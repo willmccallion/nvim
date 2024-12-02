@@ -225,33 +225,62 @@ vim.opt.rtp:prepend(lazypath)
 --
 --  To update plugins you can run
 --    :Lazy update
---
+-- Set indent size to 4 spaces
+
+-- NOTE: MY USER DEFINED EXTRAS ********
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = false
+vim.opt.softtabstop = 4
+
+vim.opt.list = false
+
 -- NOTE: MY USER DEFINED KEYMAPS ********
 vim.keymap.set('n', '<leader>bn', ':bn<CR>')
 vim.keymap.set('n', '<leader>bp', ':bp<CR>')
 vim.keymap.set('n', '<leader>bd', ':bd<CR>')
 
 -- NOTE: MY USER DEFINED FUNCTIONS ******
+
+-- Remove trailing whitespace on write
+local function trim_trailing_whitespace()
+  vim.cmd [[ %s/\s\+$//e ]]
+end
+
+-- Autocommand to trim trailing whitespace on save
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = '*',
+  callback = trim_trailing_whitespace,
+})
+
+-- Colorscheme changes
 function ColorMyPencils(color)
   color = color or 'rose-pine-moon'
   vim.cmd.colorscheme(color)
+
+  local set_fg = function(group, colour)
+    vim.api.nvim_set_hl(0, group, { fg = colour })
+  end
 
   local set_bg = function(group, colour)
     vim.api.nvim_set_hl(0, group, { bg = colour })
   end
 
-  local dark = '#000000'
+  local black = '#000000'
+  local dark_gray = '#050505'
+  -- Sets regular background to black
+  set_bg('Normal', black)
+  set_bg('NormalFloat', black)
+  -- Sets telescope background colours to black
+  set_bg('TelescopeNormal', dark_gray)
+  set_bg('TelescopeBorder', dark_gray)
 
-  set_bg('Normal', dark)
-  set_bg('NormalFloat', dark)
-
-  set_bg('TelescopeNormal', dark)
-  set_bg('TelescopeBorder', dark)
-
-  set_bg('WinSeparator', dark)
-  set_bg('NormalNC', dark)
-  set_bg('FloatBorder', dark)
-  set_bg('FloatShadow', dark)
+  set_bg('NormalNC', black)
+  set_bg('FloatBorder', black)
+  set_bg('FloatShadow', black)
+  -- Sets line numbers to specificed colours
+  set_fg('LineNr', '#252525')
+  set_fg('CursorLineNr', '#002223')
 end
 
 -- NOTE: Here is where you install your plugins.
@@ -262,6 +291,75 @@ require('lazy').setup({
     branch = 'harpoon2',
     dependencies = 'nvim-lua/plenary.nvim',
   },
+  {
+    'farmergreg/vim-lastplace',
+    config = function() -- No additional configuration needed
+    end,
+  },
+
+  {
+    'nvim-lualine/lualine.nvim',
+    requires = { 'nvim-tree/nvim-web-devicons', opt = true },
+    config = function()
+      require('lualine').setup {
+        options = {
+          theme = 'auto',
+          section_separators = '',
+          component_separators = '',
+        },
+        sections = {
+          lualine_a = { 'mode' },
+          lualine_b = { 'branch' },
+          lualine_c = { 'filename' },
+          lualine_x = { 'encoding', 'fileformat', 'filetype' },
+          lualine_y = { 'progress' },
+          lualine_z = {},
+        },
+        inactive_sections = {
+          lualine_a = {},
+          lualine_b = {},
+          lualine_c = { 'filename' },
+          lualine_x = { 'location' },
+          lualine_y = {},
+          lualine_z = {},
+        },
+        tabline = {},
+        extensions = {},
+      }
+    end,
+  },
+  {
+    'archibate/lualine-time',
+    requires = { 'kyazdani42/nvim-web-devicons', opt = true },
+    config = function()
+      require('lualine').setup {
+        options = {
+          theme = 'auto',
+          section_separators = '',
+          component_separators = '',
+        },
+        sections = {
+          lualine_a = { 'mode' },
+          lualine_b = { 'branch' },
+          lualine_c = { 'filename' },
+          lualine_x = { 'encoding', 'fileformat', 'filetype' },
+          lualine_y = { 'progress' },
+          lualine_z = { 'ctime' },
+        },
+        inactive_sections = {
+          lualine_a = {},
+          lualine_b = {},
+          lualine_c = { 'filename' },
+          lualine_x = { 'location' },
+          lualine_y = {},
+          lualine_z = {},
+        },
+        tabline = {},
+        extensions = {},
+      }
+    end,
+  },
+
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -281,13 +379,31 @@ require('lazy').setup({
     'lewis6991/gitsigns.nvim',
     opts = {
       signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
+        add = { text = '│' }, -- Unicode character for nf-fa-plus_circle
+        change = { text = '│' }, -- Unicode character for change
+        delete = { text = '─' }, -- Unicode character for delete
+        topdelete = { text = '╭' }, -- Unicode character for topdelete
+        changedelete = { text = '│' },
+        untracked = { text = '│' },
       },
     },
+    watch_gitdir = { interval = 1000, follow_files = true },
+    sign_priority = 6,
+    status_formatter = nil, -- Use default
+    update_debounce = 100,
+    attach_to_untracked = true,
+    current_line_blame = false,
+    current_line_blame_opts = {
+      virt_text = true,
+      virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+      delay = 1000,
+      ignore_whitespace = false,
+    },
+    current_line_blame_formatter_opts = { relative_time = false },
+    signcolumn = true, -- Toggle with `:Gitsigns toggle_signs`
+    numhl = false, -- Toggle with `:Gitsigns toggle_numhl`
+    linehl = false, -- Toggle with `:Gitsigns toggle_linehl`
+    word_diff = false, -- Toggle with `:Gitsigns toggle_word_diff`
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -649,11 +765,12 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        clangd = {},
-        zls = {},
-        -- gopls = {},
-        pyright = {},
-        rust_analyzer = {},
+        clangd = {}, -- C/C++
+        zls = {}, -- Zig
+        gopls = {}, -- Golang
+        -- pyright = {}, -- Python
+        -- rust_analyzer = {},
+
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -868,7 +985,6 @@ require('lazy').setup({
       }
     end,
   },
-
   {
     'rose-pine/neovim',
     priority = 1000,
@@ -883,7 +999,12 @@ require('lazy').setup({
       ColorMyPencils()
     end,
   },
-
+  {
+    'craftzdog/solarized-osaka.nvim',
+    lazy = false,
+    priority = 2000,
+    opts = {},
+  },
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
@@ -948,7 +1069,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'go', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1016,5 +1137,6 @@ require('lazy').setup({
   },
 })
 
+--vim.cmd 'colorscheme darker_rose_pine'
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
