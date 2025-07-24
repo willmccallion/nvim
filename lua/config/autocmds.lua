@@ -33,7 +33,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     if vim.fn.argc() == 0 then
-      require('telescope.builtin').find_files()
+      require('telescope.builtin').oldfiles()
     end
   end
 })
