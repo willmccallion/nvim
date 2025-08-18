@@ -18,6 +18,7 @@ return {
   require('plugins.lsp'),
   require('plugins.conform'),
   require('plugins.completion'),
+  require('plugins.dap'),
 
   -- Utilities & Tools
   require('plugins.telescope'),

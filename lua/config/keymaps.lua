@@ -42,3 +42,23 @@ vim.keymap.set('n', '<leader>sd', vim.diagnostic.open_float, {
 })
 
 map('n', '<leader>fr', ":%s/", { desc = "Find and replace."})
+
+-- In your keymaps configuration file
+
+-- Set a breakpoint
+vim.keymap.set("n", "<F9>", function() require("dap").toggle_breakpoint() end)
+
+-- Start the debugger
+vim.keymap.set("n", "<F5>", function() require("dap").continue() end)
+
+-- Step over
+vim.keymap.set("n", "<F10>", function() require("dap").step_over() end)
+
+-- Step into
+vim.keymap.set("n", "<F11>", function() require("dap").step_into() end)
+
+-- Step out
+vim.keymap.set("n", "<F12>", function() require("dap").step_out() end)
+
+-- Open the DAP UI
+vim.keymap.set("n", "<leader>du", function() require("dapui").toggle() end)
