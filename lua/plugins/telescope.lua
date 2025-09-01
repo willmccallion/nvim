@@ -1,34 +1,38 @@
--- ~/.config/nvim/lua/plugins/telescope.lua
-return {
-  'nvim-telescope/telescope.nvim',
-  branch = '0.1.x',
-  dependencies = {
-    'nvim-lua/plenary.nvim',
-    { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
+vim.pack.add({
+  'https://github.com/nvim-lua/plenary.nvim',
+  'https://github.com/nvim-telescope/telescope.nvim',
+  'https://github.com/nvim-telescope/telescope-fzf-native.nvim',
+  'https://github.com/nvim-telescope/telescope-ui-select.nvim',
+  'https://github.comnvim-tree/nvim-web-devicons'
+})
+
+local telescope = require('telescope')
+local actions = require('telescope.actions')
+
+telescope.setup({
+  defaults = {
+    path_display = { 'truncate' },
+    mappings = {
+      i = { ['<C-j>'] = actions.move_selection_next, ['<C-k>'] = actions.move_selection_previous },
+    },
+    layout_strategy = 'horizontal',
+    layout_config = { horizontal = { preview_width = 0.55 } },
+    borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' },
+    prompt_prefix = vim.g.have_nerd_font and '  ' or '> ',
+    selection_caret = vim.g.have_nerd_font and ' ' or '-> ',
   },
-  keys = {
-    { '<leader>sf', require('telescope.builtin').find_files, desc = '[S]earch [F]iles' },
-    { '<leader>sg', require('telescope.builtin').live_grep, desc = '[S]earch by [G]rep' },
-    { '<leader>sb', require('telescope.builtin').buffers, desc = '[S]earch [B]uffers' },
-    { '<leader>sw', require('telescope.builtin').grep_string , desc = '[S]earch [W]ord'},
-    { '<leader>sh', require('telescope.builtin').help_tags, desc = '[S]earch [H]elp' },
-    { '<leader>s.', require('telescope.builtin').oldfiles, desc = '[S]earch Recent Files' },
+  extensions = {
+    ['fzf'] = { override_generic_sorter = true, override_file_sorter = true, case_mode = 'smart_case' },
+    ['ui-select'] = { require('telescope.themes').get_dropdown({}) },
   },
-  config = function()
-    local telescope = require('telescope')
-    telescope.setup({
-      defaults = {
-        path_display = { 'truncate' },
-      },
-      extensions = {
-        fzf = {
-          fuzzy = true,
-          override_generic_sorter = true,
-          override_file_sorter = true,
-          case_mode = 'smart_case',
-        },
-      },
-    })
-    telescope.load_extension('fzf')
-  end,
-}
+})
+
+pcall(telescope.load_extension, 'fzf')
+pcall(telescope.load_extension, 'ui-select')
+
+local builtin = require('telescope.builtin')
+local map = vim.keymap.set
+map('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+map('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+map('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+map('n', '<leader><leader>', builtin.buffers, { desc = 'Find open buffers' })

@@ -1,10 +1,17 @@
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+require('config.globals')
+require('config.options')
+require('config.keymaps')
+require('config.autocmds')
 
-vim.g.have_nerd_font = true
-
-require('core.options')
-require('core.keymaps')
-require('core.autocmds')
-
-require('init')
+require('plugins.lsp')
+require('plugins.treesitter')
+require('plugins.colourscheme')
+require('plugins.completion')
+require('plugins.telescope')
+require('plugins.oil')
+require('plugins.conform')
+require('plugins.flash')
+require('plugins.gitsigns')
+require('plugins.todo_comments')
+require('plugins.undotree')
+require('plugins.dap')
