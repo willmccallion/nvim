@@ -3,7 +3,7 @@ vim.pack.add({
   'https://github.com/nvim-telescope/telescope.nvim',
   'https://github.com/nvim-telescope/telescope-fzf-native.nvim',
   'https://github.com/nvim-telescope/telescope-ui-select.nvim',
-  'https://github.comnvim-tree/nvim-web-devicons'
+  'https://github.com/nvim-tree/nvim-web-devicons'
 })
 
 local telescope = require('telescope')
@@ -35,4 +35,10 @@ local map = vim.keymap.set
 map('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
 map('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
 map('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-map('n', '<leader><leader>', builtin.buffers, { desc = 'Find open buffers' })
+map('n', '<leader>/', builtin.buffers, { desc = 'Find open buffers' })
+map('n', '<leader><leader>', function()
+    builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown({
+      winblend = 10,
+      previewer = false,
+    }))
+  end, { desc = '[/] Fuzzily search in current buffer' })
