@@ -5,6 +5,7 @@ require('conform').setup({
     rust = { "rustfmt" },
     c = { "clang-format" },
     cpp = { "clang-format" },
+    lua = { "stylua" },
   },
   format_on_save = {
     timeout_ms = 500,
