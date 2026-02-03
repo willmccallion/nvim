@@ -1,8 +1,8 @@
---- @file accelerate.lua
---- @brief Configuration for the accelerated-jk plugin to enhance vertical navigation.
---- @details This file handles the installation and configuration of the
---- accelerated-jk plugin, which increases cursor movement speed when 'j' or 'k'
---- are held down.
+--- @module accelerate
+--- @brief Configuration for the accelerated-jk plugin.
+--- @description This module handles the installation and configuration of the
+--- accelerated-jk plugin, which speeds up cursor movement when the j or k keys
+--- are held down. It defines the acceleration steps and sets up the keymaps.
 
 vim.pack.add({ "https://github.com/rhysd/accelerated-jk" })
 

@@ -1,6 +1,7 @@
---- @file gitsigns.lua
---- @brief Configuration for gitsigns.nvim, providing git decorations and hunk management.
---- @details This module sets up gitsigns with custom signs and keymaps for hunk navigation, staging, and blaming.
+--- @module plugins.gitsigns
+--- @brief Git integration for the Neovim sign column.
+--- @description Configures gitsigns.nvim to provide visual indicators for git changes
+--- and provides keybindings for hunk navigation, staging, and previewing.
 
 vim.pack.add({ "https://github.com/lewis6991/gitsigns.nvim" })
 
@@ -13,18 +14,8 @@ require("gitsigns").setup({
 		changedelete = { text = "~" },
 	},
 
-	--- @brief Callback function triggered when gitsigns attaches to a buffer.
-	--- @param bufnr number The buffer number where gitsigns is attached.
-	--- @details Sets up buffer-local keymaps for git operations like hunk navigation, staging, and blaming.
-	--- @return nil
 	on_attach = function(bufnr)
 		local gs = package.loaded.gitsigns
-		--- @brief Helper function to create buffer-local key mappings.
-		--- @param mode string|table The mode(s) for the mapping (e.g., 'n', 'v').
-		--- @param l string The left-hand side of the mapping (the keys).
-		--- @param r string|function The right-hand side of the mapping (the action).
-		--- @param opts table|nil Optional mapping settings (e.g., desc).
-		--- @return nil
 		local map = function(mode, l, r, opts)
 			opts = opts or {}
 			opts.buffer = bufnr

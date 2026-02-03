@@ -1,7 +1,7 @@
 --- @module init
 --- @brief Main entry point for the Neovim configuration.
 --- @description This module orchestrates the loading sequence of the entire Neovim setup,
---- including global variables, core options, keybindings, autocommands, and
+--- including global variables, editor options, keybindings, autocommands, and
 --- individual plugin configurations.
 
 --- Config files

@@ -1,5 +1,8 @@
---- @file completion.lua
---- @brief Configuration for the nvim-cmp completion engine and snippet integration.
+--- @module plugins.completion
+--- @brief Configuration for nvim-cmp and snippet integration.
+--- @description Sets up the autocompletion engine using nvim-cmp, including
+--- sources for LSP, snippets, paths, and buffers. Configures LuaSnip for
+--- snippet expansion and provides custom keybindings for the completion menu.
 
 vim.pack.add({
 	"https://github.com/hrsh7th/nvim-cmp",
@@ -22,8 +25,6 @@ vim.o.pumheight = 5
 
 cmp.setup({
 	snippet = {
-		--- Expands a snippet using the LuaSnip engine.
-		--- @param args table The arguments provided by nvim-cmp, containing the snippet body.
 		expand = function(args)
 			luasnip.lsp_expand(args.body)
 		end,
@@ -40,11 +41,6 @@ cmp.setup({
 		["<C-Space>"] = cmp.mapping.complete(),
 		["<C-e>"] = cmp.mapping.abort(),
 		["<CR>"] = cmp.mapping.confirm({ select = true }),
-		--- Handles the <Tab> key for completion and snippet navigation.
-		--- If the completion menu is open, it selects the next item.
-		--- If a snippet can be expanded or jumped, it performs that action.
-		--- Otherwise, it falls back to the default tab behavior.
-		--- @param fallback function The default Neovim behavior for the <Tab> key.
 		["<Tab>"] = cmp.mapping(function(fallback)
 			if cmp.visible() then
 				cmp.select_next_item()

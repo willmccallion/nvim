@@ -1,7 +1,7 @@
---- @file globals.lua
---- @brief Global configuration settings for Neovim.
---- @details This file defines global variables used across the Neovim configuration,
---- including leader keys and UI capabilities like Nerd Font support.
+--- @module globals
+--- @brief Defines global configuration variables and leader keys for Neovim.
+--- @description This module sets up the primary and local leader keys, as well as
+--- global flags like Nerd Font support used by other plugins and configurations.
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "

@@ -1,10 +1,8 @@
---- @file rust_analyzer.lua
---- @brief Configuration for the rust-analyzer Language Server Protocol (LSP).
---- This module defines the settings used by the LSP client to initialize
---- and configure the rust-analyzer server.
+--- @module lsp.rust_analyzer
+--- @brief Configuration settings for the rust-analyzer Language Server Protocol (LSP).
+--- @details This module provides a table of settings for rust-analyzer, specifically
+--- configuring it to use clippy for on-save checks and enabling all cargo features.
 
---- @brief Entry point for the rust-analyzer configuration module.
---- @return table The configuration settings for rust-analyzer.
 return {
 	settings = {
 		["rust-analyzer"] = {

@@ -1,7 +1,8 @@
---- @file flash.lua
---- @brief Configuration and initialization for the flash.nvim plugin.
---- @details This script manages the installation of the flash.nvim plugin,
---- performs the initial setup, and configures keybindings for jumping.
+--- @module plugins.flash
+--- @brief Configuration for flash.nvim to navigate code with search labels.
+--- @description This module handles the installation, setup, and keybindings for flash.nvim,
+--- providing a fast and intuitive way to jump to any location in the buffer using
+--- search-based labels.
 
 vim.pack.add({ "https://github.com/folke/flash.nvim" })
 

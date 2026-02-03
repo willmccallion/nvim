@@ -1,8 +1,8 @@
---- @file conform.lua
---- @brief Configuration for the conform.nvim formatting plugin.
---- @details This file handles the installation and setup of conform.nvim,
---- defining specific formatters for various programming languages and
---- configuring automatic formatting on save.
+--- @module plugins.conform
+--- @brief Configuration for conform.nvim to handle code formatting.
+--- @details This module sets up the conform.nvim plugin, defining formatters for specific
+--- filetypes (Rust, C, C++, Lua), enabling format-on-save, and providing a manual
+--- formatting keybind.
 
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" })
 

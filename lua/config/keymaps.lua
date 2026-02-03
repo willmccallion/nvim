@@ -1,7 +1,7 @@
---- @file keymaps.lua
---- @brief Custom keybindings for Neovim configuration.
---- @details This file defines various key mappings for navigation, line manipulation,
---- clipboard operations, buffer management, and Lua execution.
+--- @module config.keymaps
+--- @brief Defines global keybindings for Neovim.
+--- @description This module configures custom shortcuts for navigation, line manipulation,
+--- system clipboard integration, buffer management, and Lua development utilities.
 
 vim.keymap.set({ "n", "x" }, "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "k", "gk", { desc = "Navigate up (visual line)" })

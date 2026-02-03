@@ -1,7 +1,7 @@
---- @file todo_comments.lua
+--- @module plugins.todo_comments
 --- @brief Configuration for the todo-comments.nvim plugin.
---- @details This file handles the installation, setup, and keybindings for
---- managing TODO, FIXME, and other comment tags using todo-comments.nvim.
+--- @description This module handles the setup and keybindings for todo-comments.nvim,
+--- allowing for highlighting and searching of TODO, FIXME, and other comment tags.
 
 vim.pack.add({ "https://github.com/folke/todo-comments.nvim" })
 

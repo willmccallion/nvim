@@ -1,8 +1,7 @@
---- @file telescope.lua
+--- @module plugins.telescope
 --- @brief Configuration for the Telescope fuzzy finder and its extensions.
---- @details This file handles the installation of Telescope and its dependencies,
---- configures the core settings, loads extensions (fzf, ui-select),
---- and defines keybindings for efficient navigation and searching.
+--- @description This module handles the setup of telescope.nvim, including UI enhancements,
+--- FZF native sorting, and custom keybindings for file navigation and text searching.
 
 vim.pack.add({
 	"https://github.com/nvim-lua/plenary.nvim",

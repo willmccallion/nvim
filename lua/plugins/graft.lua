@@ -1,7 +1,7 @@
---- @file graft.lua
---- @brief Configuration and initialization for the graft.nvim AI assistant plugin.
---- @details This script manages the loading of the graft.nvim plugin from a local path,
---- ensures its dependencies are available, and sets up the default configuration and keybindings.
+--- @module plugins.graft
+--- @brief Plugin configuration for graft.nvim.
+--- @description Manages the integration of the graft AI assistant, including dependency
+--- loading (plenary, nui), provider setup, and keybindings for AI operations.
 
 local home = os.getenv("HOME")
 vim.pack.add({ home .. "/projects/graft.nvim" })
@@ -13,7 +13,3 @@ local graft = require("graft")
 graft.setup({
 	default_provider = "gemini_flash",
 })
-
-vim.keymap.set({ "n", "v" }, "<leader>aa", graft.start, { desc = "[A]I [A]ssistant" })
-vim.keymap.set("n", "<leader>am", graft.select_model, { desc = "[A]I [M]odel Select" })
-vim.keymap.set("n", "<leader>as", graft.stop_job, { desc = "[A]I [S]top" })

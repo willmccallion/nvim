@@ -1,7 +1,7 @@
---- @file options.lua
---- @brief Global Neovim configuration options.
---- @details This script serves as the entry point for setting Neovim's global options.
---- It configures UI elements, search behavior, indentation, and window splits.
+--- @module config.options
+--- @brief Global Neovim options configuration.
+--- @description This module defines the core editor settings, including UI elements,
+--- indentation rules, search behavior, and window management.
 
 vim.opt.number = true
 vim.opt.relativenumber = true

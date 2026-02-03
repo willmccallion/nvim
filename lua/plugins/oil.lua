@@ -1,7 +1,7 @@
---- @file oil.lua
---- @brief Configuration for oil.nvim, a file explorer for Neovim.
---- @details This file handles the installation and setup of oil.nvim and its dependencies,
---- providing a directory editor that looks like a normal buffer.
+--- @module plugins.oil
+--- @brief Configuration for oil.nvim file explorer.
+--- This module handles the installation and setup of oil.nvim, which allows
+--- editing the file system like a normal Neovim buffer.
 
 vim.pack.add({ "https://github.com/stevearc/oil.nvim" })
 vim.pack.add({ "https://github.com/nvim-tree/nvim-web-devicons" })

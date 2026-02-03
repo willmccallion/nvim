@@ -1,8 +1,8 @@
---- @file treesitter.lua
---- @brief Configuration and setup for nvim-treesitter.
---- @details This file manages the installation of the nvim-treesitter plugin,
---- configures the supported language parsers, and establishes an
---- automated update mechanism for parsers when the plugin is updated.
+--- @module treesitter
+--- @brief Configuration for nvim-treesitter, including parser management and syntax highlighting.
+--- @description This module handles the installation of the nvim-treesitter plugin,
+--- configures the desired language parsers, and sets up an autocommand to
+--- automatically run :TSUpdate when the plugin is updated via the package manager.
 
 vim.pack.add({
 	{
@@ -40,9 +40,6 @@ require("nvim-treesitter.configs").setup({
 vim.api.nvim_create_autocmd("PackChanged", {
 	desc = "Handle nvim-treesitter updates",
 	group = vim.api.nvim_create_augroup("nvim-treesitter-pack-changed-update-handler", { clear = true }),
-	--- @brief Callback function executed when a package change event occurs.
-	--- @param event table The event context containing data about the package change.
-	--- @return nil
 	callback = function(event)
 		if event.data.kind == "update" and event.data.spec.name == "nvim-treesitter" then
 			vim.notify("nvim-treesitter updated, running TSUpdate...", vim.log.levels.INFO)

@@ -1,7 +1,7 @@
---- @file colourscheme.lua
+--- @module plugins.colourscheme
 --- @brief Configuration for the Neovim colorscheme.
---- @details This file handles the installation, configuration, and activation
---- of the 'nightfox.nvim' colorscheme, specifically the 'terafox' variant.
+--- @description This module handles the installation and configuration of the Nightfox
+--- colorscheme family, specifically applying the Terafox variant with transparency.
 
 vim.pack.add({ "https://github.com/EdenEast/nightfox.nvim" })
 

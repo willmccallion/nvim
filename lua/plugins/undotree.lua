@@ -1,7 +1,7 @@
---- @file undotree.lua
---- @brief Configuration for the Undotree plugin.
---- @details This file manages the loading and keymapping for the Undotree plugin,
---- which allows users to visualize and navigate the undo tree.
+--- @module plugins.undotree
+--- @brief Configuration for the undotree plugin.
+--- @description This module handles the installation and keybinding setup for the undotree plugin,
+--- which provides a visual representation of the undo history tree.
 
 vim.pack.add({ "https://github.com/mbbill/undotree" })
 
