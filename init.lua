@@ -1,29 +1,28 @@
 --- @module init
 --- @brief Main entry point for the Neovim configuration.
---- @description This module orchestrates the loading sequence of the entire Neovim setup,
---- including global variables, editor options, keybindings, autocommands, and
---- individual plugin configurations.
+--- This module orchestrates the loading of global variables, core options, keymaps,
+--- autocommands, and various plugin configurations categorized by functionality.
 
---- Config files
 require("config.globals")
+
 require("config.options")
 require("config.keymaps")
 require("config.autocmds")
 
---- Plugins
-require("plugins.lsp")
-require("plugins.treesitter")
-require("plugins.colourscheme")
-require("plugins.completion")
-require("plugins.telescope")
-require("plugins.oil")
-require("plugins.conform")
-require("plugins.flash")
-require("plugins.gitsigns")
-require("plugins.todo_comments")
-require("plugins.undotree")
-require("plugins.accelerate")
-require("plugins.diagnostic")
+require("plugins.ui.colourscheme")
+require("plugins.ui.diagnostic")
+require("plugins.ui.oil")
 
---- My plugin
-require("plugins.graft")
+require("plugins.coding.completion")
+require("plugins.coding.conform")
+require("plugins.coding.graft")
+require("plugins.coding.treesitter")
+
+require("plugins.editor.accelerate")
+require("plugins.editor.flash")
+require("plugins.editor.gitsigns")
+require("plugins.editor.telescope")
+require("plugins.editor.todo_comments")
+require("plugins.editor.undotree")
+
+require("plugins.lsp.init")
