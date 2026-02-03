@@ -31,8 +31,8 @@ Install the following tools for code formatting:
 ## Structure
 
 *   `lua/config/`: Core configuration (options, keymaps, autocommands).
-*   `lua/lsp/`: Language server specific configurations.
-*   `lua/plugins/`: Plugin installation and configuration.
+*   `lua/plugins/`: Plugin configuration organized by category (`coding`, `editor`, `lsp`, `ui`).
+*   `lua/plugins/lsp/servers/`: Language server specific configurations.
 
 ## Key Features
 
@@ -51,41 +51,49 @@ Install the following tools for code formatting:
 The leader key is set to `Space`.
 
 ### General
-*   `<Space>e`: Open file explorer (Oil).
-*   `<Space>q`: Open diagnostic quickfix list.
-*   `<Space>u`: Toggle UndoTree.
+*   `<leader>e`: Open file explorer (Oil).
+*   `<leader>q`: Open diagnostic quickfix list.
+*   `<leader>u`: Toggle UndoTree.
 *   `<C-l>`: Toggle search highlighting.
-*   `<Space>y` / `<Space>p`: Copy/Paste to system clipboard.
+*   `<leader>y` / `<Space>p`: Copy/Paste to system clipboard.
+*   `<leader>xx`: Source current file.
+*   `<leader>x`: Execute Lua line/selection.
 
 ### Navigation
 *   `j` / `k`: Accelerated vertical navigation.
 *   `s`: Flash jump to character.
-*   `<Space>bb`: Switch to alternate buffer.
-*   `<Space>bn` / `<Space>bp`: Next/Previous buffer.
+*   `<leader>bb`: Switch to alternate buffer.
+*   `<leader>bn` / `<Space>bp`: Next/Previous buffer.
 
 ### Telescope
-*   `<Space>sf`: Find files.
-*   `<Space>sg`: Live grep.
-*   `<Space>sw`: Search current word.
-*   `<Space>/`: Search in current buffer.
+*   `<leader>sf`: Find files.
+*   `<leader>sg`: Live grep.
+*   `<leader>sw`: Search current word.
+*   `<leader>sk`: Search keymaps
+*   `<leader>st`: Search TODOs.
+*   `<leader>/`: Find open buffers.
+*   `<leader><Space>`: Fuzzily search in current buffer.
 
 ### LSP
 *   `gd`: Go to definition.
 *   `gr`: Go to references.
 *   `K`: Hover documentation.
-*   `<Space>rn`: Rename symbol.
-*   `<Space>ca`: Code action.
-*   `<Space>f`: Format buffer.
+*   `<leader>rn`: Rename symbol.
+*   `<leader>ca`: Code action.
+*   `<leader>f`: Format buffer.
+*   `<leader>l`: Toggle LSP lines.
 
 ### Git
-*   `<Space>hs`: Stage hunk.
-*   `<Space>hr`: Reset hunk.
-*   `<Space>hb`: Blame line.
+*   `<leader>hs`: Stage hunk.
+*   `<leader>hr`: Reset hunk.
+*   `<leader>hb`: Blame line.
+*   `<leader>hu`: Undo stage hunk.
+*   `<leader>hp`: Preview hunk.
 
 ### AI Assistant
-*   `<Space>aa`: Start AI assistant (Graft).
-*   `<Space>am`: Select AI model.
-*   `<Space>as`: Stop AI job.
+*   `<leader>aa`: Start AI assistant (Graft).
+*   `<leader>am`: Select AI model.
+*   `<leader>as`: Stop AI job.
 
 ## Notes
 
