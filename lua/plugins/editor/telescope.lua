@@ -56,3 +56,6 @@ map("n", "<leader><leader>", function()
 		previewer = false,
 	}))
 end, { desc = "[/] Fuzzily search in current buffer" })
+
+map("n", "<leader>so", builtin.oldfiles, { desc = "[S]earch [O]ldfiles (Recent)" })
+map("n", "<leader>sq", builtin.search_history, { desc = "[S]earch [Q]uery History" })
