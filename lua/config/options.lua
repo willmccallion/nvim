@@ -1,14 +1,19 @@
+--- @file options.lua
+--- @brief Global Neovim configuration options.
+--- @details This script serves as the entry point for setting Neovim's global options.
+--- It configures UI elements, search behavior, indentation, and window splits.
+
 vim.opt.number = true
 vim.opt.relativenumber = true
-vim.opt.signcolumn = 'yes'
+vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
 vim.opt.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
-vim.opt.inccommand = 'split'
+vim.opt.inccommand = "split"
 
 vim.opt.wrap = true
 vim.opt.breakindent = true
@@ -23,4 +28,4 @@ vim.opt.splitbelow = true
 
 vim.opt.undofile = true
 
-vim.opt.winborder = 'rounded'
+vim.opt.winborder = "rounded"

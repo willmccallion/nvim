@@ -1,3 +1,8 @@
+--- @file lsp.lua
+--- @brief Configuration for Neovim's built-in LSP client.
+--- This module handles the setup of language servers, including capabilities,
+--- root directory detection, and buffer-local keybindings.
+
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 local has_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
 if has_cmp then
@@ -31,7 +36,13 @@ local builtin_defaults = {
 
 local servers = { "rust_analyzer", "clangd", "lua_ls" }
 
+--- @brief Generates a root directory detection function based on provided markers.
+--- @param markers string[] List of files/directories (e.g., '.git', 'Cargo.toml') to identify project root.
+--- @return function A function that accepts a filename and returns the detected root path.
 local function get_root_finder(markers)
+	--- @brief Detects the root directory for a given filename.
+	--- @param fname string The absolute path to the file.
+	--- @return string The detected root directory path.
 	return function(fname)
 		local root = vim.fs.root(fname, markers)
 		if root then

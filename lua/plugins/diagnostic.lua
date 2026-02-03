@@ -1,3 +1,9 @@
+--- @file diagnostic.lua
+--- @brief Configuration for Neovim diagnostics and lsp_lines.nvim.
+--- @details This file handles the setup of the lsp_lines plugin, configures
+--- global diagnostic display settings, defines custom diagnostic signs,
+--- and sets up keybindings for toggling diagnostic views.
+
 vim.pack.add({ "https://git.sr.ht/~whynothugo/lsp_lines.nvim" })
 
 require("lsp_lines").setup()

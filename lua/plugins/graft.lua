@@ -1,3 +1,8 @@
+--- @file graft.lua
+--- @brief Configuration and initialization for the graft.nvim AI assistant plugin.
+--- @details This script manages the loading of the graft.nvim plugin from a local path,
+--- ensures its dependencies are available, and sets up the default configuration and keybindings.
+
 local home = os.getenv("HOME")
 vim.pack.add({ home .. "/projects/graft.nvim" })
 vim.pack.add({ "https://github.com/nvim-lua/plenary.nvim" })

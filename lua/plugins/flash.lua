@@ -1,5 +1,12 @@
-vim.pack.add({'https://github.com/folke/flash.nvim'})
+--- @file flash.lua
+--- @brief Configuration and initialization for the flash.nvim plugin.
+--- @details This script manages the installation of the flash.nvim plugin,
+--- performs the initial setup, and configures keybindings for jumping.
 
-require('flash').setup({})
+vim.pack.add({ "https://github.com/folke/flash.nvim" })
 
-vim.keymap.set({ "n", "x", "o" }, "s", function() require("flash").jump() end, { desc = "Flash Jump" })
+require("flash").setup({})
+
+vim.keymap.set({ "n", "x", "o" }, "s", function()
+	require("flash").jump()
+end, { desc = "Flash Jump" })
