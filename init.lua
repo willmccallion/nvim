@@ -15,5 +15,6 @@ require("plugins.gitsigns")
 require("plugins.todo_comments")
 require("plugins.undotree")
 require("plugins.accelerate")
+require("plugins.diagnostic")
 
 require("plugins.graft")

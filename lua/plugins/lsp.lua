@@ -37,11 +37,9 @@ local function get_root_finder(markers)
 		if root then
 			return root
 		end
-
 		if fname and fname ~= "" then
 			return vim.fs.dirname(fname)
 		end
-
 		return vim.fn.getcwd()
 	end
 end
@@ -71,11 +69,7 @@ for _, server in ipairs(servers) do
 				if root_finder then
 					root_dir = root_finder(vim.api.nvim_buf_get_name(ev.buf))
 				end
-
-				local client_config = vim.tbl_deep_extend("force", final_config, {
-					root_dir = root_dir,
-				})
-
+				local client_config = vim.tbl_deep_extend("force", final_config, { root_dir = root_dir })
 				vim.lsp.start(client_config, { bufnr = ev.buf })
 			end,
 		})
@@ -91,7 +85,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		local map = function(keys, func, desc)
 			vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
 		end
-
 		map("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
 		map("K", vim.lsp.buf.hover, "Hover Documentation")
 		map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
@@ -106,7 +99,6 @@ vim.api.nvim_create_user_command("LspInfo", function()
 		vim.notify("No active LSP clients in this buffer.", vim.log.levels.WARN)
 		return
 	end
-
 	local info = { "LSP Clients attached to this buffer:" }
 	for _, client in ipairs(clients) do
 		table.insert(info, "--------------------")
@@ -114,6 +106,5 @@ vim.api.nvim_create_user_command("LspInfo", function()
 		table.insert(info, "Root:   " .. (client.config.root_dir or "nil"))
 		table.insert(info, "Cmd:    " .. table.concat(client.config.cmd or {}, " "))
 	end
-
 	vim.notify(table.concat(info, "\n"), vim.log.levels.INFO)
 end, {})
