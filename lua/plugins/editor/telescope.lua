@@ -40,8 +40,16 @@ local map = vim.keymap.set
 map("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
 map("n", "<leader>sg", builtin.live_grep, { desc = "[S]earch by [G]rep" })
 map("n", "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
-vim.keymap.set("n", "<leader>sk", require("telescope.builtin").keymaps, { desc = "Search Keymaps" })
+map("n", "<leader>sk", require("telescope.builtin").keymaps, { desc = "Search Keymaps" })
 map("n", "<leader>/", builtin.buffers, { desc = "Find open buffers" })
+map("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
+map("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
+map("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
+
+map("n", "<leader>sc", function()
+	builtin.find_files({ cwd = vim.fn.stdpath("config") })
+end, { desc = "[S]earch [C]onfig" })
+
 map("n", "<leader><leader>", function()
 	builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
 		winblend = 10,

@@ -76,8 +76,13 @@ vim.keymap.set("n", "[q", "<cmd>cprev<CR>", { desc = "Previous quickfix item" })
 vim.keymap.set("n", "]q", "<cmd>cnext<CR>", { desc = "Next quickfix item" })
 vim.keymap.set("n", "[Q", "<cmd>cfirst<CR>", { desc = "First quickfix item" })
 vim.keymap.set("n", "]Q", "<cmd>clast<CR>", { desc = "Last quickfix item" })
+vim.keymap.set("n", "<leader>qo", "<cmd>copen<cr>", { desc = "[Q]uickfix [O]pen" })
+vim.keymap.set("n", "<leader>qc", "<cmd>cclose<cr>", { desc = "[Q]uickfix [C]lose" })
 
 vim.keymap.set("n", "<leader>bd", "<cmd>bd<CR>", { desc = "Close current buffer" })
 vim.keymap.set("n", "<leader>ba", "<cmd>%bd|e#|bd#<CR>", { desc = "Close all but current buffer" })
 
 vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
+
+vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent right" })
+vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left" })
