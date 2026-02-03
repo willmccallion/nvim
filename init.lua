@@ -1,8 +1,8 @@
---- @file init.lua
---- @brief Neovim configuration entry point.
---- @details This file serves as the primary initialization script for Neovim.
---- It orchestrates the loading of core settings, keybindings, and plugin
---- configurations in a specific order to ensure a stable and functional environment.
+--- @module init
+--- @brief Main entry point for the Neovim configuration.
+--- @description This module orchestrates the loading sequence of the entire Neovim setup,
+--- including global variables, core options, keybindings, autocommands, and
+--- individual plugin configurations.
 
 --- Config files
 require("config.globals")
@@ -24,6 +24,7 @@ require("plugins.todo_comments")
 require("plugins.undotree")
 require("plugins.accelerate")
 require("plugins.diagnostic")
+require("plugins.which_key")
 
 --- My plugin
 require("plugins.graft")

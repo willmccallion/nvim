@@ -9,8 +9,8 @@ vim.pack.add({ "https://git.sr.ht/~whynothugo/lsp_lines.nvim" })
 require("lsp_lines").setup()
 
 vim.diagnostic.config({
+	virtual_lines = false,
 	virtual_text = false,
-	virtual_lines = true,
 	signs = true,
 	underline = true,
 	update_in_insert = false,
