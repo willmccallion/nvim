@@ -86,3 +86,9 @@ vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
 
 vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent right" })
 vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left" })
+
+vim.api.nvim_create_user_command("Update", function()
+	vim.pack.update()
+end, { desc = "Update Neovim packages" })
+
+vim.keymap.set("n", "<leader>pu", "<cmd>Update<cr>", { desc = "Plugin Update" })
