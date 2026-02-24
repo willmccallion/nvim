@@ -11,7 +11,7 @@ if has_cmp then
 	capabilities = cmp_nvim_lsp.default_capabilities()
 end
 
-local servers = { "clangd", "lua_ls", "rust_analyzer" }
+local servers = { "clangd", "lua_ls", "rust_analyzer", "pyright" }
 
 for _, server_name in ipairs(servers) do
 	local ok, config = pcall(require, "plugins.lsp.servers." .. server_name)

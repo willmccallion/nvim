@@ -15,7 +15,6 @@ require("plugins.ui.oil")
 
 require("plugins.coding.completion")
 require("plugins.coding.conform")
-require("plugins.coding.graft")
 require("plugins.coding.treesitter")
 
 require("plugins.editor.accelerate")
