@@ -28,4 +28,6 @@ vim.opt.splitbelow = true
 
 vim.opt.undofile = true
 
+vim.opt.exrc = true
+
 vim.opt.winborder = "rounded"

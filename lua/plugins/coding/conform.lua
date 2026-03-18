@@ -14,10 +14,12 @@ require("conform").setup({
 		lua = { "stylua" },
 		python = { "isort", "black" },
 	},
-	format_on_save = {
-		timeout_ms = 500,
-		lsp_fallback = true,
-	},
+	format_on_save = function(bufnr)
+		if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then
+			return
+		end
+		return { timeout_ms = 500, lsp_fallback = true }
+	end,
 })
 
 vim.keymap.set({ "n", "v" }, "<leader>f", function()
