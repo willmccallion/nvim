@@ -1,8 +1,7 @@
---- @module plugins.diagnostic
---- @brief Configuration for Neovim diagnostics and lsp_lines.nvim integration.
---- @description This module configures the global diagnostic display settings,
---- defines custom diagnostic signs, and integrates the lsp_lines.nvim plugin
---- to provide multi-line diagnostic information with a toggle keymap.
+--- @module plugins.ui.diagnostic
+--- @brief Diagnostic display and lsp_lines.nvim.
+--- Configures diagnostic signs, disables virtual text by default, and adds
+--- lsp_lines for togglable multiline diagnostic display (<leader>l).
 
 vim.pack.add({ "https://git.sr.ht/~whynothugo/lsp_lines.nvim" })
 
@@ -23,4 +22,4 @@ for type, icon in pairs(signs) do
 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
 end
 
-vim.keymap.set("", "<leader>l", require("lsp_lines").toggle, { desc = "Toggle multiline diagnostic errors inline under code" })
+vim.keymap.set({ "n", "x", "o" }, "<leader>l", require("lsp_lines").toggle, { desc = "Toggle multiline diagnostic errors inline under code" })

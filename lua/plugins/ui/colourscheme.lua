@@ -1,11 +1,12 @@
---- @module plugins.colourscheme
---- @brief Configuration for the Neovim colorscheme.
---- @description This module handles the installation and configuration of the Nightfox
---- colorscheme family, specifically applying the Terafox variant with transparency.
+--- @module plugins.ui.colourscheme
+--- @brief Colorscheme setup.
+--- Installs Nightfox, Tokyonight, and Rose Pine with transparent backgrounds.
+--- Active scheme: Tokyonight (night).
 
 vim.pack.add({ 
   "https://github.com/EdenEast/nightfox.nvim",
   "https://github.com/folke/tokyonight.nvim",
+  "https://github.com/rose-pine/neovim",
 })
 
 require("nightfox").setup({
@@ -16,7 +17,15 @@ require("nightfox").setup({
 
 require("tokyonight").setup({
 	transparent = true,
-  style = "night",
+	style = "night",
+})
+
+require("rose-pine").setup({
+	variant = "moon",
+
+	styles = {
+		transparency = true,
+	},
 })
 
 vim.cmd([[colorscheme tokyonight]])

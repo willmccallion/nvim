@@ -1,7 +1,7 @@
---- @module plugins.telescope
---- @brief Configuration for the Telescope fuzzy finder and its extensions.
---- @description This module handles the setup of telescope.nvim, including UI enhancements,
---- FZF native sorting, and custom keybindings for file navigation and text searching.
+--- @module plugins.editor.telescope
+--- @brief Fuzzy finder via Telescope with fzf-native and ui-select extensions.
+--- Find files, live grep, buffers, diagnostics, help, keymaps, and more
+--- under the <leader>s prefix.
 
 vim.pack.add({
 	"https://github.com/nvim-lua/plenary.nvim",
@@ -46,7 +46,7 @@ map("n", "<leader>sr", builtin.resume, { desc = "Search resume last search" })
 map("n", "<leader>sh", builtin.help_tags, { desc = "Search help documentation" })
 map("n", "<leader>sd", builtin.diagnostics, { desc = "Search diagnostics errors and warnings" })
 
-map("n", "<leader>sc", function()
+map("n", "<leader>sn", function()
 	builtin.find_files({ cwd = vim.fn.stdpath("config") })
 end, { desc = "Search neovim config files" })
 

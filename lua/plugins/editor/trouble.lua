@@ -1,3 +1,7 @@
+--- @module plugins.editor.trouble
+--- @brief Diagnostic and symbol browser via Trouble.nvim.
+--- Pretty list for diagnostics, symbols, and quickfix under <leader>d.
+
 vim.pack.add({ "https://github.com/folke/trouble.nvim" })
 
 require("trouble").setup()

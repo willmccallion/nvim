@@ -1,7 +1,6 @@
---- @module plugins.undotree
---- @brief Configuration for the undotree plugin.
---- @description This module handles the installation and keybinding setup for the undotree plugin,
---- which provides a visual representation of the undo history tree.
+--- @module plugins.editor.undotree
+--- @brief Visual undo history tree.
+--- <leader>u to toggle the undo tree sidebar.
 
 vim.pack.add({ "https://github.com/mbbill/undotree" })
 

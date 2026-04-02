@@ -1,8 +1,7 @@
---- @module plugins.conform
---- @brief Configuration for conform.nvim to handle code formatting.
---- @details This module sets up the conform.nvim plugin, defining formatters for specific
---- filetypes (Rust, C, C++, Lua), enabling format-on-save, and providing a manual
---- formatting keybind.
+--- @module plugins.coding.conform
+--- @brief Code formatting via conform.nvim.
+--- Format-on-save for Rust (rustfmt), C/C++ (clang-format), Lua (stylua),
+--- and Python (isort, black). Disable per-buffer with vim.b.autoformat = false.
 
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" })
 

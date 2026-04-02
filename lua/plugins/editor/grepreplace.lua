@@ -1,3 +1,8 @@
+--- @module plugins.editor.grepreplace
+--- @brief Project-wide search and replace via Telescope.
+--- <leader>sR prompts for search/replace terms, shows matches in Telescope,
+--- then applies the replacement across all matched files on confirm.
+
 vim.keymap.set("n", "<leader>sR", function()
 	local search = vim.fn.input("Search: ")
 	if search == "" then return end

@@ -1,8 +1,7 @@
---- @module treesitter
---- @brief Configuration for nvim-treesitter, including parser management and syntax highlighting.
---- @description This module handles the installation of the nvim-treesitter plugin,
---- configures the desired language parsers, and sets up an autocommand to
---- automatically run :TSUpdate when the plugin is updated via the package manager.
+--- @module plugins.coding.treesitter
+--- @brief Treesitter syntax highlighting, text objects, and incremental selection.
+--- Parsers auto-install on use. Includes treesitter-textobjects for selecting
+--- and jumping between functions, classes, arguments, conditionals, and loops.
 
 vim.pack.add({
 	{

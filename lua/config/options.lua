@@ -1,7 +1,7 @@
 --- @module config.options
---- @brief Global Neovim options configuration.
---- @description This module defines the core editor settings, including UI elements,
---- indentation rules, search behavior, and window management.
+--- @brief Core editor settings.
+--- Configures UI (line numbers, sign column, cursor line), 2-space indentation,
+--- smart case search, split behavior, persistent undo, and rounded window borders.
 
 vim.opt.number = true
 vim.opt.relativenumber = true

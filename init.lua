@@ -1,7 +1,7 @@
 --- @module init
 --- @brief Main entry point for the Neovim configuration.
---- This module orchestrates the loading of global variables, core options, keymaps,
---- autocommands, and various plugin configurations categorized by functionality.
+--- Loads core config (globals, options, keymaps, autocommands) then plugins
+--- organized by category: ui, coding, editor, and lsp.
 
 require("config.globals")
 

@@ -1,7 +1,7 @@
---- @module plugins.gitsigns
---- @brief Git integration for the Neovim sign column.
---- @description Configures gitsigns.nvim to provide visual indicators for git changes
---- and provides keybindings for hunk navigation, staging, and previewing.
+--- @module plugins.editor.gitsigns
+--- @brief Git sign column indicators and hunk management.
+--- Shows added/changed/deleted lines in the sign column. Keymaps for staging,
+--- resetting, previewing, and blaming hunks under <leader>h.
 
 vim.pack.add({ "https://github.com/lewis6991/gitsigns.nvim" })
 

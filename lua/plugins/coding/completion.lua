@@ -1,8 +1,6 @@
---- @module plugins.completion
---- @brief Configuration for nvim-cmp and snippet integration.
---- @description Sets up the autocompletion engine using nvim-cmp, including
---- sources for LSP, snippets, paths, and buffers. Configures LuaSnip for
---- snippet expansion and provides custom keybindings for the completion menu.
+--- @module plugins.coding.completion
+--- @brief Autocompletion via nvim-cmp with LuaSnip snippets.
+--- Sources: LSP, snippets, path, buffer. Ghost text enabled.
 
 vim.pack.add({
 	"https://github.com/hrsh7th/nvim-cmp",

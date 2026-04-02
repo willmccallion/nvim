@@ -1,100 +1,58 @@
 # Neovim Configuration
 
-This is a configuration for Neovim focused on C, C++, Rust, and Lua development. It uses Lua for configuration and manages plugins via a package system.
+My Neovim config for C, C++, Rust, Python, and Lua.
+Everything is in Lua and uses the built-in `vim.pack` plugin system that shipped in Neovim 0.12.
 
-## Requirements
+## Getting Started
 
-### Neovim
-Requires Neovim 0.12.0 or later since it uses the new vim.pack.
+Requires **Neovim 0.12.0+**, a **Nerd Font**, **ripgrep** (for grep/search), and a **C compiler** (for treesitter parsers).
 
-### External Dependencies
-The following tools are required for full functionality:
+For LSP support, install the language servers you need: `clangd`, `rust-analyzer`, `lua-language-server`, `pyright`.
+Same for formatters: `clang-format`, `rustfmt`, `stylua`, `black`/`isort`.
+The config will pick them up automatically if they're on your PATH.
 
-*   **ripgrep**: Required for Telescope live grep.
-*   **Nerd Font**: Required for UI icons.
-*   **C Compiler**: Required for compiling Treesitter parsers.
+## How It's Organized
 
-### Language Servers
-Install the following language servers for LSP support:
+```
+lua/
+  config/            Options, keymaps, globals, autocommands
+  plugins/
+    ui/              Colorscheme, file explorer (oil), diagnostics display
+    coding/          Completion, formatting, treesitter, autopairs, snippets
+    editor/          Navigation, search, git, surround, comments, multi-cursor
+    lsp/             LSP client setup
+      servers/       One file per language server (clangd, rust_analyzer, lua_ls, pyright)
+```
 
-*   `clangd` (C/C++)
-*   `rust-analyzer` (Rust)
-*   `lua-language-server` (Lua)
+Everything is loaded from `init.lua` in a order of config first, then plugins by category.
 
-### Formatters
-Install the following tools for code formatting:
+## What's In Here
 
-*   `clang-format` (C/C++)
-*   `rustfmt` (Rust)
-*   `stylua` (Lua)
+**LSP**: Native LSP client with auto-start per filetype. Each server has its own config file under `lsp/servers/` so it's easy to add or tweak one without touching the rest. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources.
 
-## Structure
+**Treesitter**: Syntax highlighting, indentation, incremental selection, and text objects. You get motions for jumping between functions, classes, and arguments, plus selection of those same structures.
 
-*   `lua/config/`: Core configuration (options, keymaps, autocommands).
-*   `lua/plugins/`: Plugin configuration organized by category (`coding`, `editor`, `lsp`, `ui`).
-*   `lua/plugins/lsp/servers/`: Language server specific configurations.
+**Formatting**: Format-on-save via conform.nvim. Each language has its own formatter configured. You can disable it per-buffer if needed.
 
-## Key Features
+**Search**: Telescope for finding files, grepping, searching buffers/diagnostics/help/keymaps/TODOs. There's also a project-wide search-and-replace built on top of Telescope and quickfix.
 
-*   **LSP**: Native LSP client configured for C, C++, Rust, and Lua.
-*   **Completion**: Autocompletion provided by nvim-cmp with snippet support.
-*   **Formatting**: Auto-formatting on save using conform.nvim.
-*   **Syntax Highlighting**: Treesitter enabled for syntax highlighting and indentation.
-*   **Fuzzy Finding**: Telescope for finding files, buffers, and text.
-*   **File Explorer**: Oil.nvim for editing the filesystem as a buffer.
-*   **Git**: Gitsigns for hunk management and blame.
-*   **Navigation**: Flash.nvim for quick jumping and accelerated-jk for vertical movement.
-*   **Theme**: Terafox (Nightfox).
+**File Explorer**: Oil.nvim lets you edit your filesystem like a regular buffer. Way nicer than a tree sidebar.
 
-## Keybindings
+**Git**: Gitsigns shows changed/added/deleted lines in the sign column with keymaps for staging, resetting, and previewing hunks.
 
-The leader key is set to `Space`.
+**Diagnostics**: Trouble.nvim gives you a nice list view of diagnostics and symbols. lsp_lines.nvim can render multiline diagnostics inline under your code (togglable).
 
-### General
-*   `<leader>e`: Open file explorer (Oil).
-*   `<leader>q`: Open diagnostic quickfix list.
-*   `<leader>u`: Toggle UndoTree.
-*   `<C-l>`: Toggle search highlighting.
-*   `<leader>y` / `<Space>p`: Copy/Paste to system clipboard.
-*   `<leader>xx`: Source current file.
-*   `<leader>x`: Execute Lua line/selection.
+**Navigation**: Flash.nvim for label-based jumping, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
 
-### Navigation
-*   `j` / `k`: Accelerated vertical navigation.
-*   `s`: Flash jump to character.
-*   `<leader>bb`: Switch to alternate buffer.
-*   `<leader>bn` / `<Space>bp`: Next/Previous buffer.
+**Editing**: Comment.nvim for toggling comments, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor, and autopairs for automatic bracket closing.
 
-### Telescope
-*   `<leader>sf`: Find files.
-*   `<leader>sg`: Live grep.
-*   `<leader>sw`: Search current word.
-*   `<leader>sk`: Search keymaps
-*   `<leader>st`: Search TODOs.
-*   `<leader>/`: Find open buffers.
-*   `<leader><Space>`: Fuzzily search in current buffer.
-
-### LSP
-*   `gd`: Go to definition.
-*   `gr`: Go to references.
-*   `K`: Hover documentation.
-*   `<leader>rn`: Rename symbol.
-*   `<leader>ca`: Code action.
-*   `<leader>f`: Format buffer.
-*   `<leader>l`: Toggle LSP lines.
-
-### Git
-*   `<leader>hs`: Stage hunk.
-*   `<leader>hr`: Reset hunk.
-*   `<leader>hb`: Blame line.
-*   `<leader>hu`: Undo stage hunk.
-*   `<leader>hp`: Preview hunk.
-
-### AI Assistant
-*   `<leader>aa`: Start AI assistant (Graft).
-*   `<leader>am`: Select AI model.
-*   `<leader>as`: Stop AI job.
+**Theme**: Tokyonight (night) with transparent background. Nightfox and Rose Pine are also installed if you want to swap.
 
 ## Notes
 
-*   **Graft**: The configuration references a local plugin `graft.nvim` in `~/projects/`. You may need to adjust `lua/plugins/graft.lua` to point to a valid location or remove it if not used.
+- Leader key is **Space**.
+- All keymaps have descriptions -- use `:Telescope keymaps` (or `<leader>sk`) to search them.
+- Format-on-save can be disabled globally (`vim.g.autoformat = false`) or per-buffer (`vim.b.autoformat = false`).
+- Supports local project config via `.exrc` files.
+- Run `:LspInfo` to see which servers are attached to the current buffer.
+- Run `:Update` to update all plugins.

@@ -1,7 +1,6 @@
---- @module lsp.servers.lua_ls
---- @brief Configuration for the Lua Language Server (lua_ls).
---- @description This module defines the settings for the Lua LSP, including runtime environment,
---- diagnostics for Neovim globals, and workspace library paths optimized for Neovim development.
+--- @module plugins.lsp.servers.lua_ls
+--- @brief Lua Language Server config for Neovim Lua development.
+--- Configured with LuaJIT runtime, vim global recognition, and Neovim runtime libs.
 
 return {
 	cmd = { "lua-language-server" },

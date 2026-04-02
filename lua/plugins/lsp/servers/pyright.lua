@@ -1,6 +1,6 @@
---- @module lsp.servers.pyright
---- @brief Configuration for the Pyright Language Server.
---- @description Defines settings for Python static analysis and type checking.
+--- @module plugins.lsp.servers.pyright
+--- @brief Pyright LSP config for Python.
+--- Auto search paths, library type stubs, and workspace-level diagnostics.
 
 return {
 	cmd = { "pyright-langserver", "--stdio" },

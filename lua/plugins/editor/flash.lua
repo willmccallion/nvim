@@ -1,8 +1,6 @@
---- @module plugins.flash
---- @brief Configuration for flash.nvim to navigate code with search labels.
---- @description This module handles the installation, setup, and keybindings for flash.nvim,
---- providing a fast and intuitive way to jump to any location in the buffer using
---- search-based labels.
+--- @module plugins.editor.flash
+--- @brief Label-based jump navigation via flash.nvim.
+--- Press s to search and jump to any visible text with labeled targets.
 
 vim.pack.add({ "https://github.com/folke/flash.nvim" })
 

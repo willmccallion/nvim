@@ -1,7 +1,7 @@
 --- @module config.keymaps
---- @brief Global keybindings and custom shortcuts configuration.
---- @description Sets up keymaps for navigation, buffer/window management, clipboard operations,
---- and various utility functions to enhance the Neovim experience.
+--- @brief Global keybindings (non-plugin).
+--- Navigation, buffer/window management, clipboard, quickfix, search/replace,
+--- terminal toggle, file rename, and Lua execution shortcuts.
 
 vim.keymap.set({ "n", "x" }, "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "k", "gk", { desc = "Navigate up (visual line)" })

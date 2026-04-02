@@ -1,9 +1,7 @@
 --- @module plugins.lsp
---- @brief Core LSP initialization and configuration module.
---- This module manages the lifecycle of Language Server Protocol (LSP) clients.
---- It dynamically loads server-specific configurations, handles automatic client
---- startup via FileType autocommands, and sets up global LSP keybindings and
---- diagnostic commands.
+--- @brief LSP client lifecycle and keybindings.
+--- Loads server configs from plugins.lsp.servers.*, auto-starts them on FileType,
+--- and sets up LSP keybindings (go-to-definition, references, rename, etc.) on attach.
 
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 local has_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")

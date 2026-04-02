@@ -1,7 +1,6 @@
---- @module plugins.oil
---- @brief Configuration for oil.nvim file explorer.
---- This module handles the installation and setup of oil.nvim, which allows
---- editing the file system like a normal Neovim buffer.
+--- @module plugins.ui.oil
+--- @brief File explorer via oil.nvim.
+--- Edit the filesystem as a buffer. <leader>e opens parent dir, <leader>E floats.
 
 vim.pack.add({ "https://github.com/stevearc/oil.nvim" })
 vim.pack.add({ "https://github.com/nvim-tree/nvim-web-devicons" })

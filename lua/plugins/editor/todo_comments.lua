@@ -1,7 +1,6 @@
---- @module plugins.todo_comments
---- @brief Configuration for the todo-comments.nvim plugin.
---- @description This module handles the setup and keybindings for todo-comments.nvim,
---- allowing for highlighting and searching of TODO, FIXME, and other comment tags.
+--- @module plugins.editor.todo_comments
+--- @brief Highlight and search TODO/FIXME/HACK comments.
+--- <leader>st to search all tagged comments via Telescope.
 
 vim.pack.add({ "https://github.com/folke/todo-comments.nvim" })
 

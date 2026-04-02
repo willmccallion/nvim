@@ -1,7 +1,6 @@
---- @module lsp.servers.rust_analyzer
---- @brief LSP configuration for the rust-analyzer language server.
---- @description Provides the command, filetypes, root markers, and specific settings
---- for Rust development, including Clippy integration and Cargo feature support.
+--- @module plugins.lsp.servers.rust_analyzer
+--- @brief Rust-analyzer LSP config.
+--- Enables Clippy check-on-save and all Cargo features.
 
 return {
 	cmd = { "rust-analyzer" },

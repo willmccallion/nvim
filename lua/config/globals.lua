@@ -1,7 +1,6 @@
---- @module globals
---- @brief Defines global configuration variables and leader keys for Neovim.
---- @description This module sets up the primary and local leader keys, as well as
---- global flags like Nerd Font support used by other plugins and configurations.
+--- @module config.globals
+--- @brief Leader keys and global flags.
+--- Sets mapleader/maplocalleader to Space and enables Nerd Font support.
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
