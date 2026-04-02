@@ -45,10 +45,10 @@ vim.keymap.set("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally"
 vim.keymap.set("n", "<leader>se", "<C-w>=", { desc = "Make splits equal size" })
 vim.keymap.set("n", "<leader>sx", "<cmd>close<CR>", { desc = "Close current split" })
 
-vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Move to left window pane" })
-vim.keymap.set("n", "<C-j>", "<C-w>j", { desc = "Move to below window pane" })
-vim.keymap.set("n", "<C-k>", "<C-w>k", { desc = "Move to above window pane" })
-vim.keymap.set("n", "<C-l>", "<C-w>l", { desc = "Move to right window pane" })
+vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Move to left window pane" })
+vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Move to below window pane" })
+vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Move to above window pane" })
+vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Move to right window pane" })
 
 vim.keymap.set("n", "<leader>sr", "<C-w>r", { desc = "Swap rotate window panes" })
 vim.keymap.set("n", "<leader>sH", "<C-w>H", { desc = "Swap move current pane to far left" })
@@ -81,6 +81,25 @@ vim.keymap.set("n", "n", "nzzzv", { desc = "Next search result and center" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Prev search result and center" })
 
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode back to normal" })
+
+local _term_buf = nil
+vim.keymap.set({ "n", "t" }, "<leader>;", function()
+	if _term_buf and vim.api.nvim_buf_is_valid(_term_buf) then
+		local wins = vim.fn.win_findbuf(_term_buf)
+		if #wins > 0 then
+			vim.api.nvim_win_close(wins[1], true)
+			return
+		end
+	end
+	vim.cmd("botright vsplit")
+	if _term_buf and vim.api.nvim_buf_is_valid(_term_buf) then
+		vim.api.nvim_set_current_buf(_term_buf)
+	else
+		vim.cmd("terminal")
+		_term_buf = vim.api.nvim_get_current_buf()
+	end
+	vim.cmd("startinsert")
+end, { desc = "Toggle terminal split on right side" })
 
 vim.keymap.set("n", "<leader>rf", function()
 	local current_file = vim.fn.expand("%")
