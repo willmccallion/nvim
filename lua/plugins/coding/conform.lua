@@ -24,4 +24,4 @@ require("conform").setup({
 
 vim.keymap.set({ "n", "v" }, "<leader>f", function()
 	require("conform").format({ async = true, lsp_fallback = true })
-end, { desc = "Format buffer" })
+end, { desc = "Format code in current buffer (prettier rustfmt stylua)" })

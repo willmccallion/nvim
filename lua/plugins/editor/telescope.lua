@@ -37,25 +37,25 @@ pcall(telescope.load_extension, "ui-select")
 
 local builtin = require("telescope.builtin")
 local map = vim.keymap.set
-map("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
-map("n", "<leader>sg", builtin.live_grep, { desc = "[S]earch by [G]rep" })
-map("n", "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
-map("n", "<leader>sk", require("telescope.builtin").keymaps, { desc = "Search Keymaps" })
-map("n", "<leader>/", builtin.buffers, { desc = "Find open buffers" })
-map("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
-map("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
-map("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
+map("n", "<leader>sf", builtin.find_files, { desc = "Search find files by name" })
+map("n", "<leader>sg", builtin.live_grep, { desc = "Search grep text in all files" })
+map("n", "<leader>sw", builtin.grep_string, { desc = "Search for word under cursor in all files" })
+map("n", "<leader>sk", require("telescope.builtin").keymaps, { desc = "Search keymaps and keyboard shortcuts" })
+map("n", "<leader>/", builtin.buffers, { desc = "Switch between open buffers" })
+map("n", "<leader>sr", builtin.resume, { desc = "Search resume last search" })
+map("n", "<leader>sh", builtin.help_tags, { desc = "Search help documentation" })
+map("n", "<leader>sd", builtin.diagnostics, { desc = "Search diagnostics errors and warnings" })
 
 map("n", "<leader>sc", function()
 	builtin.find_files({ cwd = vim.fn.stdpath("config") })
-end, { desc = "[S]earch [C]onfig" })
+end, { desc = "Search neovim config files" })
 
 map("n", "<leader><leader>", function()
 	builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
 		winblend = 10,
 		previewer = false,
 	}))
-end, { desc = "[/] Fuzzily search in current buffer" })
+end, { desc = "Fuzzy search text in current buffer" })
 
-map("n", "<leader>so", builtin.oldfiles, { desc = "[S]earch [O]ldfiles (Recent)" })
-map("n", "<leader>sq", builtin.search_history, { desc = "[S]earch [Q]uery History" })
+map("n", "<leader>so", builtin.oldfiles, { desc = "Search recently opened files" })
+map("n", "<leader>sq", builtin.search_history, { desc = "Search previous search queries" })

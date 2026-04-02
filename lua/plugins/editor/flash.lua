@@ -10,4 +10,4 @@ require("flash").setup({})
 
 vim.keymap.set({ "n", "x", "o" }, "s", function()
 	require("flash").jump()
-end, { desc = "Flash Jump" })
+end, { desc = "Flash jump to any visible text with search labels" })

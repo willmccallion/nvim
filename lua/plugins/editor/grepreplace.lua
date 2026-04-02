@@ -16,4 +16,4 @@ vim.keymap.set("n", "<leader>sR", function()
 			return true
 		end,
 	})
-end, { desc = "Search and Replace across files" })
+end, { desc = "Search and replace text across all project files" })

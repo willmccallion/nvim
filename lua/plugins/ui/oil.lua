@@ -11,5 +11,5 @@ require("oil").setup({
 	columns = { "icon" },
 })
 
-vim.keymap.set("n", "<leader>e", "<CMD>Oil<CR>", { desc = "Open parent directory" })
-vim.keymap.set("n", "<leader>E", require("oil").toggle_float, { desc = "Open Oil (Float)" })
+vim.keymap.set("n", "<leader>e", "<CMD>Oil<CR>", { desc = "Open file explorer in parent directory" })
+vim.keymap.set("n", "<leader>E", require("oil").toggle_float, { desc = "Open file explorer floating window" })
