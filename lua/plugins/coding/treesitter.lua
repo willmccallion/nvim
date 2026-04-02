@@ -10,6 +10,7 @@ vim.pack.add({
 		version = "master",
 	},
 })
+vim.pack.add({ "https://github.com/nvim-treesitter/nvim-treesitter-textobjects" })
 
 require("nvim-treesitter.configs").setup({
 	ensure_installed = {
@@ -45,6 +46,55 @@ require("nvim-treesitter.configs").setup({
 		},
 	},
 })
+
+local tsto = require("nvim-treesitter-textobjects")
+local move = require("nvim-treesitter-textobjects.move")
+local select = require("nvim-treesitter-textobjects.select")
+
+tsto.setup({
+	select = {
+		lookahead = true,
+	},
+	move = {
+		set_jumps = true,
+	},
+})
+
+-- Text object selections (work with d, c, y, v)
+local sel_maps = {
+	{ "af", "@function.outer", "Select around function" },
+	{ "if", "@function.inner", "Select inside function body" },
+	{ "ac", "@class.outer", "Select around class" },
+	{ "ic", "@class.inner", "Select inside class body" },
+	{ "aa", "@parameter.outer", "Select around argument" },
+	{ "ia", "@parameter.inner", "Select inside argument" },
+	{ "ai", "@conditional.outer", "Select around if/conditional" },
+	{ "ii", "@conditional.inner", "Select inside if/conditional" },
+	{ "al", "@loop.outer", "Select around loop" },
+	{ "il", "@loop.inner", "Select inside loop" },
+}
+
+for _, m in ipairs(sel_maps) do
+	vim.keymap.set({ "x", "o" }, m[1], function()
+		select.select_textobject(m[2], "textobjects")
+	end, { desc = m[3] })
+end
+
+-- Move to next/previous function, argument, class
+local move_maps = {
+	{ "]f", "@function.outer", "goto_next_start", "Jump to next function" },
+	{ "]a", "@parameter.outer", "goto_next_start", "Jump to next argument" },
+	{ "]C", "@class.outer", "goto_next_start", "Jump to next class" },
+	{ "[f", "@function.outer", "goto_previous_start", "Jump to previous function" },
+	{ "[a", "@parameter.outer", "goto_previous_start", "Jump to previous argument" },
+	{ "[C", "@class.outer", "goto_previous_start", "Jump to previous class" },
+}
+
+for _, m in ipairs(move_maps) do
+	vim.keymap.set({ "n", "x", "o" }, m[1], function()
+		move[m[3]](m[2], "textobjects")
+	end, { desc = m[4] })
+end
 
 vim.api.nvim_create_autocmd("PackChanged", {
 	desc = "Handle nvim-treesitter updates",
