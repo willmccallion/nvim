@@ -63,11 +63,23 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
 		end
 
-		map("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
+		local builtin = require("telescope.builtin")
+
+		map("gd", builtin.lsp_definitions, "[G]oto [D]efinition")
+		map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
+		map("gi", builtin.lsp_implementations, "[G]oto [I]mplementation")
+		map("gt", builtin.lsp_type_definitions, "[G]oto [T]ype Definition")
+		map("gr", builtin.lsp_references, "[G]oto [R]eferences")
 		map("K", vim.lsp.buf.hover, "Hover Documentation")
-		map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
+		map("gK", vim.lsp.buf.signature_help, "Signature Help")
+		map("<leader>ds", builtin.lsp_document_symbols, "[D]ocument [S]ymbols")
+		map("<leader>ws", builtin.lsp_dynamic_workspace_symbols, "[W]orkspace [S]ymbols")
 		map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
 		map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction")
+
+		map("<leader>ih", function()
+			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
+		end, "Toggle [I]nlay [H]ints")
 	end,
 })
 
