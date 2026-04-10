@@ -132,3 +132,23 @@ vim.api.nvim_create_user_command("Update", function()
 end, { desc = "Update Neovim packages" })
 
 vim.keymap.set("n", "<leader>pu", "<cmd>Update<cr>", { desc = "Update all plugins" })
+
+local _repl_buf = nil
+vim.keymap.set({ "n", "t" }, "<leader>ri", function()
+	if _repl_buf and vim.api.nvim_buf_is_valid(_repl_buf) then
+		local wins = vim.fn.win_findbuf(_repl_buf)
+		if #wins > 0 then
+			vim.api.nvim_win_close(wins[1], true)
+			return
+		end
+	end
+	vim.cmd("botright split")
+	vim.cmd("resize 12")
+	if _repl_buf and vim.api.nvim_buf_is_valid(_repl_buf) then
+		vim.api.nvim_set_current_buf(_repl_buf)
+	else
+		vim.cmd("terminal python3")
+		_repl_buf = vim.api.nvim_get_current_buf()
+	end
+	vim.cmd("startinsert")
+end, { desc = "Toggle Python REPL split" })
