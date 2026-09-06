@@ -9,6 +9,7 @@ vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
 vim.opt.list = true
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+vim.opt.mouse = ""
 
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
