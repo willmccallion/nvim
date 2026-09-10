@@ -152,3 +152,32 @@ vim.keymap.set({ "n", "t" }, "<leader>ri", function()
 	end
 	vim.cmd("startinsert")
 end, { desc = "Toggle Python REPL split" })
+
+vim.keymap.set('n', '<leader>tr', ':vsplit | terminal<CR>', { desc = 'Open terminal on right' })
+
+local term_buf = nil
+local term_win = nil
+
+function ToggleBottomTerminal()
+  if term_win and vim.api.nvim_win_is_valid(term_win) then
+    vim.api.nvim_win_close(term_win, true)
+    term_win = nil
+  else
+    vim.cmd('botright split')
+
+    vim.cmd('resize 15')
+
+    if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
+      vim.api.nvim_set_current_buf(term_buf)
+    else
+      vim.cmd('terminal')
+      term_buf = vim.api.nvim_get_current_buf()
+    end
+
+    term_win = vim.api.nvim_get_current_win()
+    vim.cmd('startinsert')
+  end
+end
+
+vim.keymap.set('n', '<leader>t', ToggleBottomTerminal, { desc = 'Toggle bottom terminal' })
+

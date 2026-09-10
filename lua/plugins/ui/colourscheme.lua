@@ -7,6 +7,7 @@ vim.pack.add({
   "https://github.com/EdenEast/nightfox.nvim",
   "https://github.com/folke/tokyonight.nvim",
   "https://github.com/rose-pine/neovim",
+  "https://github.com/vague-theme/vague.nvim",
 })
 
 require("nightfox").setup({
@@ -28,4 +29,8 @@ require("rose-pine").setup({
 	},
 })
 
-vim.cmd([[colorscheme tokyonight]])
+require("vague").setup({
+  transparent = true,
+})
+
+vim.cmd([[colorscheme vague]])
