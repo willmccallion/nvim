@@ -179,5 +179,5 @@ function ToggleBottomTerminal()
   end
 end
 
-vim.keymap.set('n', '<leader>t', ToggleBottomTerminal, { desc = 'Toggle bottom terminal' })
+vim.keymap.set('n', '<leader>tt', ToggleBottomTerminal, { desc = 'Toggle bottom terminal' })
 
