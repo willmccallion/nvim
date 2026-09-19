@@ -1,7 +1,8 @@
---- @module plugins.lsp.servers.lua_ls
+--- @module lsp.lua_ls
 --- @brief Lua Language Server config for Neovim Lua development.
 --- Configured with LuaJIT runtime, vim global recognition, and Neovim runtime libs.
 
+---@type vim.lsp.Config
 return {
 	cmd = { "lua-language-server" },
 	filetypes = { "lua" },

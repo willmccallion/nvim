@@ -1,7 +1,8 @@
---- @module plugins.lsp.servers.clangd
+--- @module lsp.clangd
 --- @brief Clangd LSP config for C/C++.
 --- Enables background indexing and clang-tidy.
 
+---@type vim.lsp.Config
 return {
 	cmd = { "clangd", "--background-index", "--clang-tidy" },
 	filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "proto" },

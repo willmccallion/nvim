@@ -1,7 +1,8 @@
---- @module plugins.lsp.servers.pyright
+--- @module lsp.pyright
 --- @brief Pyright LSP config for Python.
 --- Auto search paths, library type stubs, and workspace-level diagnostics.
 
+---@type vim.lsp.Config
 return {
 	cmd = { "pyright-langserver", "--stdio" },
 	filetypes = { "python" },
