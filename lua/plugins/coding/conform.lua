@@ -25,4 +25,4 @@ require("conform").setup({
 
 vim.keymap.set({ "n", "v" }, "<leader>f", function()
 	require("conform").format({ async = true, lsp_format = "fallback" })
-end, { desc = "Format code in current buffer (prettier rustfmt stylua)" })
+end, { desc = "Format current buffer or selection" })

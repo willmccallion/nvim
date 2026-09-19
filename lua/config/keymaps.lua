@@ -10,37 +10,37 @@ vim.keymap.set({ "n", "x" }, "<Up>", "gk", { desc = "Navigate up (visual line)" 
 vim.keymap.set("i", "<Down>", "<C-\\><C-o>gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set("i", "<Up>", "<C-\\><C-o>gk", { desc = "Navigate up (visual line)" })
 
-vim.keymap.set({ "n", "x" }, "<M-S-Up>", ":move -2<cr>", { desc = "Move Line Up" })
-vim.keymap.set({ "n", "x" }, "<M-S-Down>", ":move +1<cr>", { desc = "Move Line Down" })
-vim.keymap.set("i", "<M-S-Up>", "<C-o>:move -2<cr>", { desc = "Move Line Up" })
-vim.keymap.set("i", "<M-S-Down>", "<C-o>:move +1<cr>", { desc = "Move Line Down" })
+vim.keymap.set({ "n", "x" }, "<M-S-Up>", ":move -2<cr>", { desc = "Move line up" })
+vim.keymap.set({ "n", "x" }, "<M-S-Down>", ":move +1<cr>", { desc = "Move line down" })
+vim.keymap.set("i", "<M-S-Up>", "<C-o>:move -2<cr>", { desc = "Move line up" })
+vim.keymap.set("i", "<M-S-Down>", "<C-o>:move +1<cr>", { desc = "Move line down" })
 
-vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Copy to system clipboard" })
-vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Paste from system clipboard after the cursor position" })
-vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Paste from system clipboard before the cursor position" })
+vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Clipboard copy to system clipboard" })
+vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from system clipboard after cursor" })
+vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from system clipboard before cursor" })
 
-vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Switch to alternate buffer" })
-vim.keymap.set("n", "<leader>bn", ":bnext<cr>", { desc = "Next buffer" })
-vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Previous buffer" })
+vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate (last used) buffer" })
+vim.keymap.set("n", "<leader>bn", ":bnext<cr>", { desc = "Buffer go to next buffer" })
+vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Buffer go to previous buffer" })
 
-vim.keymap.set("n", "<leader>nh", ":set hlsearch!<cr>", { desc = "Toggle search highlighting" })
+vim.keymap.set("n", "<leader>nh", ":set hlsearch!<cr>", { desc = "Search toggle match highlighting" })
 
-vim.keymap.set("n", "<leader>xs", "<Cmd>source %<CR>", { desc = "Source current file (reload config)" })
-vim.keymap.set("n", "<leader>xl", "<Cmd>:.lua<CR>", { desc = "Execute current line as Lua" })
-vim.keymap.set("v", "<leader>x", "<Cmd>:lua<CR>", { desc = "Execute selection as Lua" })
+vim.keymap.set("n", "<leader>xs", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
+vim.keymap.set("n", "<leader>xl", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })
+vim.keymap.set("v", "<leader>x", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
 
 vim.keymap.set(
 	"n",
 	"<leader>rw",
 	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-	{ desc = "Find and replace word under cursor" }
+	{ desc = "Replace word under cursor in file" }
 )
 
 vim.keymap.set(
 	"x",
 	"<leader>rw",
 	[["hy:%s/<C-r>h/<C-r>h/gI<Left><Left><Left>]],
-	{ desc = "Find and replace selected text" }
+	{ desc = "Replace selected text in file" }
 )
 
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
@@ -69,10 +69,10 @@ vim.keymap.set("n", "<leader>wm", function()
 	end
 end, { desc = "Window toggle maximize zoom current pane" })
 
-vim.keymap.set("n", "<C-Up>", ":resize +2<CR>", { desc = "Resize window height +" })
-vim.keymap.set("n", "<C-Down>", ":resize -2<CR>", { desc = "Resize window height -" })
-vim.keymap.set("n", "<C-Left>", ":vertical resize -2<CR>", { desc = "Resize window width -" })
-vim.keymap.set("n", "<C-Right>", ":vertical resize +2<CR>", { desc = "Resize window width +" })
+vim.keymap.set("n", "<C-Up>", ":resize +2<CR>", { desc = "Window increase height" })
+vim.keymap.set("n", "<C-Down>", ":resize -2<CR>", { desc = "Window decrease height" })
+vim.keymap.set("n", "<C-Left>", ":vertical resize -2<CR>", { desc = "Window decrease width" })
+vim.keymap.set("n", "<C-Right>", ":vertical resize +2<CR>", { desc = "Window increase width" })
 
 vim.keymap.set("v", "<", "<gv", { desc = "Indent left and stay in visual" })
 vim.keymap.set("v", ">", ">gv", { desc = "Indent right and stay in visual" })
@@ -80,8 +80,8 @@ vim.keymap.set("x", "p", '"_dP', { desc = "Paste without overwriting register" }
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
 vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
-vim.keymap.set("n", "n", "nzzzv", { desc = "Next search result and center" })
-vim.keymap.set("n", "N", "Nzzzv", { desc = "Prev search result and center" })
+vim.keymap.set("n", "n", "nzzzv", { desc = "Search next match and center" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "Search previous match and center" })
 
 vim.keymap.set("n", "<leader>rf", function()
 	local current_file = vim.fn.expand("%")
@@ -92,7 +92,7 @@ vim.keymap.set("n", "<leader>rf", function()
 		vim.cmd("!rm " .. current_file)
 		print("Renamed to " .. new_name)
 	end
-end, { desc = "Rename current file" })
+end, { desc = "File rename current file on disk" })
 
 vim.keymap.set("n", "[q", "<cmd>cprev<CR>", { desc = "Quickfix go to previous item" })
 vim.keymap.set("n", "]q", "<cmd>cnext<CR>", { desc = "Quickfix go to next item" })
@@ -101,13 +101,13 @@ vim.keymap.set("n", "]Q", "<cmd>clast<CR>", { desc = "Quickfix go to last item" 
 vim.keymap.set("n", "<leader>qo", "<cmd>copen<cr>", { desc = "Quickfix open list" })
 vim.keymap.set("n", "<leader>qc", "<cmd>cclose<cr>", { desc = "Quickfix close list" })
 
-vim.keymap.set("n", "<leader>bd", "<cmd>bd<CR>", { desc = "Close current buffer" })
-vim.keymap.set("n", "<leader>ba", "<cmd>%bd|e#|bd#<CR>", { desc = "Close all but current buffer" })
+vim.keymap.set("n", "<leader>bd", "<cmd>bd<CR>", { desc = "Buffer close current buffer" })
+vim.keymap.set("n", "<leader>ba", "<cmd>%bd|e#|bd#<CR>", { desc = "Buffer close all but current buffer" })
 
 vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
 
-vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent right" })
-vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left" })
+vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent right and stay in visual" })
+vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left and stay in visual" })
 
 vim.api.nvim_create_user_command("Update", function()
 	vim.pack.update()
