@@ -19,6 +19,7 @@ require("plugins.coding.completion")
 require("plugins.coding.autopairs")
 require("plugins.coding.conform")
 require("plugins.coding.treesitter")
+require("plugins.coding.build")
 
 require("plugins.editor.accelerate")
 require("plugins.editor.flash")
