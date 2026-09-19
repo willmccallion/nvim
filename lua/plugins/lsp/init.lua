@@ -9,13 +9,17 @@ vim.lsp.config("*", {
 vim.lsp.enable({ "clangd", "lua_ls", "rust_analyzer", "pyright", "nixd" })
 
 -- Built-in gr* maps would make the gr mapping wait for 'timeoutlen'.
-for _, lhs in ipairs({ "grr", "grn", "gri", "grt", "grx" }) do
-	vim.keymap.del("n", lhs)
+local builtin_gr_maps = { n = { "grr", "grn", "gri", "grt", "grx", "gra" }, x = { "gra" } }
+for mode, lhss in pairs(builtin_gr_maps) do
+	for _, lhs in ipairs(lhss) do
+		if vim.fn.maparg(lhs, mode) ~= "" then
+			vim.keymap.del(mode, lhs)
+		end
+	end
 end
-vim.keymap.del({ "n", "x" }, "gra")
 
 vim.api.nvim_create_autocmd("LspAttach", {
-	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
+	group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 	callback = function(ev)
 		local map = function(keys, func, desc)
 			vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
