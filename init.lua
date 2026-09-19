@@ -20,7 +20,6 @@ require("plugins.coding.conform")
 require("plugins.coding.treesitter")
 
 require("plugins.editor.accelerate")
-require("plugins.editor.comment")
 require("plugins.editor.flash")
 require("plugins.editor.gitsigns")
 require("plugins.editor.grepreplace")
