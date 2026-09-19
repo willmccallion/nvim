@@ -21,11 +21,11 @@ require("gitsigns").setup({
 			vim.keymap.set(mode, l, r, opts)
 		end
 
-		map("n", "]c", function()
+		map("n", "]h", function()
 			gs.nav_hunk("next")
 		end, { desc = "Git go to next changed hunk" })
 
-		map("n", "[c", function()
+		map("n", "[h", function()
 			gs.nav_hunk("prev")
 		end, { desc = "Git go to previous changed hunk" })
 

@@ -79,14 +79,24 @@ end
 local move_maps = {
 	{ "]f", "@function.outer", "goto_next_start", "Jump to next function" },
 	{ "]a", "@parameter.outer", "goto_next_start", "Jump to next argument" },
-	{ "]C", "@class.outer", "goto_next_start", "Jump to next class" },
+	{ "]c", "@class.outer", "goto_next_start", "Jump to next class" },
 	{ "[f", "@function.outer", "goto_previous_start", "Jump to previous function" },
 	{ "[a", "@parameter.outer", "goto_previous_start", "Jump to previous argument" },
-	{ "[C", "@class.outer", "goto_previous_start", "Jump to previous class" },
+	{ "[c", "@class.outer", "goto_previous_start", "Jump to previous class" },
 }
+
+--- ]c and [c jump between changes in diff mode, so leave them native there.
+---@param lhs string
+local function is_native_diff_motion(lhs)
+	return vim.wo.diff and (lhs == "]c" or lhs == "[c")
+end
 
 for _, m in ipairs(move_maps) do
 	vim.keymap.set({ "n", "x", "o" }, m[1], function()
+		if is_native_diff_motion(m[1]) then
+			vim.cmd.normal({ vim.v.count1 .. m[1], bang = true })
+			return
+		end
 		move[m[3]](m[2], "textobjects")
 	end, { desc = m[4] })
 end
