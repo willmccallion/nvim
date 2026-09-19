@@ -13,6 +13,7 @@ require("config.terminal")
 require("plugins.ui.colourscheme")
 require("plugins.ui.diagnostic")
 require("plugins.ui.oil")
+require("plugins.ui.treesitter_context")
 
 require("plugins.coding.completion")
 require("plugins.coding.autopairs")
