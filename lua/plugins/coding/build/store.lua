@@ -1,5 +1,4 @@
---- @module plugins.coding.build.store
---- @brief Per-project build command persistence.
+--- Per-project build command persistence.
 --- Stores the selected and custom commands for each project root in a single
 --- JSON file under stdpath("data"), so nothing is written into repositories.
 

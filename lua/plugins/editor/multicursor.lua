@@ -1,5 +1,4 @@
---- @module plugins.editor.multicursor
---- @brief Multi-cursor editing via vim-visual-multi.
+--- Multi-cursor editing via vim-visual-multi.
 --- Ctrl-n to select word, add cursors, and edit multiple locations at once.
 --- Its <C-Up>/<C-Down> cursor maps are disabled so window resizing keeps them.
 

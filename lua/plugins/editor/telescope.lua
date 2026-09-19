@@ -1,5 +1,4 @@
---- @module plugins.editor.telescope
---- @brief Fuzzy finder via Telescope with fzf-native and ui-select extensions.
+--- Fuzzy finder via Telescope with fzf-native and ui-select extensions.
 --- Find files, smart grep (supports *.ext prefix for filetype filtering),
 --- git log, changed-file grep, directory-scoped grep, marks, and more
 --- under the <leader>s prefix.

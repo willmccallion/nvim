@@ -1,5 +1,4 @@
---- @module plugins.debug.dap
---- @brief Debugging via nvim-dap with the lldb-dap adapter and nvim-dap-view UI.
+--- Debugging via nvim-dap with the lldb-dap adapter and nvim-dap-view UI.
 --- Launches or attaches to C, C++ and Rust programs. F5 starts/continues,
 --- F10/F11/F12 step over/into/out; everything else lives under <leader>D.
 --- The debug view opens and closes automatically with the session.

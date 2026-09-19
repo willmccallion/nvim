@@ -1,5 +1,4 @@
---- @module init
---- @brief Main entry point for the Neovim configuration.
+--- Main entry point for the Neovim configuration.
 --- Loads core config (globals, options, keymaps, autocommands) then plugins
 --- organized by category: ui, coding, debug, editor, and lsp.
 

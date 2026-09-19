@@ -1,5 +1,4 @@
---- @module lsp.clangd
---- @brief Clangd LSP config for C/C++.
+--- Clangd LSP config for C/C++.
 --- Enables background indexing and clang-tidy.
 
 ---@type vim.lsp.Config

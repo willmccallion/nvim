@@ -1,5 +1,4 @@
---- @module config.autocmds
---- @brief Global autocommands.
+--- Global autocommands.
 --- Highlight text briefly after yanking.
 
 vim.api.nvim_create_autocmd("TextYankPost", {

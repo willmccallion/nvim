@@ -1,5 +1,4 @@
---- @module plugins.coding.build
---- @brief Asynchronous project build runner feeding the quickfix list.
+--- Asynchronous project build runner feeding the quickfix list.
 --- Detects Cargo/CMake/Make from the current buffer, runs the project's selected
 --- command in the background, and loads compiler errors into quickfix.
 --- The chosen command and any custom commands are remembered per project.

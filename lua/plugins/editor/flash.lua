@@ -1,5 +1,4 @@
---- @module plugins.editor.flash
---- @brief Label-based jump navigation via flash.nvim.
+--- Label-based jump navigation via flash.nvim.
 --- Press s to search and jump to any visible text with labeled targets.
 
 vim.pack.add({ "https://github.com/folke/flash.nvim" })

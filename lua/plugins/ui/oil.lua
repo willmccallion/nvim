@@ -1,5 +1,4 @@
---- @module plugins.ui.oil
---- @brief File explorer via oil.nvim.
+--- File explorer via oil.nvim.
 --- Edit the filesystem as a buffer. <leader>e opens parent dir, <leader>E floats.
 
 vim.pack.add({ "https://github.com/stevearc/oil.nvim" })

@@ -1,5 +1,4 @@
---- @module config.terminal
---- @brief Toggleable terminal splits.
+--- Toggleable terminal splits.
 --- Each toggle keeps its own terminal buffer, so hiding a terminal preserves
 --- its session. An exited terminal is replaced by a fresh one on next open.
 

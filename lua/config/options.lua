@@ -1,5 +1,4 @@
---- @module config.options
---- @brief Core editor settings.
+--- Core editor settings.
 --- Configures UI (line numbers, sign column, cursor line), 2-space indentation,
 --- smart case search, split behavior, persistent undo, and rounded window borders.
 

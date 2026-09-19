@@ -1,5 +1,4 @@
---- @module plugins.ui.treesitter_context
---- @brief Sticky scope header via nvim-treesitter-context.
+--- Sticky scope header via nvim-treesitter-context.
 --- Pins the enclosing function/class/loop line to the top of the window while
 --- scrolling through its body. [x jumps up to that context line.
 

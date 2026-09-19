@@ -1,5 +1,4 @@
---- @module config.globals
---- @brief Leader keys and global flags.
+--- Leader keys and global flags.
 --- Sets mapleader/maplocalleader to Space and enables Nerd Font support.
 
 vim.g.mapleader = " "

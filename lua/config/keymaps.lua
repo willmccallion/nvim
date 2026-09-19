@@ -1,5 +1,4 @@
---- @module config.keymaps
---- @brief Global keybindings (non-plugin).
+--- Global keybindings (non-plugin).
 --- Navigation, buffer/window management, clipboard, quickfix, search/replace,
 --- file rename, and Lua execution shortcuts.
 

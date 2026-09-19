@@ -1,5 +1,4 @@
---- @module plugins.ui.diagnostic
---- @brief Diagnostic display.
+--- Diagnostic display.
 --- Configures diagnostic signs, disables virtual text by default, and toggles
 --- Neovim's native multiline diagnostics (virtual_lines) with <leader>l.
 

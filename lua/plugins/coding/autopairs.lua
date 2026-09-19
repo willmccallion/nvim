@@ -1,5 +1,4 @@
---- @module plugins.coding.autopairs
---- @brief Automatic bracket/quote pairing via nvim-autopairs.
+--- Automatic bracket/quote pairing via nvim-autopairs.
 --- Integrates with nvim-cmp to insert pairs on completion confirm.
 
 vim.pack.add({ "https://github.com/windwp/nvim-autopairs" })

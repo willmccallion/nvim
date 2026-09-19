@@ -1,5 +1,4 @@
---- @module plugins.coding.completion
---- @brief Autocompletion via nvim-cmp with LuaSnip snippets.
+--- Autocompletion via nvim-cmp with LuaSnip snippets.
 --- Sources: LSP, snippets, path, buffer. Ghost text enabled.
 
 vim.pack.add({

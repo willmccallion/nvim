@@ -1,5 +1,4 @@
---- @module plugins.ui.colourscheme
---- @brief Colorscheme setup.
+--- Colorscheme setup.
 --- Installs Nightfox, Tokyonight, Rose Pine, and Vague with transparent backgrounds.
 --- Active scheme: Vague.
 

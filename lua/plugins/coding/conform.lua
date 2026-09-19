@@ -1,5 +1,4 @@
---- @module plugins.coding.conform
---- @brief Code formatting via conform.nvim.
+--- Code formatting via conform.nvim.
 --- Format-on-save for Rust (rustfmt), C/C++ (clang-format), Lua (stylua),
 --- Python (isort, black), and Nix (nixfmt).
 --- Disable per-buffer with vim.b.autoformat = false.

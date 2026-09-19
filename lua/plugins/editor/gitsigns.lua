@@ -1,5 +1,4 @@
---- @module plugins.editor.gitsigns
---- @brief Git sign column indicators and hunk management.
+--- Git sign column indicators and hunk management.
 --- Shows added/changed/deleted lines in the sign column. Keymaps for staging,
 --- resetting, previewing, and blaming hunks under <leader>h.
 

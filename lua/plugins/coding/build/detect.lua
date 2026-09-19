@@ -1,5 +1,4 @@
---- @module plugins.coding.build.detect
---- @brief Pure build-system detection and default commands.
+--- Pure build-system detection and default commands.
 --- Given the marker files found in each directory from a buffer upward, picks
 --- the project root and build system. Performs no I/O.
 

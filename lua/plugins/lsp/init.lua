@@ -1,5 +1,4 @@
---- @module plugins.lsp
---- @brief LSP client lifecycle and keybindings.
+--- LSP client lifecycle and keybindings.
 --- Enables the server configs in the top-level lsp/ directory via vim.lsp.enable
 --- and sets up LSP keybindings (go-to-definition, references, rename, etc.) on attach.
 

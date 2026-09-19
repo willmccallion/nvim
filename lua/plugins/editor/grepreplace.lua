@@ -1,5 +1,4 @@
---- @module plugins.editor.grepreplace
---- @brief Project-wide search and replace via Telescope.
+--- Project-wide search and replace via Telescope.
 --- <leader>sR prompts for search/replace terms, shows matches in Telescope,
 --- then applies the replacement across all matched files on confirm.
 

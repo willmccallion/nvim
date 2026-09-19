@@ -1,5 +1,4 @@
---- @module lsp.nixd
---- @brief nixd LSP config for Nix.
+--- nixd LSP config for Nix.
 --- Formatting is handled by conform (nixfmt), not the server.
 
 ---@type vim.lsp.Config

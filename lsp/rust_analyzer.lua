@@ -1,5 +1,4 @@
---- @module lsp.rust_analyzer
---- @brief Rust-analyzer LSP config.
+--- Rust-analyzer LSP config.
 --- Enables Clippy check-on-save and all Cargo features. Roots at the Cargo
 --- workspace so every member crate shares one server.
 

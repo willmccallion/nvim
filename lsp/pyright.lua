@@ -1,5 +1,4 @@
---- @module lsp.pyright
---- @brief Pyright LSP config for Python.
+--- Pyright LSP config for Python.
 --- Auto search paths, library type stubs, and workspace-level diagnostics.
 
 ---@type vim.lsp.Config

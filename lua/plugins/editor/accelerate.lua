@@ -1,5 +1,4 @@
---- @module plugins.editor.accelerate
---- @brief Accelerated j/k vertical movement.
+--- Accelerated j/k vertical movement.
 --- Cursor speed increases the longer j or k is held down.
 
 vim.pack.add({ "https://github.com/rhysd/accelerated-jk" })
