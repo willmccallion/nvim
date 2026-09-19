@@ -1,12 +1,14 @@
 --- Multi-cursor editing via vim-visual-multi.
 --- Ctrl-n to select word, add cursors, and edit multiple locations at once.
---- Its <C-Up>/<C-Down> cursor maps are disabled so window resizing keeps them.
+--- Its <C-Up>/<C-Down> cursor maps are disabled so window resizing keeps them,
+--- and its four-key <leader>vgS reselect is moved to <leader>vr.
 --- Global VM commands live under <leader>v; keys used inside a session keep \\.
 
 vim.g.VM_leader = { default = "<leader>v", visual = "<leader>v", buffer = "\\\\" }
 vim.g.VM_maps = {
 	["Add Cursor Down"] = "",
 	["Add Cursor Up"] = "",
+	["Reselect Last"] = "",
 }
 
 -- Load plugin/ now (not after init.lua) so its maps exist before the ones below replace them.
@@ -19,7 +21,7 @@ local described_maps = {
 	{ "n", "<leader>vA", "<Plug>(VM-Select-All)", "Multi-cursor select all matches of word" },
 	{ "n", "<leader>v/", "<Plug>(VM-Start-Regex-Search)", "Multi-cursor select matches of a regex" },
 	{ "n", "<leader>v\\", "<Plug>(VM-Add-Cursor-At-Pos)", "Multi-cursor add cursor at position" },
-	{ "n", "<leader>vgS", "<Plug>(VM-Reselect-Last)", "Multi-cursor reselect last session" },
+	{ "n", "<leader>vr", "<Plug>(VM-Reselect-Last)", "Multi-cursor reselect last session" },
 	{ "x", "<leader>vA", "<Plug>(VM-Visual-All)", "Multi-cursor select all matches of selection" },
 	{ "x", "<leader>va", "<Plug>(VM-Visual-Add)", "Multi-cursor add selection as region" },
 	{ "x", "<leader>vc", "<Plug>(VM-Visual-Cursors)", "Multi-cursor add cursor on each selected line" },
