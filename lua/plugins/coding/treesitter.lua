@@ -28,6 +28,11 @@ local parsers = {
 	"bash",
 	"fish",
 	"nix",
+	"toml",
+	"cmake",
+	"make",
+	"json",
+	"yaml",
 }
 
 -- Install parsers asynchronously on startup; no-op if already installed.
