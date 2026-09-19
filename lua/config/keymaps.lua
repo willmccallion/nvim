@@ -5,8 +5,8 @@
 
 local substitute = require("util.substitute")
 
-vim.keymap.set({ "n", "x" }, "j", "gj", { desc = "Navigate down (visual line)" })
-vim.keymap.set({ "n", "x" }, "k", "gk", { desc = "Navigate up (visual line)" })
+vim.keymap.set("x", "j", "gj", { desc = "Navigate down (visual line)" })
+vim.keymap.set("x", "k", "gk", { desc = "Navigate up (visual line)" })
 vim.keymap.set({ "n", "x" }, "<Down>", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "<Up>", "gk", { desc = "Navigate up (visual line)" })
 vim.keymap.set("i", "<Down>", "<C-\\><C-o>gj", { desc = "Navigate down (visual line)" })

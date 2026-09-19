@@ -15,8 +15,6 @@ vim.pack.add({
 local cmp = require("cmp")
 local luasnip = require("luasnip")
 
-local lspkind_ok, lspkind = pcall(require, "lspkind")
-
 require("luasnip.loaders.from_vscode").lazy_load()
 
 vim.o.pumheight = 5
@@ -66,12 +64,6 @@ cmp.setup({
 	}, {
 		{ name = "buffer", keyword_length = 3 },
 	}),
-	formatting = {
-		format = (lspkind_ok and vim.g.have_nerd_font) and lspkind.cmp_format({
-			maxwidth = 50,
-			ellipsis_char = "...",
-		}) or nil,
-	},
 	experimental = {
 		ghost_text = true,
 	},
