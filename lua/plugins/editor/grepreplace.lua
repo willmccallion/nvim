@@ -5,9 +5,13 @@
 
 vim.keymap.set("n", "<leader>sR", function()
 	local search = vim.fn.input("Search: ")
-	if search == "" then return end
+	if search == "" then
+		return
+	end
 	local replace = vim.fn.input("Replace with: ")
-	if replace == "" then return end
+	if replace == "" then
+		return
+	end
 
 	require("telescope.builtin").grep_string({
 		search = search,

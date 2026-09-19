@@ -70,23 +70,31 @@ map("n", "<leader>sc", function()
 	local changed = vim.fn.systemlist("git diff --name-only --diff-filter=ACMR HEAD")
 	local untracked = vim.fn.systemlist("git ls-files --others --exclude-standard")
 	local files = {}
-	for _, f in ipairs(changed) do table.insert(files, f) end
-	for _, f in ipairs(untracked) do table.insert(files, f) end
+	for _, f in ipairs(changed) do
+		table.insert(files, f)
+	end
+	for _, f in ipairs(untracked) do
+		table.insert(files, f)
+	end
 
 	if #files == 0 then
 		vim.notify("No changed files", vim.log.levels.INFO)
 		return
 	end
 
-	pickers.new({}, {
-		prompt_title = "Grep Changed Files",
-		finder = finders.new_job(function(prompt)
-			if not prompt or prompt == "" then return nil end
-			return vim.iter({ "rg", "--vimgrep", "--smart-case", prompt, unpack(files) }):totable()
-		end, make_entry.gen_from_vimgrep({})),
-		previewer = conf.grep_previewer({}),
-		sorter = require("telescope.sorters").highlighter_only({}),
-	}):find()
+	pickers
+		.new({}, {
+			prompt_title = "Grep Changed Files",
+			finder = finders.new_job(function(prompt)
+				if not prompt or prompt == "" then
+					return nil
+				end
+				return vim.iter({ "rg", "--vimgrep", "--smart-case", prompt, unpack(files) }):totable()
+			end, make_entry.gen_from_vimgrep({})),
+			previewer = conf.grep_previewer({}),
+			sorter = require("telescope.sorters").highlighter_only({}),
+		})
+		:find()
 end, { desc = "Search grep only in git changed files" })
 
 -- Git log with diff preview
@@ -99,19 +107,23 @@ map("n", "<leader>sg", function()
 	local conf = require("telescope.config").values
 	local make_entry = require("telescope.make_entry")
 
-	pickers.new({}, {
-		prompt_title = "Live Grep (supports *.ext prefix)",
-		finder = finders.new_job(function(prompt)
-			if not prompt or prompt == "" then return nil end
-			local glob, query = prompt:match("^(%*%.%S+)%s+(.+)$")
-			if glob and query then
-				return { "rg", "--vimgrep", "--smart-case", "--glob", glob, query }
-			end
-			return { "rg", "--vimgrep", "--smart-case", prompt }
-		end, make_entry.gen_from_vimgrep({})),
-		previewer = conf.grep_previewer({}),
-		sorter = require("telescope.sorters").highlighter_only({}),
-	}):find()
+	pickers
+		.new({}, {
+			prompt_title = "Live Grep (supports *.ext prefix)",
+			finder = finders.new_job(function(prompt)
+				if not prompt or prompt == "" then
+					return nil
+				end
+				local glob, query = prompt:match("^(%*%.%S+)%s+(.+)$")
+				if glob and query then
+					return { "rg", "--vimgrep", "--smart-case", "--glob", glob, query }
+				end
+				return { "rg", "--vimgrep", "--smart-case", prompt }
+			end, make_entry.gen_from_vimgrep({})),
+			previewer = conf.grep_previewer({}),
+			sorter = require("telescope.sorters").highlighter_only({}),
+		})
+		:find()
 end, { desc = "Search grep text (supports *.ext prefix to filter filetype)" })
 
 -- Grep in current file's directory

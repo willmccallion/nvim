@@ -38,7 +38,12 @@ vim.keymap.set(
 	{ desc = "Find and replace word under cursor" }
 )
 
-vim.keymap.set("x", "<leader>rw", [["hy:%s/<C-r>h/<C-r>h/gI<Left><Left><Left>]], { desc = "Find and replace selected text" })
+vim.keymap.set(
+	"x",
+	"<leader>rw",
+	[["hy:%s/<C-r>h/<C-r>h/gI<Left><Left><Left>]],
+	{ desc = "Find and replace selected text" }
+)
 
 vim.keymap.set("n", "<leader>sv", "<C-w>v", { desc = "Split window vertically" })
 vim.keymap.set("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally" })
@@ -153,31 +158,30 @@ vim.keymap.set({ "n", "t" }, "<leader>ri", function()
 	vim.cmd("startinsert")
 end, { desc = "Toggle Python REPL split" })
 
-vim.keymap.set('n', '<leader>tr', ':vsplit | terminal<CR>', { desc = 'Open terminal on right' })
+vim.keymap.set("n", "<leader>tr", ":vsplit | terminal<CR>", { desc = "Open terminal on right" })
 
 local term_buf = nil
 local term_win = nil
 
 function ToggleBottomTerminal()
-  if term_win and vim.api.nvim_win_is_valid(term_win) then
-    vim.api.nvim_win_close(term_win, true)
-    term_win = nil
-  else
-    vim.cmd('botright split')
+	if term_win and vim.api.nvim_win_is_valid(term_win) then
+		vim.api.nvim_win_close(term_win, true)
+		term_win = nil
+	else
+		vim.cmd("botright split")
 
-    vim.cmd('resize 15')
+		vim.cmd("resize 15")
 
-    if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
-      vim.api.nvim_set_current_buf(term_buf)
-    else
-      vim.cmd('terminal')
-      term_buf = vim.api.nvim_get_current_buf()
-    end
+		if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
+			vim.api.nvim_set_current_buf(term_buf)
+		else
+			vim.cmd("terminal")
+			term_buf = vim.api.nvim_get_current_buf()
+		end
 
-    term_win = vim.api.nvim_get_current_win()
-    vim.cmd('startinsert')
-  end
+		term_win = vim.api.nvim_get_current_win()
+		vim.cmd("startinsert")
+	end
 end
 
-vim.keymap.set('n', '<leader>tt', ToggleBottomTerminal, { desc = 'Toggle bottom terminal' })
-
+vim.keymap.set("n", "<leader>tt", ToggleBottomTerminal, { desc = "Toggle bottom terminal" })

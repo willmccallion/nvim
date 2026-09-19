@@ -22,4 +22,9 @@ for type, icon in pairs(signs) do
 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
 end
 
-vim.keymap.set({ "n", "x", "o" }, "<leader>l", require("lsp_lines").toggle, { desc = "Toggle multiline diagnostic errors inline under code" })
+vim.keymap.set(
+	{ "n", "x", "o" },
+	"<leader>l",
+	require("lsp_lines").toggle,
+	{ desc = "Toggle multiline diagnostic errors inline under code" }
+)

@@ -38,11 +38,16 @@ require("nvim-treesitter").install({
 vim.api.nvim_create_autocmd("FileType", {
 	group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
 	pattern = {
-		"lua", "vim", "help",
-		"c", "zig", "rust",
+		"lua",
+		"vim",
+		"help",
+		"c",
+		"zig",
+		"rust",
 		"python",
 		"markdown",
-		"sh", "fish",
+		"sh",
+		"fish",
 	},
 	callback = function()
 		vim.treesitter.start()
