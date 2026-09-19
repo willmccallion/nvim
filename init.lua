@@ -35,4 +35,4 @@ require("plugins.editor.trouble")
 require("plugins.editor.undotree")
 
 require("plugins.lsp.fidget")
-require("plugins.lsp.init")
+require("plugins.lsp")
