@@ -83,7 +83,7 @@ vim.keymap.set("n", "<C-Right>", ":vertical resize +2<CR>", { desc = "Window inc
 
 vim.keymap.set("x", "<", "<gv", { desc = "Indent left and stay in visual" })
 vim.keymap.set("x", ">", ">gv", { desc = "Indent right and stay in visual" })
-vim.keymap.set("x", "p", '"_dP', { desc = "Paste without overwriting register" })
+vim.keymap.set("x", "p", "P", { desc = "Paste without overwriting register" })
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
 vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
