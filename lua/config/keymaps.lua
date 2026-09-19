@@ -26,9 +26,9 @@ vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Buffer go to previ
 
 vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
 
-vim.keymap.set("n", "<leader>xs", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
-vim.keymap.set("n", "<leader>xl", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })
-vim.keymap.set("v", "<leader>x", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
+vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
+vim.keymap.set("n", "<leader>Ll", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })
+vim.keymap.set("v", "<leader>L", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
 
 vim.keymap.set(
 	"n",

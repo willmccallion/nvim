@@ -1,5 +1,5 @@
 --- Diagnostic and symbol browser via Trouble.nvim.
---- Pretty list for diagnostics, symbols, and quickfix under <leader>d.
+--- Diagnostics and quickfix lists under <leader>x; symbol outline under <leader>co.
 
 vim.pack.add({ "https://github.com/folke/trouble.nvim" })
 
@@ -7,15 +7,15 @@ require("trouble").setup()
 
 vim.keymap.set(
 	"n",
-	"<leader>dd",
+	"<leader>xx",
 	"<cmd>Trouble diagnostics toggle win.position=right win.size=0.4 win.wo.wrap=true win.wo.linebreak=true win.wo.breakindent=true<cr>",
-	{ desc = "Diagnostics toggle project errors and warnings list" }
+	{ desc = "Problems toggle project errors and warnings list" }
 )
 vim.keymap.set(
 	"n",
-	"<leader>db",
+	"<leader>xb",
 	"<cmd>Trouble diagnostics toggle filter.buf=0<cr>",
-	{ desc = "Diagnostics toggle current buffer list" }
+	{ desc = "Problems toggle current buffer list" }
 )
 vim.keymap.set(
 	"n",
@@ -23,4 +23,9 @@ vim.keymap.set(
 	"<cmd>Trouble symbols toggle focus=false<cr>",
 	{ desc = "Code toggle symbol outline sidebar (functions classes)" }
 )
-vim.keymap.set("n", "<leader>df", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix toggle list in Trouble view" })
+vim.keymap.set(
+	"n",
+	"<leader>xq",
+	"<cmd>Trouble qflist toggle<cr>",
+	{ desc = "Problems toggle quickfix list in Trouble view" }
+)
