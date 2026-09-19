@@ -24,7 +24,7 @@ vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate 
 vim.keymap.set("n", "<leader>bn", ":bnext<cr>", { desc = "Buffer go to next buffer" })
 vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Buffer go to previous buffer" })
 
-vim.keymap.set("n", "<leader>nh", ":set hlsearch!<cr>", { desc = "Search toggle match highlighting" })
+vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
 
 vim.keymap.set("n", "<leader>xs", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
 vim.keymap.set("n", "<leader>xl", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })

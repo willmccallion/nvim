@@ -19,8 +19,8 @@ vim.keymap.set(
 )
 vim.keymap.set(
 	"n",
-	"<leader>ds",
+	"<leader>co",
 	"<cmd>Trouble symbols toggle focus=false<cr>",
-	{ desc = "Symbols toggle outline sidebar (functions classes)" }
+	{ desc = "Code toggle symbol outline sidebar (functions classes)" }
 )
 vim.keymap.set("n", "<leader>df", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix toggle list in Trouble view" })

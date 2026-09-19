@@ -32,12 +32,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gK", vim.lsp.buf.signature_help, "LSP show function signature and parameters")
 		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
 		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
-		map("<leader>rn", vim.lsp.buf.rename, "LSP rename symbol across all files")
-		map("<leader>ca", vim.lsp.buf.code_action, "LSP code action (quick fix, refactor)")
+		map("<leader>cr", vim.lsp.buf.rename, "Code rename symbol across all files")
+		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)")
 
-		map("<leader>ih", function()
+		map("<leader>oi", function()
 			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
-		end, "LSP toggle inlay hints (inline type annotations)")
+		end, "Option toggle inlay hints (inline type annotations)")
 	end,
 })
 
