@@ -18,7 +18,7 @@ require("conform").setup({
 		if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then
 			return
 		end
-		return { timeout_ms = 500, lsp_format = "fallback" }
+		return { timeout_ms = 2000, lsp_format = "fallback" }
 	end,
 })
 
