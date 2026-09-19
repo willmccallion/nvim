@@ -3,6 +3,8 @@
 --- Navigation, buffer/window management, clipboard, quickfix, search/replace,
 --- file rename, and Lua execution shortcuts.
 
+local substitute = require("util.substitute")
+
 vim.keymap.set({ "n", "x" }, "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "k", "gk", { desc = "Navigate up (visual line)" })
 vim.keymap.set({ "n", "x" }, "<Down>", "gj", { desc = "Navigate down (visual line)" })
@@ -36,12 +38,16 @@ vim.keymap.set(
 	{ desc = "Replace word under cursor in file" }
 )
 
-vim.keymap.set(
-	"x",
-	"<leader>rw",
-	[["hy:%s/<C-r>h/<C-r>h/gI<Left><Left><Left>]],
-	{ desc = "Replace selected text in file" }
-)
+vim.keymap.set("x", "<leader>rw", function()
+	local selected =
+		table.concat(vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() }), "\n")
+	local command = ":%s/"
+		.. substitute.literal_pattern(selected)
+		.. "/"
+		.. substitute.literal_replacement(selected)
+		.. "/gI"
+	vim.api.nvim_feedkeys(vim.keycode("<Esc>") .. command .. vim.keycode("<Left><Left><Left>"), "ni", false)
+end, { desc = "Replace selected text in file" })
 
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
 vim.keymap.set("n", "<leader>ws", "<C-w>s", { desc = "Window split horizontally" })
