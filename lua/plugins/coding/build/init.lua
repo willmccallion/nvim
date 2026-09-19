@@ -18,18 +18,59 @@ local output_buf = nil
 
 local ROOT_LINE_PREFIX = "build-root: "
 
+---@alias build.Status "building" | "passed" | "failed" | "stopped"
+
+---@type table<build.Status, {annote: string, hl: string}>
+local STATUS_STYLE = {
+	building = { annote = "Building", hl = "DiagnosticInfo" },
+	passed = { annote = "Passed", hl = "DiagnosticOk" },
+	failed = { annote = "Failed", hl = "DiagnosticError" },
+	stopped = { annote = "Stopped", hl = "DiagnosticWarn" },
+}
+
+local FIDGET_GROUP = "build"
+
 --- Shown by fidget in the corner, so long commands never trigger a "Press ENTER" prompt.
---- Status messages share one key, so each replaces the previous one.
 ---@param msg string
----@param level? integer vim.log.levels value
----@param opts? {status?: boolean, persist?: boolean}
-local function notify(msg, level, opts)
-	opts = opts or {}
-	require("fidget").notify(msg, level, {
-		annote = "Build",
-		key = opts.status and "build-status" or nil,
-		ttl = opts.persist and math.huge or 0,
+---@param level integer|string vim.log.levels value, or a highlight group for the annote
+---@param opts table fidget notification options
+local function fidget_notify(msg, level, opts)
+	local fidget = require("fidget")
+	fidget.notification.set_config(FIDGET_GROUP, {
+		name = "Build",
+		icon = vim.g.have_nerd_font and "\u{f085}" or nil,
+		group_style = "Title",
+	}, false)
+	fidget.notify(msg, level, vim.tbl_extend("force", { group = FIDGET_GROUP }, opts))
+end
+
+--- Each status replaces the previous one, so a build shows as one item that changes state.
+---@param status build.Status
+---@param msg string
+local function notify_status(status, msg)
+	local style = STATUS_STYLE[status]
+	fidget_notify(msg, style.hl, {
+		key = "status",
+		annote = style.annote,
+		ttl = status == "building" and math.huge or 0,
 	})
+end
+
+--- Keeps status lines short enough that the coloured status word stays on screen.
+---@param cmd string
+---@return string
+local function short_command(cmd)
+	local max = 40
+	if vim.fn.strchars(cmd) <= max then
+		return cmd
+	end
+	return vim.fn.strcharpart(cmd, 0, max - 1) .. "…"
+end
+
+---@param msg string
+---@param level integer vim.log.levels value
+local function notify(msg, level)
+	fidget_notify(msg, level, {})
 end
 
 ---@return string
@@ -193,17 +234,13 @@ end
 local function report(command, result, issues, seconds)
 	local elapsed = ("%.1fs"):format(seconds)
 	if result.signal ~= 0 then
-		notify(("Stopped: %s"):format(command.cmd), vim.log.levels.WARN, { status = true })
+		notify_status("stopped", short_command(command.cmd))
 	elseif result.code == 0 then
 		local suffix = issues > 0 and (", %d quickfix entries"):format(issues) or ""
-		notify(("Passed: %s (%s%s)"):format(command.cmd, elapsed, suffix), vim.log.levels.INFO, { status = true })
+		notify_status("passed", ("%s (%s%s)"):format(short_command(command.cmd), elapsed, suffix))
 	else
 		local hint = issues > 0 and "" or "; <leader>mo shows the output"
-		notify(
-			("Failed: %s (exit %d, %s%s)"):format(command.cmd, result.code, elapsed, hint),
-			vim.log.levels.ERROR,
-			{ status = true }
-		)
+		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(command.cmd), result.code, elapsed, hint))
 		vim.cmd("botright cwindow")
 	end
 end
@@ -212,7 +249,7 @@ end
 ---@param command build.Command
 local function run(project, command)
 	if active_run then
-		notify(("Already running: %s (<leader>mk stops it)"):format(active_run.cmd), vim.log.levels.WARN)
+		notify(("Already running: %s (<leader>mk stops it)"):format(short_command(active_run.cmd)), vim.log.levels.WARN)
 		return
 	end
 
@@ -224,11 +261,7 @@ local function run(project, command)
 	end
 	local started = vim.uv.hrtime()
 
-	notify(
-		("Building in %s: %s"):format(vim.fn.fnamemodify(project.root, ":~"), command.cmd),
-		vim.log.levels.INFO,
-		{ status = true, persist = true }
-	)
+	notify_status("building", ("%s in %s"):format(short_command(command.cmd), vim.fn.fnamemodify(project.root, ":t")))
 	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, command.cmd }, {
 		cwd = project.root,
 		text = true,
