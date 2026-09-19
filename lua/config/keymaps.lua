@@ -133,7 +133,25 @@ vim.keymap.set("n", "<leader>qo", "<cmd>copen<cr>", { desc = "Quickfix open list
 vim.keymap.set("n", "<leader>qc", "<cmd>cclose<cr>", { desc = "Quickfix close list" })
 
 vim.keymap.set("n", "<leader>bd", "<cmd>bd<CR>", { desc = "Buffer close current buffer" })
-vim.keymap.set("n", "<leader>ba", "<cmd>%bd|e#|bd#<CR>", { desc = "Buffer close all but current buffer" })
+--- Keeps buffers with unsaved changes and terminals, whose shells would be killed.
+local function close_other_buffers()
+	local current = vim.api.nvim_get_current_buf()
+	local kept = {}
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if buf ~= current and vim.bo[buf].buflisted then
+			if vim.bo[buf].modified or vim.bo[buf].buftype == "terminal" then
+				table.insert(kept, vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t"))
+			else
+				vim.api.nvim_buf_delete(buf, {})
+			end
+		end
+	end
+	if #kept > 0 then
+		vim.notify("Kept (unsaved or terminal): " .. table.concat(kept, ", "), vim.log.levels.WARN)
+	end
+end
+
+vim.keymap.set("n", "<leader>ba", close_other_buffers, { desc = "Buffer close all but current buffer" })
 
 vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
 
