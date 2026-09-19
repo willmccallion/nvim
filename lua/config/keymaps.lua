@@ -89,16 +89,44 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
 vim.keymap.set("n", "n", "nzzzv", { desc = "Search next match and center" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Search previous match and center" })
 
-vim.keymap.set("n", "<leader>rf", function()
-	local current_file = vim.fn.expand("%")
-	local new_name = vim.fn.input("Rename file: ", current_file)
-	if new_name ~= "" and new_name ~= current_file then
-		vim.cmd("saveas " .. new_name)
-		vim.cmd("e " .. new_name)
-		vim.cmd("!rm " .. current_file)
-		print("Renamed to " .. new_name)
+--- Renames on disk (keeping permissions), then points the buffer at the new path.
+local function rename_current_file()
+	local old_path = vim.api.nvim_buf_get_name(0)
+	if vim.bo.buftype ~= "" or old_path == "" or not vim.uv.fs_stat(old_path) then
+		vim.notify("Current buffer is not a file on disk", vim.log.levels.WARN)
+		return
 	end
-end, { desc = "File rename current file on disk" })
+
+	local input = vim.fn.input({ prompt = "Rename file: ", default = old_path, completion = "file" })
+	if input == "" then
+		return
+	end
+	local new_path = vim.fn.fnamemodify(input, ":p")
+	if new_path == old_path then
+		return
+	end
+	if vim.uv.fs_stat(new_path) then
+		vim.notify(new_path .. " already exists", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.fn.mkdir(vim.fs.dirname(new_path), "p")
+	local ok, err = vim.uv.fs_rename(old_path, new_path)
+	if not ok then
+		vim.notify("Rename failed: " .. err, vim.log.levels.ERROR)
+		return
+	end
+	vim.api.nvim_buf_set_name(0, new_path)
+	vim.cmd("silent write!")
+
+	local stale_buf = vim.fn.bufnr(old_path)
+	if stale_buf ~= -1 then
+		vim.api.nvim_buf_delete(stale_buf, {})
+	end
+	vim.notify("Renamed to " .. vim.fn.fnamemodify(new_path, ":~:."))
+end
+
+vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "File rename current file on disk" })
 
 vim.keymap.set("n", "[q", "<cmd>cprev<CR>", { desc = "Quickfix go to previous item" })
 vim.keymap.set("n", "]q", "<cmd>cnext<CR>", { desc = "Quickfix go to next item" })
