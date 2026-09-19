@@ -1,7 +1,7 @@
 --- @module init
 --- @brief Main entry point for the Neovim configuration.
 --- Loads core config (globals, options, keymaps, autocommands) then plugins
---- organized by category: ui, coding, editor, and lsp.
+--- organized by category: ui, coding, debug, editor, and lsp.
 
 require("config.globals")
 
@@ -20,6 +20,8 @@ require("plugins.coding.autopairs")
 require("plugins.coding.conform")
 require("plugins.coding.treesitter")
 require("plugins.coding.build")
+
+require("plugins.debug.dap")
 
 require("plugins.editor.accelerate")
 require("plugins.editor.flash")
