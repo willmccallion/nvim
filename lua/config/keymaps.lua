@@ -11,10 +11,12 @@ vim.keymap.set({ "n", "x" }, "<Up>", "gk", { desc = "Navigate up (visual line)" 
 vim.keymap.set("i", "<Down>", "<C-\\><C-o>gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set("i", "<Up>", "<C-\\><C-o>gk", { desc = "Navigate up (visual line)" })
 
-vim.keymap.set({ "n", "x" }, "<M-S-Up>", ":move -2<cr>", { desc = "Move line up" })
-vim.keymap.set({ "n", "x" }, "<M-S-Down>", ":move +1<cr>", { desc = "Move line down" })
-vim.keymap.set("i", "<M-S-Up>", "<C-o>:move -2<cr>", { desc = "Move line up" })
-vim.keymap.set("i", "<M-S-Down>", "<C-o>:move +1<cr>", { desc = "Move line down" })
+vim.keymap.set("n", "<M-S-Up>", "<Cmd>move -2<CR>", { desc = "Move line up" })
+vim.keymap.set("n", "<M-S-Down>", "<Cmd>move +1<CR>", { desc = "Move line down" })
+vim.keymap.set("x", "<M-S-Up>", ":move '<-2<CR>gv", { desc = "Move selected lines up" })
+vim.keymap.set("x", "<M-S-Down>", ":move '>+1<CR>gv", { desc = "Move selected lines down" })
+vim.keymap.set("i", "<M-S-Up>", "<Cmd>move -2<CR>", { desc = "Move line up" })
+vim.keymap.set("i", "<M-S-Down>", "<Cmd>move +1<CR>", { desc = "Move line down" })
 
 vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Clipboard copy to system clipboard" })
 vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from system clipboard after cursor" })
