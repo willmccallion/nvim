@@ -71,7 +71,7 @@ Leader is **Space**. Keymaps are built like sentences so they can be worked out 
 
 **`<leader>` + domain + action.** The first key after leader names *what* you are working on, the second
 says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**c**ode **r**ename",
-"**D**ebug **n**ext", "**o**ption **i**nlay hints".
+"**d**ebug **n**ext", "**o**ption **i**nlay hints".
 
 | Domain | Meaning |
 |---|---|
@@ -85,7 +85,7 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | `b` | Buffer |
 | `t` | Terminal |
 | `m` | Build (think "make") |
-| `D` | Debug |
+| `d` | Debug |
 | `v` | Multi-cursor |
 | `q` | Quickfix window |
 | `L` | Lua: run code in Neovim |

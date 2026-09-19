@@ -1,6 +1,6 @@
 --- Debugging via nvim-dap with the lldb-dap adapter and nvim-dap-view UI.
 --- Launches or attaches to C, C++ and Rust programs. All keys live under
---- <leader>D; function keys are avoided because tmux binds F1-F9.
+--- <leader>d; function keys are avoided because tmux binds F1-F9.
 --- The debug view opens and closes automatically with the session.
 
 vim.pack.add({
@@ -111,17 +111,17 @@ vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "Diagnostic
 vim.fn.sign_define("DapStopped", { text = "→", texthl = "DiagnosticOk", linehl = "Visual" })
 
 local map = vim.keymap.set
-map("n", "<leader>Dd", dap.continue, { desc = "Debug start or continue" })
-map("n", "<leader>Dn", dap.step_over, { desc = "Debug step over (next line)" })
-map("n", "<leader>Di", dap.step_into, { desc = "Debug step into function" })
-map("n", "<leader>Do", dap.step_out, { desc = "Debug step out of function" })
-map("n", "<leader>Db", dap.toggle_breakpoint, { desc = "Debug toggle breakpoint" })
-map("n", "<leader>DB", function()
+map("n", "<leader>dd", dap.continue, { desc = "Debug start or continue" })
+map("n", "<leader>dn", dap.step_over, { desc = "Debug step over (next line)" })
+map("n", "<leader>di", dap.step_into, { desc = "Debug step into function" })
+map("n", "<leader>do", dap.step_out, { desc = "Debug step out of function" })
+map("n", "<leader>db", dap.toggle_breakpoint, { desc = "Debug toggle breakpoint" })
+map("n", "<leader>dB", function()
 	dap.set_breakpoint(vim.fn.input("Breakpoint condition: "))
 end, { desc = "Debug set conditional breakpoint" })
-map("n", "<leader>Dc", dap.run_to_cursor, { desc = "Debug run to cursor" })
-map("n", "<leader>Dl", dap.run_last, { desc = "Debug rerun last configuration" })
-map("n", "<leader>Dr", dap.restart, { desc = "Debug restart session" })
-map("n", "<leader>Dq", dap.terminate, { desc = "Debug stop session" })
-map("n", "<leader>Du", dap_view.toggle, { desc = "Debug toggle view panel" })
-map({ "n", "x" }, "<leader>Dw", dap_view.add_expr, { desc = "Debug watch expression under cursor" })
+map("n", "<leader>dc", dap.run_to_cursor, { desc = "Debug run to cursor" })
+map("n", "<leader>dl", dap.run_last, { desc = "Debug rerun last configuration" })
+map("n", "<leader>dr", dap.restart, { desc = "Debug restart session" })
+map("n", "<leader>dq", dap.terminate, { desc = "Debug stop session" })
+map("n", "<leader>du", dap_view.toggle, { desc = "Debug toggle view panel" })
+map({ "n", "x" }, "<leader>dw", dap_view.add_expr, { desc = "Debug watch expression under cursor" })
