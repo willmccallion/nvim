@@ -59,6 +59,30 @@ end, { desc = "Search fuzzy text in current buffer" })
 map("n", "<leader>so", builtin.oldfiles, { desc = "Search recently opened files" })
 map("n", "<leader>sq", builtin.search_history, { desc = "Search previous search queries" })
 
+--- Live grep that reruns rg on every keystroke with the args `rg_args_for` builds.
+---@param title string
+---@param rg_args_for fun(prompt: string): string[] must put the pattern after "--"
+local function live_rg_picker(title, rg_args_for)
+	local pickers = require("telescope.pickers")
+	local finders = require("telescope.finders")
+	local conf = require("telescope.config").values
+	local make_entry = require("telescope.make_entry")
+
+	pickers
+		.new({}, {
+			prompt_title = title,
+			finder = finders.new_job(function(prompt)
+				if not prompt or prompt == "" then
+					return nil
+				end
+				return vim.list_extend({ "rg", "--vimgrep", "--smart-case" }, rg_args_for(prompt))
+			end, make_entry.gen_from_vimgrep({})),
+			previewer = conf.grep_previewer({}),
+			sorter = require("telescope.sorters").highlighter_only({}),
+		})
+		:find()
+end
+
 --- Modified and untracked files under the cwd, as cwd-relative paths.
 ---@return string[]? files nil when git fails (not a repo, no commits yet, ...)
 local function git_changed_files()
@@ -75,11 +99,6 @@ local function git_changed_files()
 end
 
 map("n", "<leader>gc", function()
-	local pickers = require("telescope.pickers")
-	local finders = require("telescope.finders")
-	local conf = require("telescope.config").values
-	local make_entry = require("telescope.make_entry")
-
 	local files = git_changed_files()
 	if not files then
 		return
@@ -89,46 +108,21 @@ map("n", "<leader>gc", function()
 		return
 	end
 
-	pickers
-		.new({}, {
-			prompt_title = "Grep Changed Files",
-			finder = finders.new_job(function(prompt)
-				if not prompt or prompt == "" then
-					return nil
-				end
-				return vim.iter({ "rg", "--vimgrep", "--smart-case", "--", prompt, unpack(files) }):totable()
-			end, make_entry.gen_from_vimgrep({})),
-			previewer = conf.grep_previewer({}),
-			sorter = require("telescope.sorters").highlighter_only({}),
-		})
-		:find()
+	live_rg_picker("Grep Changed Files", function(prompt)
+		return vim.list_extend({ "--", prompt }, files)
+	end)
 end, { desc = "Git grep only in changed files" })
 
 map("n", "<leader>gl", builtin.git_commits, { desc = "Git log commits with diff preview" })
 
 map("n", "<leader>sg", function()
-	local pickers = require("telescope.pickers")
-	local finders = require("telescope.finders")
-	local conf = require("telescope.config").values
-	local make_entry = require("telescope.make_entry")
-
-	pickers
-		.new({}, {
-			prompt_title = "Live Grep (supports *.ext prefix)",
-			finder = finders.new_job(function(prompt)
-				if not prompt or prompt == "" then
-					return nil
-				end
-				local glob, query = prompt:match("^(%*%.%S+)%s+(.+)$")
-				if glob and query then
-					return { "rg", "--vimgrep", "--smart-case", "--glob", glob, "--", query }
-				end
-				return { "rg", "--vimgrep", "--smart-case", "--", prompt }
-			end, make_entry.gen_from_vimgrep({})),
-			previewer = conf.grep_previewer({}),
-			sorter = require("telescope.sorters").highlighter_only({}),
-		})
-		:find()
+	live_rg_picker("Live Grep (supports *.ext prefix)", function(prompt)
+		local glob, query = prompt:match("^(%*%.%S+)%s+(.+)$")
+		if glob and query then
+			return { "--glob", glob, "--", query }
+		end
+		return { "--", prompt }
+	end)
 end, { desc = "Search grep text (supports *.ext prefix to filter filetype)" })
 
 map("n", "<leader>s.", function()
