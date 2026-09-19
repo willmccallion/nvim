@@ -17,10 +17,10 @@ require("conform").setup({
 		if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then
 			return
 		end
-		return { timeout_ms = 500, lsp_fallback = true }
+		return { timeout_ms = 500, lsp_format = "fallback" }
 	end,
 })
 
 vim.keymap.set({ "n", "v" }, "<leader>f", function()
-	require("conform").format({ async = true, lsp_fallback = true })
+	require("conform").format({ async = true, lsp_format = "fallback" })
 end, { desc = "Format code in current buffer (prettier rustfmt stylua)" })

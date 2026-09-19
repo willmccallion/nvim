@@ -23,22 +23,21 @@ require("gitsigns").setup({
 		end
 
 		map("n", "]c", function()
-			gs.next_hunk()
+			gs.nav_hunk("next")
 		end, { desc = "Git go to next changed hunk" })
 
 		map("n", "[c", function()
-			gs.prev_hunk()
+			gs.nav_hunk("prev")
 		end, { desc = "Git go to previous changed hunk" })
 
-		map("n", "<leader>hs", gs.stage_hunk, { desc = "Git stage hunk" })
+		map("n", "<leader>hs", gs.stage_hunk, { desc = "Git stage or unstage hunk" })
 		map("n", "<leader>hr", gs.reset_hunk, { desc = "Git reset hunk (discard changes)" })
 		map("v", "<leader>hs", function()
 			gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
-		end, { desc = "Git stage selected lines" })
+		end, { desc = "Git stage or unstage selected lines" })
 		map("v", "<leader>hr", function()
 			gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
 		end, { desc = "Git reset selected lines" })
-		map("n", "<leader>hu", gs.undo_stage_hunk, { desc = "Git undo last stage hunk" })
 		map("n", "<leader>hp", gs.preview_hunk, { desc = "Git preview hunk diff inline" })
 		map("n", "<leader>hb", function()
 			gs.blame_line({ full = true })
