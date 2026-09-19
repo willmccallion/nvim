@@ -25,8 +25,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gr", builtin.lsp_references, "Find all references to symbol")
 		map("K", vim.lsp.buf.hover, "Show hover documentation for symbol")
 		map("gK", vim.lsp.buf.signature_help, "Show function signature and parameters")
-		map("<leader>ds", builtin.lsp_document_symbols, "List all symbols in current file")
-		map("<leader>ws", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
+		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
+		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
 		map("<leader>rn", vim.lsp.buf.rename, "Rename symbol across all files")
 		map("<leader>ca", vim.lsp.buf.code_action, "Code action quick fix refactor")
 
