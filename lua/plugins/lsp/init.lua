@@ -21,8 +21,9 @@ end
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 	callback = function(ev)
-		local map = function(keys, func, desc)
-			vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
+		---@param modes? string|string[] defaults to normal mode
+		local map = function(keys, func, desc, modes)
+			vim.keymap.set(modes or "n", keys, func, { buffer = ev.buf, desc = desc })
 		end
 
 		local builtin = require("telescope.builtin")
@@ -37,7 +38,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
 		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
 		map("<leader>cr", vim.lsp.buf.rename, "Code rename symbol across all files")
-		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)")
+		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)", { "n", "x" })
 
 		map("<leader>oi", function()
 			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
