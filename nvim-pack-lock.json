@@ -44,14 +44,6 @@
       "rev": "dd3f588bacbeb041be6facf1742e42097f62165d",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
-    "neovim": {
-      "rev": "6a961effd67f6130d36df6d1c05c48c739796dd2",
-      "src": "https://github.com/rose-pine/neovim"
-    },
-    "nightfox.nvim": {
-      "rev": "ba47d4b4c5ec308718641ba7402c143836f35aa9",
-      "src": "https://github.com/EdenEast/nightfox.nvim"
-    },
     "nvim-autopairs": {
       "rev": "59bce2eef357189c3305e25bc6dd2d138c1683f5",
       "src": "https://github.com/windwp/nvim-autopairs"
@@ -112,10 +104,6 @@
     "todo-comments.nvim": {
       "rev": "31e3c38ce9b29781e4422fc0322eb0a21f4e8668",
       "src": "https://github.com/folke/todo-comments.nvim"
-    },
-    "tokyonight.nvim": {
-      "rev": "cdc07ac78467a233fd62c493de29a17e0cf2b2b6",
-      "src": "https://github.com/folke/tokyonight.nvim"
     },
     "trouble.nvim": {
       "rev": "bd67efe408d4816e25e8491cc5ad4088e708a69a",

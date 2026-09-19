@@ -63,7 +63,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.
 
-**Theme**: Vague with transparent background. Tokyonight, Nightfox, and Rose Pine are also installed if you want to swap.
+**Theme**: Vague with transparent background.
 
 ## Keymap Grammar
 
