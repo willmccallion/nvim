@@ -33,8 +33,8 @@ telescope.setup({
 	},
 })
 
-pcall(telescope.load_extension, "fzf")
-pcall(telescope.load_extension, "ui-select")
+telescope.load_extension("fzf")
+telescope.load_extension("ui-select")
 
 local builtin = require("telescope.builtin")
 local map = vim.keymap.set

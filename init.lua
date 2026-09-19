@@ -9,6 +9,7 @@ require("config.options")
 require("config.keymaps")
 require("config.autocmds")
 require("config.terminal")
+require("config.pack_hooks")
 
 require("plugins.ui.colourscheme")
 require("plugins.ui.diagnostic")

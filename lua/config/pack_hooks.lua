@@ -1,0 +1,22 @@
+--- Build and update hooks for plugins managed by vim.pack.
+--- Loaded before any vim.pack.add() so installs from the lockfile trigger them too.
+
+---@param ev vim.api.keyset.create_autocmd.callback_args
+local function build_fzf_native(ev)
+	local result = vim.system({ "make" }, { cwd = ev.data.path, text = true }):wait()
+	if result.code ~= 0 then
+		vim.notify("Building telescope-fzf-native failed:\n" .. result.stderr, vim.log.levels.ERROR)
+	end
+end
+
+vim.api.nvim_create_autocmd("PackChanged", {
+	desc = "Run plugin build steps after install or update",
+	group = vim.api.nvim_create_augroup("pack-hooks", { clear = true }),
+	callback = function(ev)
+		local name, kind = ev.data.spec.name, ev.data.kind
+		local code_changed = kind == "install" or kind == "update"
+		if name == "telescope-fzf-native.nvim" and code_changed then
+			build_fzf_native(ev)
+		end
+	end,
+})
