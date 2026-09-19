@@ -21,7 +21,6 @@ local parsers = {
 	"vim",
 	"vimdoc",
 	"c",
-	"zig",
 	"rust",
 	"python",
 	"markdown",
