@@ -11,7 +11,8 @@ local M = {}
 
 local path = vim.fs.joinpath(vim.fn.stdpath("data"), "build-commands.json")
 
----@return table<string, build.ProjectState>? states, string? err
+--- Returns nil, after reporting why, when the file exists but is not a JSON object.
+---@return table<string, build.ProjectState>?
 local function read_all()
 	local file = io.open(path, "r")
 	if not file then
@@ -24,7 +25,11 @@ local function read_all()
 	end
 	local ok, decoded = pcall(vim.json.decode, content)
 	if not ok or type(decoded) ~= "table" then
-		return nil, ("%s is not valid JSON: %s"):format(path, decoded)
+		vim.notify(
+			("%s is not a JSON object (%s); fix or delete it"):format(path, tostring(decoded)),
+			vim.log.levels.ERROR
+		)
+		return nil
 	end
 	return decoded
 end
@@ -32,11 +37,7 @@ end
 ---@param root string
 ---@return build.ProjectState
 function M.load(root)
-	local states, err = read_all()
-	if not states then
-		vim.notify(err, vim.log.levels.ERROR)
-		return { custom = {} }
-	end
+	local states = read_all() or {}
 	local state = states[root] or {}
 	return { selected = state.selected, custom = state.custom or {} }
 end
@@ -45,9 +46,8 @@ end
 ---@param root string
 ---@param state build.ProjectState
 function M.save(root, state)
-	local states, err = read_all()
+	local states = read_all()
 	if not states then
-		vim.notify(err .. "; not saving", vim.log.levels.ERROR)
 		return
 	end
 	states[root] = state
