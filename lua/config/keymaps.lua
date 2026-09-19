@@ -125,7 +125,7 @@ local function rename_current_file()
 	vim.notify("Renamed to " .. vim.fn.fnamemodify(new_path, ":~:."))
 end
 
-vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "File rename current file on disk" })
+vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "Rename current file on disk" })
 
 vim.keymap.set("n", "[q", "<cmd>cprev<CR>", { desc = "Quickfix go to previous item" })
 vim.keymap.set("n", "]q", "<cmd>cnext<CR>", { desc = "Quickfix go to next item" })

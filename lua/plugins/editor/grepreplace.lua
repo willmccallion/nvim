@@ -1,10 +1,10 @@
 --- Project-wide search and replace via Telescope.
---- <leader>sR prompts for search/replace terms, shows matches in Telescope,
+--- <leader>rp prompts for search/replace terms, shows matches in Telescope,
 --- then applies the replacement across all matched files on confirm.
 
 local substitute = require("util.substitute")
 
-vim.keymap.set("n", "<leader>sR", function()
+vim.keymap.set("n", "<leader>rp", function()
 	local search = vim.fn.input("Search: ")
 	if search == "" then
 		return
@@ -28,4 +28,4 @@ vim.keymap.set("n", "<leader>sR", function()
 			return true
 		end,
 	})
-end, { desc = "Search and replace text across all project files" })
+end, { desc = "Replace text across all project files" })
