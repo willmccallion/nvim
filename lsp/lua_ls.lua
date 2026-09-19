@@ -2,8 +2,8 @@
 --- LuaJIT runtime with Neovim's runtime and libuv types. Only plugins whose
 --- types the config uses are indexed, which keeps startup indexing fast.
 
---- Plugins whose type annotations this config refers to (e.g. dap.Configuration).
-local typed_plugins = { "nvim-dap" }
+--- Plugins whose APIs or type annotations this config uses (e.g. dap.Configuration).
+local typed_plugins = { "nvim-dap", "fidget.nvim" }
 
 local library = { vim.env.VIMRUNTIME, "${3rd}/luv/library" }
 for _, name in ipairs(typed_plugins) do
