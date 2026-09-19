@@ -31,10 +31,10 @@ require("gitsigns").setup({
 
 		map("n", "<leader>gs", gs.stage_hunk, { desc = "Git stage or unstage hunk" })
 		map("n", "<leader>gr", gs.reset_hunk, { desc = "Git reset hunk (discard changes)" })
-		map("v", "<leader>gs", function()
+		map("x", "<leader>gs", function()
 			gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
 		end, { desc = "Git stage or unstage selected lines" })
-		map("v", "<leader>gr", function()
+		map("x", "<leader>gr", function()
 			gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
 		end, { desc = "Git reset selected lines" })
 		map("n", "<leader>gp", gs.preview_hunk, { desc = "Git preview hunk diff inline" })

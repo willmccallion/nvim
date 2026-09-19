@@ -22,6 +22,6 @@ require("conform").setup({
 	end,
 })
 
-vim.keymap.set({ "n", "v" }, "<leader>cf", function()
+vim.keymap.set({ "n", "x" }, "<leader>cf", function()
 	require("conform").format({ async = true, lsp_format = "fallback" })
 end, { desc = "Code format buffer or selection" })

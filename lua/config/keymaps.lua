@@ -28,7 +28,7 @@ vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option tog
 
 vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
 vim.keymap.set("n", "<leader>Ll", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })
-vim.keymap.set("v", "<leader>L", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
+vim.keymap.set("x", "<leader>L", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
 
 vim.keymap.set(
 	"n",
@@ -79,8 +79,8 @@ vim.keymap.set("n", "<C-Down>", ":resize -2<CR>", { desc = "Window decrease heig
 vim.keymap.set("n", "<C-Left>", ":vertical resize -2<CR>", { desc = "Window decrease width" })
 vim.keymap.set("n", "<C-Right>", ":vertical resize +2<CR>", { desc = "Window increase width" })
 
-vim.keymap.set("v", "<", "<gv", { desc = "Indent left and stay in visual" })
-vim.keymap.set("v", ">", ">gv", { desc = "Indent right and stay in visual" })
+vim.keymap.set("x", "<", "<gv", { desc = "Indent left and stay in visual" })
+vim.keymap.set("x", ">", ">gv", { desc = "Indent right and stay in visual" })
 vim.keymap.set("x", "p", '"_dP', { desc = "Paste without overwriting register" })
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
