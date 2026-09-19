@@ -96,7 +96,7 @@ map("n", "<leader>gc", function()
 				if not prompt or prompt == "" then
 					return nil
 				end
-				return vim.iter({ "rg", "--vimgrep", "--smart-case", prompt, unpack(files) }):totable()
+				return vim.iter({ "rg", "--vimgrep", "--smart-case", "--", prompt, unpack(files) }):totable()
 			end, make_entry.gen_from_vimgrep({})),
 			previewer = conf.grep_previewer({}),
 			sorter = require("telescope.sorters").highlighter_only({}),
@@ -121,9 +121,9 @@ map("n", "<leader>sg", function()
 				end
 				local glob, query = prompt:match("^(%*%.%S+)%s+(.+)$")
 				if glob and query then
-					return { "rg", "--vimgrep", "--smart-case", "--glob", glob, query }
+					return { "rg", "--vimgrep", "--smart-case", "--glob", glob, "--", query }
 				end
-				return { "rg", "--vimgrep", "--smart-case", prompt }
+				return { "rg", "--vimgrep", "--smart-case", "--", prompt }
 			end, make_entry.gen_from_vimgrep({})),
 			previewer = conf.grep_previewer({}),
 			sorter = require("telescope.sorters").highlighter_only({}),
