@@ -19,7 +19,8 @@ for mode, lhss in pairs(builtin_gr_maps) do
 end
 
 vim.api.nvim_create_autocmd("LspAttach", {
-	group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
+	desc = "Set LSP keymaps in the attached buffer",
+	group = vim.api.nvim_create_augroup("lsp-attach", { clear = true }),
 	callback = function(ev)
 		---@param modes? string|string[] defaults to normal mode
 		local map = function(keys, func, desc, modes)
