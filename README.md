@@ -35,17 +35,17 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 **LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources.
 
-**Treesitter**: Syntax highlighting and text objects (`af`/`if`, `ac`/`ic`, `aa`/`ia`, `ai`/`ii`, `al`/`il`) with `]f`/`[f`-style motions. Incremental selection is built into Neovim: in visual mode `an` grows the selection to the parent node and `in` shrinks it. nvim-treesitter-context pins the enclosing function/loop to the top of the window; `[x` jumps to it.
+**Treesitter**: Syntax highlighting, text objects and motions for functions, classes, arguments, conditionals and loops, and Neovim's built-in incremental selection by syntax node. nvim-treesitter-context pins the enclosing function/loop to the top of the window.
 
-**Build**: `<leader>mb` builds the project in the background and loads compiler errors into quickfix. The build system is detected from the current file upward (stopping at the git root):
+**Build**: Builds the project in the background and loads compiler errors into quickfix. The build system is detected from the current file upward (stopping at the git root):
 - `Cargo.toml` runs `cargo build` from the outermost `Cargo.toml` (the workspace root).
 - `CMakeLists.txt` configures a Debug build (so the debugger works) into `build/` from the outermost `CMakeLists.txt`, exporting `compile_commands.json` for clangd.
 - `Makefile` runs `make` from the nearest `Makefile`.
 - When several appear in one directory, Cargo beats CMake beats Make.
 
-`<leader>mp` picks another detected command or lets you type your own. The choice is remembered per project in `stdpath("data")/build-commands.json`.
+You can pick another detected command or type your own; the choice is remembered per project in `stdpath("data")/build-commands.json`.
 
-**Debugging**: nvim-dap with `lldb-dap` for C, C++, and Rust, and nvim-dap-view as the UI (opens and closes with the session). `<leader>Dd` starts a session and prompts for the executable, defaulting to `target/debug/` or `build/`. Rust sessions load rustc's LLDB formatters so `Vec`, `String`, etc. display readably.
+**Debugging**: nvim-dap with `lldb-dap` for C, C++, and Rust, and nvim-dap-view as the UI (opens and closes with the session). Starting a session prompts for the executable, defaulting to `target/debug/` or `build/`. Rust sessions load rustc's LLDB formatters so `Vec`, `String`, etc. display readably.
 
 **Formatting**: Format-on-save via conform.nvim. Each language has its own formatter configured. Lua style is set by `.stylua.toml`.
 
@@ -53,36 +53,55 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 **File Explorer**: Oil.nvim lets you edit your filesystem like a regular buffer.
 
-**Git**: Gitsigns shows changed/added/deleted lines in the sign column with keymaps for staging, resetting, and previewing hunks.
+**Git**: Gitsigns shows changed/added/deleted lines in the sign column and stages, resets, previews and blames hunks.
 
-**Diagnostics**: Trouble.nvim gives you a list view of diagnostics and symbols. `<leader>l` toggles Neovim's native multiline diagnostics under your code.
+**Diagnostics**: Trouble.nvim gives you a list view of diagnostics, quickfix and symbols, and Neovim's native multiline diagnostics can be toggled under your code.
 
-**Navigation**: Flash.nvim for label-based jumping (`s`) and multi-line `f`/`t`/`F`/`T` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
+**Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
 
-**Editing**: Built-in `gc`/`gcc` commenting, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor (`<C-n>` selects the word under the cursor; its other mappings start with `\\`), autopairs, and Neovim's bundled undo tree.
+**Editing**: Built-in commenting, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor editing, autopairs, and Neovim's bundled undo tree.
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.
 
 **Theme**: Vague with transparent background. Tokyonight, Nightfox, and Rose Pine are also installed if you want to swap.
 
-## Keymap Prefixes
+## Keymap Grammar
 
-Leader is **Space**. Every mapping has a description, so `<leader>sk` searches them all; descriptions start with the category below.
+Leader is **Space**. Keymaps are built like sentences so they can be worked out instead of memorised.
 
-| Prefix | Category |
+**`<leader>` + domain + action.** The first key after leader names *what* you are working on, the second
+says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**c**ode **r**ename",
+"**D**ebug **n**ext", "**o**ption **i**nlay hints".
+
+| Domain | Meaning |
 |---|---|
-| `<leader>s` | Search (files, grep, help, symbols, marks, ...) |
-| `<leader>w` | Window (split, move, swap, maximize) |
-| `<leader>b` | Buffer |
-| `<leader>t` | Terminal (`tt` bottom, `tv` right, `tp` Python) |
-| `<leader>m` | Build (`mb` build, `mp` pick, `mo` output, `mk` stop) |
-| `<leader>D` | Debug (`Dd` start/continue, `Dn`/`Di`/`Do` step over/into/out, `Db` breakpoint, `Du` view, `Dq` stop, ...) |
-| `<leader>d` | Diagnostics and symbols (Trouble) |
-| `<leader>h` | Git hunks |
-| `<leader>q` | Quickfix list |
-| `<leader>x` | Lua (execute line/selection, source file) |
-| `<leader>r` | Replace / rename |
-| `g`         | LSP go-to (`gd`, `gr`, `gi`, `gt`, `gD`) |
+| `s` | Search: find things with Telescope |
+| `c` | Code: LSP actions, formatting, navigation to implementations |
+| `g` | Git: hunks, blame, log |
+| `x` | Problems: diagnostic and quickfix lists |
+| `o` | Option toggles: switch a display option on or off |
+| `r` | Replace and rename |
+| `w` | Window |
+| `b` | Buffer |
+| `t` | Terminal |
+| `m` | Build (think "make") |
+| `D` | Debug |
+| `v` | Multi-cursor |
+| `q` | Quickfix window |
+| `L` | Lua: run code in Neovim |
+
+**Shift means bigger or stronger.** Lowercase acts on the current thing, uppercase on more of it or a
+heavier version: symbols in this file vs the project, a breakpoint vs a conditional breakpoint,
+moving to a window vs moving the window.
+
+**Brackets are motions.** `]` goes forward and `[` back, followed by the object's letter:
+function, argument, class, hunk, quickfix entry, diagnostic, context.
+
+**Frequent actions get single keys** after leader (file explorer, undo tree, clipboard), and the
+LSP go-to motions stay on `g` like Vim's own.
+
+Every mapping's description starts with its domain word, so `<leader>sk` then typing a domain
+(`Git`, `Debug`, ...) lists all of its keys.
 
 ## Notes
 
