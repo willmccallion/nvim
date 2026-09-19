@@ -1,6 +1,6 @@
 --- Global keybindings (non-plugin).
---- Navigation, buffer/window management, clipboard, quickfix, search/replace,
---- file rename, and Lua execution shortcuts.
+--- Grouped by domain: editing and navigation, clipboard, buffer, window,
+--- replace/rename, quickfix, option toggles, and Lua.
 
 local substitute = require("util.substitute")
 
@@ -18,6 +18,17 @@ vim.keymap.set("x", "<M-S-Down>", ":move '>+1<CR>gv", { desc = "Move selected li
 vim.keymap.set("i", "<M-S-Up>", "<Cmd>move -2<CR>", { desc = "Move line up" })
 vim.keymap.set("i", "<M-S-Down>", "<Cmd>move +1<CR>", { desc = "Move line down" })
 
+vim.keymap.set("x", "<", "<gv", { desc = "Indent left and stay in visual" })
+vim.keymap.set("x", ">", ">gv", { desc = "Indent right and stay in visual" })
+vim.keymap.set("x", "p", "P", { desc = "Paste without overwriting register" })
+
+vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
+
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
+vim.keymap.set("n", "n", "nzzzv", { desc = "Search next match and center" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "Search previous match and center" })
+
 vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Clipboard copy to system clipboard" })
 vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from system clipboard after cursor" })
 vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from system clipboard before cursor" })
@@ -26,29 +37,27 @@ vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate 
 vim.keymap.set("n", "<leader>bn", "<Cmd>bnext<CR>", { desc = "Buffer go to next buffer" })
 vim.keymap.set("n", "<leader>bp", "<Cmd>bprevious<CR>", { desc = "Buffer go to previous buffer" })
 
-vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
+vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Buffer close current buffer" })
 
-vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
-vim.keymap.set("n", "<leader>Ll", "<Cmd>.lua<CR>", { desc = "Lua execute current line" })
-vim.keymap.set("x", "<leader>L", ":lua<CR>", { desc = "Lua execute selection" })
+--- Keeps buffers with unsaved changes and terminals, whose shells would be killed.
+local function close_other_buffers()
+	local current = vim.api.nvim_get_current_buf()
+	local kept = {}
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if buf ~= current and vim.bo[buf].buflisted then
+			if vim.bo[buf].modified or vim.bo[buf].buftype == "terminal" then
+				table.insert(kept, vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t"))
+			else
+				vim.api.nvim_buf_delete(buf, {})
+			end
+		end
+	end
+	if #kept > 0 then
+		vim.notify("Kept (unsaved or terminal): " .. table.concat(kept, ", "), vim.log.levels.WARN)
+	end
+end
 
-vim.keymap.set(
-	"n",
-	"<leader>rw",
-	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-	{ desc = "Replace word under cursor in file" }
-)
-
-vim.keymap.set("x", "<leader>rw", function()
-	local selected =
-		table.concat(vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() }), "\n")
-	local command = ":%s/"
-		.. substitute.literal_pattern(selected)
-		.. "/"
-		.. substitute.literal_replacement(selected)
-		.. "/gI"
-	vim.api.nvim_feedkeys(vim.keycode("<Esc>") .. command .. vim.keycode("<Left><Left><Left>"), "ni", false)
-end, { desc = "Replace selected text in file" })
+vim.keymap.set("n", "<leader>ba", close_other_buffers, { desc = "Buffer close all but current buffer" })
 
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
 vim.keymap.set("n", "<leader>ws", "<C-w>s", { desc = "Window split horizontally" })
@@ -84,14 +93,23 @@ vim.keymap.set("n", "<C-Down>", "<Cmd>resize -2<CR>", { desc = "Window decrease 
 vim.keymap.set("n", "<C-Left>", "<Cmd>vertical resize -2<CR>", { desc = "Window decrease width" })
 vim.keymap.set("n", "<C-Right>", "<Cmd>vertical resize +2<CR>", { desc = "Window increase width" })
 
-vim.keymap.set("x", "<", "<gv", { desc = "Indent left and stay in visual" })
-vim.keymap.set("x", ">", ">gv", { desc = "Indent right and stay in visual" })
-vim.keymap.set("x", "p", "P", { desc = "Paste without overwriting register" })
+vim.keymap.set(
+	"n",
+	"<leader>rw",
+	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
+	{ desc = "Replace word under cursor in file" }
+)
 
-vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center" })
-vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
-vim.keymap.set("n", "n", "nzzzv", { desc = "Search next match and center" })
-vim.keymap.set("n", "N", "Nzzzv", { desc = "Search previous match and center" })
+vim.keymap.set("x", "<leader>rw", function()
+	local selected =
+		table.concat(vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() }), "\n")
+	local command = ":%s/"
+		.. substitute.literal_pattern(selected)
+		.. "/"
+		.. substitute.literal_replacement(selected)
+		.. "/gI"
+	vim.api.nvim_feedkeys(vim.keycode("<Esc>") .. command .. vim.keycode("<Left><Left><Left>"), "ni", false)
+end, { desc = "Replace selected text in file" })
 
 --- Renames on disk (keeping permissions), then points the buffer at the new path.
 local function rename_current_file()
@@ -135,28 +153,11 @@ vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "Rename current 
 vim.keymap.set("n", "<leader>qo", "<Cmd>copen<CR>", { desc = "Quickfix open list" })
 vim.keymap.set("n", "<leader>qc", "<Cmd>cclose<CR>", { desc = "Quickfix close list" })
 
-vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Buffer close current buffer" })
---- Keeps buffers with unsaved changes and terminals, whose shells would be killed.
-local function close_other_buffers()
-	local current = vim.api.nvim_get_current_buf()
-	local kept = {}
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if buf ~= current and vim.bo[buf].buflisted then
-			if vim.bo[buf].modified or vim.bo[buf].buftype == "terminal" then
-				table.insert(kept, vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t"))
-			else
-				vim.api.nvim_buf_delete(buf, {})
-			end
-		end
-	end
-	if #kept > 0 then
-		vim.notify("Kept (unsaved or terminal): " .. table.concat(kept, ", "), vim.log.levels.WARN)
-	end
-end
+vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
 
-vim.keymap.set("n", "<leader>ba", close_other_buffers, { desc = "Buffer close all but current buffer" })
-
-vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
+vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
+vim.keymap.set("n", "<leader>Ll", "<Cmd>.lua<CR>", { desc = "Lua execute current line" })
+vim.keymap.set("x", "<leader>L", ":lua<CR>", { desc = "Lua execute selection" })
 
 vim.api.nvim_create_user_command("Update", function()
 	vim.pack.update()
