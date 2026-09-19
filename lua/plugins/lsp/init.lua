@@ -24,21 +24,21 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		local builtin = require("telescope.builtin")
 
-		map("gd", builtin.lsp_definitions, "Go to definition of symbol")
-		map("gD", vim.lsp.buf.declaration, "Go to declaration (header file)")
-		map("gi", builtin.lsp_implementations, "Go to implementation of interface")
-		map("gt", builtin.lsp_type_definitions, "Go to type definition of variable")
-		map("gr", builtin.lsp_references, "Find all references to symbol")
-		map("K", vim.lsp.buf.hover, "Show hover documentation for symbol")
-		map("gK", vim.lsp.buf.signature_help, "Show function signature and parameters")
+		map("gd", builtin.lsp_definitions, "LSP go to definition")
+		map("gD", vim.lsp.buf.declaration, "LSP go to declaration (header file)")
+		map("gi", builtin.lsp_implementations, "LSP go to implementation")
+		map("gt", builtin.lsp_type_definitions, "LSP go to type definition")
+		map("gr", builtin.lsp_references, "LSP find references to symbol")
+		map("K", vim.lsp.buf.hover, "LSP show hover documentation")
+		map("gK", vim.lsp.buf.signature_help, "LSP show function signature and parameters")
 		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
 		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
-		map("<leader>rn", vim.lsp.buf.rename, "Rename symbol across all files")
-		map("<leader>ca", vim.lsp.buf.code_action, "Code action quick fix refactor")
+		map("<leader>rn", vim.lsp.buf.rename, "LSP rename symbol across all files")
+		map("<leader>ca", vim.lsp.buf.code_action, "LSP code action (quick fix, refactor)")
 
 		map("<leader>ih", function()
 			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
-		end, "Toggle inlay hints (inline type annotations)")
+		end, "LSP toggle inlay hints (inline type annotations)")
 	end,
 })
 

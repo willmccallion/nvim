@@ -11,4 +11,4 @@ require("treesitter-context").setup({
 
 vim.keymap.set("n", "[x", function()
 	require("treesitter-context").go_to_context(vim.v.count1)
-end, { desc = "Jump to enclosing scope shown in sticky context header" })
+end, { desc = "Context jump to enclosing scope (sticky header)" })

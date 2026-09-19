@@ -21,4 +21,4 @@ vim.diagnostic.config({
 
 vim.keymap.set("n", "<leader>l", function()
 	vim.diagnostic.config({ virtual_lines = not vim.diagnostic.config().virtual_lines })
-end, { desc = "Toggle multiline diagnostic errors inline under code" })
+end, { desc = "Diagnostics toggle multiline messages under code" })

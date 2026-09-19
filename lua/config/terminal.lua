@@ -44,7 +44,7 @@ local function terminal_toggle(split_cmd, program)
 	end
 end
 
-vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode back to normal" })
+vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Terminal exit to normal mode" })
 
 vim.keymap.set("n", "<leader>tt", terminal_toggle("botright 15split"), { desc = "Terminal toggle bottom split" })
 vim.keymap.set("n", "<leader>tv", terminal_toggle("botright vsplit"), { desc = "Terminal toggle right split" })
