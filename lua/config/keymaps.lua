@@ -23,14 +23,14 @@ vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from 
 vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from system clipboard before cursor" })
 
 vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate (last used) buffer" })
-vim.keymap.set("n", "<leader>bn", ":bnext<cr>", { desc = "Buffer go to next buffer" })
-vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Buffer go to previous buffer" })
+vim.keymap.set("n", "<leader>bn", "<Cmd>bnext<CR>", { desc = "Buffer go to next buffer" })
+vim.keymap.set("n", "<leader>bp", "<Cmd>bprevious<CR>", { desc = "Buffer go to previous buffer" })
 
 vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
 
 vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source current file (reload config)" })
-vim.keymap.set("n", "<leader>Ll", "<Cmd>:.lua<CR>", { desc = "Lua execute current line" })
-vim.keymap.set("x", "<leader>L", "<Cmd>:lua<CR>", { desc = "Lua execute selection" })
+vim.keymap.set("n", "<leader>Ll", "<Cmd>.lua<CR>", { desc = "Lua execute current line" })
+vim.keymap.set("x", "<leader>L", ":lua<CR>", { desc = "Lua execute selection" })
 
 vim.keymap.set(
 	"n",
@@ -53,7 +53,7 @@ end, { desc = "Replace selected text in file" })
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
 vim.keymap.set("n", "<leader>ws", "<C-w>s", { desc = "Window split horizontally" })
 vim.keymap.set("n", "<leader>we", "<C-w>=", { desc = "Window make splits equal size" })
-vim.keymap.set("n", "<leader>wx", "<cmd>close<CR>", { desc = "Window close current split" })
+vim.keymap.set("n", "<leader>wx", "<Cmd>close<CR>", { desc = "Window close current split" })
 
 vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Window move to left pane" })
 vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Window move to below pane" })
@@ -76,10 +76,10 @@ vim.keymap.set("n", "<leader>wm", function()
 	end
 end, { desc = "Window toggle maximize zoom current pane" })
 
-vim.keymap.set("n", "<C-Up>", ":resize +2<CR>", { desc = "Window increase height" })
-vim.keymap.set("n", "<C-Down>", ":resize -2<CR>", { desc = "Window decrease height" })
-vim.keymap.set("n", "<C-Left>", ":vertical resize -2<CR>", { desc = "Window decrease width" })
-vim.keymap.set("n", "<C-Right>", ":vertical resize +2<CR>", { desc = "Window increase width" })
+vim.keymap.set("n", "<C-Up>", "<Cmd>resize +2<CR>", { desc = "Window increase height" })
+vim.keymap.set("n", "<C-Down>", "<Cmd>resize -2<CR>", { desc = "Window decrease height" })
+vim.keymap.set("n", "<C-Left>", "<Cmd>vertical resize -2<CR>", { desc = "Window decrease width" })
+vim.keymap.set("n", "<C-Right>", "<Cmd>vertical resize +2<CR>", { desc = "Window increase width" })
 
 vim.keymap.set("x", "<", "<gv", { desc = "Indent left and stay in visual" })
 vim.keymap.set("x", ">", ">gv", { desc = "Indent right and stay in visual" })
@@ -129,10 +129,10 @@ end
 
 vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "Rename current file on disk" })
 
-vim.keymap.set("n", "<leader>qo", "<cmd>copen<cr>", { desc = "Quickfix open list" })
-vim.keymap.set("n", "<leader>qc", "<cmd>cclose<cr>", { desc = "Quickfix close list" })
+vim.keymap.set("n", "<leader>qo", "<Cmd>copen<CR>", { desc = "Quickfix open list" })
+vim.keymap.set("n", "<leader>qc", "<Cmd>cclose<CR>", { desc = "Quickfix close list" })
 
-vim.keymap.set("n", "<leader>bd", "<cmd>bd<CR>", { desc = "Buffer close current buffer" })
+vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Buffer close current buffer" })
 --- Keeps buffers with unsaved changes and terminals, whose shells would be killed.
 local function close_other_buffers()
 	local current = vim.api.nvim_get_current_buf()

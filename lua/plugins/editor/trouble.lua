@@ -8,24 +8,24 @@ require("trouble").setup()
 vim.keymap.set(
 	"n",
 	"<leader>xx",
-	"<cmd>Trouble diagnostics toggle win.position=right win.size=0.4 win.wo.wrap=true win.wo.linebreak=true win.wo.breakindent=true<cr>",
+	"<Cmd>Trouble diagnostics toggle win.position=right win.size=0.4 win.wo.wrap=true win.wo.linebreak=true win.wo.breakindent=true<CR>",
 	{ desc = "Problems toggle project errors and warnings list" }
 )
 vim.keymap.set(
 	"n",
 	"<leader>xb",
-	"<cmd>Trouble diagnostics toggle filter.buf=0<cr>",
+	"<Cmd>Trouble diagnostics toggle filter.buf=0<CR>",
 	{ desc = "Problems toggle current buffer list" }
 )
 vim.keymap.set(
 	"n",
 	"<leader>co",
-	"<cmd>Trouble symbols toggle focus=false<cr>",
+	"<Cmd>Trouble symbols toggle focus=false<CR>",
 	{ desc = "Code toggle symbol outline sidebar (functions classes)" }
 )
 vim.keymap.set(
 	"n",
 	"<leader>xq",
-	"<cmd>Trouble qflist toggle<cr>",
+	"<Cmd>Trouble qflist toggle<CR>",
 	{ desc = "Problems toggle quickfix list in Trouble view" }
 )
