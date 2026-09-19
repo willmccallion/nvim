@@ -25,10 +25,8 @@ vim.keymap.set("n", "<leader>bp", ":bprevious<cr>", { desc = "Previous buffer" }
 
 vim.keymap.set("n", "<leader>nh", ":set hlsearch!<cr>", { desc = "Toggle search highlighting" })
 
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic quickfix list" })
-
-vim.keymap.set("n", "<leader>xx", "<Cmd>source %<CR>", { desc = "Source current file (reload config)" })
-vim.keymap.set("n", "<leader>x", "<Cmd>:.lua<CR>", { desc = "Execute current line as Lua" })
+vim.keymap.set("n", "<leader>xs", "<Cmd>source %<CR>", { desc = "Source current file (reload config)" })
+vim.keymap.set("n", "<leader>xl", "<Cmd>:.lua<CR>", { desc = "Execute current line as Lua" })
 vim.keymap.set("v", "<leader>x", "<Cmd>:lua<CR>", { desc = "Execute selection as Lua" })
 
 vim.keymap.set(
@@ -135,8 +133,6 @@ vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left" })
 vim.api.nvim_create_user_command("Update", function()
 	vim.pack.update()
 end, { desc = "Update Neovim packages" })
-
-vim.keymap.set("n", "<leader>pu", "<cmd>Update<cr>", { desc = "Update all plugins" })
 
 local _repl_buf = nil
 vim.keymap.set({ "n", "t" }, "<leader>ri", function()
