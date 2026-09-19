@@ -18,6 +18,20 @@ local output_buf = nil
 
 local ROOT_LINE_PREFIX = "build-root: "
 
+--- Shown by fidget in the corner, so long commands never trigger a "Press ENTER" prompt.
+--- Status messages share one key, so each replaces the previous one.
+---@param msg string
+---@param level? integer vim.log.levels value
+---@param opts? {status?: boolean, persist?: boolean}
+local function notify(msg, level, opts)
+	opts = opts or {}
+	require("fidget").notify(msg, level, {
+		annote = "Build",
+		key = opts.status and "build-status" or nil,
+		ttl = opts.persist and math.huge or 0,
+	})
+end
+
 ---@return string
 local function current_dir()
 	local name = vim.api.nvim_buf_get_name(0)
@@ -150,13 +164,21 @@ end
 local function load_quickfix(root, output, command)
 	local lines = { ROOT_LINE_PREFIX .. root }
 	vim.list_extend(lines, output)
+	local title = "Build: " .. command.cmd
 	vim.fn.setqflist({}, " ", {
-		title = "Build: " .. command.cmd,
+		title = title,
 		lines = lines,
 		efm = "%D" .. ROOT_LINE_PREFIX .. "%f," .. errorformat_for(command.compiler),
 	})
+
+	local root_line = ROOT_LINE_PREFIX .. root
+	local items = vim.tbl_filter(function(item)
+		return item.text ~= root_line
+	end, vim.fn.getqflist())
+	vim.fn.setqflist({}, "r", { title = title, items = items })
+
 	local valid = 0
-	for _, item in ipairs(vim.fn.getqflist()) do
+	for _, item in ipairs(items) do
 		if item.valid == 1 then
 			valid = valid + 1
 		end
@@ -171,15 +193,16 @@ end
 local function report(command, result, issues, seconds)
 	local elapsed = ("%.1fs"):format(seconds)
 	if result.signal ~= 0 then
-		vim.notify(("Build stopped: %s"):format(command.cmd), vim.log.levels.WARN)
+		notify(("Stopped: %s"):format(command.cmd), vim.log.levels.WARN, { status = true })
 	elseif result.code == 0 then
 		local suffix = issues > 0 and (", %d quickfix entries"):format(issues) or ""
-		vim.notify(("Build passed: %s (%s%s)"):format(command.cmd, elapsed, suffix), vim.log.levels.INFO)
+		notify(("Passed: %s (%s%s)"):format(command.cmd, elapsed, suffix), vim.log.levels.INFO, { status = true })
 	else
 		local hint = issues > 0 and "" or "; <leader>mo shows the output"
-		vim.notify(
-			("Build failed: %s (exit %d, %s%s)"):format(command.cmd, result.code, elapsed, hint),
-			vim.log.levels.ERROR
+		notify(
+			("Failed: %s (exit %d, %s%s)"):format(command.cmd, result.code, elapsed, hint),
+			vim.log.levels.ERROR,
+			{ status = true }
 		)
 		vim.cmd("botright cwindow")
 	end
@@ -189,7 +212,7 @@ end
 ---@param command build.Command
 local function run(project, command)
 	if active_run then
-		vim.notify(("Already running: %s (<leader>mk stops it)"):format(active_run.cmd), vim.log.levels.WARN)
+		notify(("Already running: %s (<leader>mk stops it)"):format(active_run.cmd), vim.log.levels.WARN)
 		return
 	end
 
@@ -201,7 +224,11 @@ local function run(project, command)
 	end
 	local started = vim.uv.hrtime()
 
-	vim.notify(("Building in %s: %s"):format(vim.fn.fnamemodify(project.root, ":~"), command.cmd))
+	notify(
+		("Building in %s: %s"):format(vim.fn.fnamemodify(project.root, ":~"), command.cmd),
+		vim.log.levels.INFO,
+		{ status = true, persist = true }
+	)
 	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, command.cmd }, {
 		cwd = project.root,
 		text = true,
@@ -310,7 +337,7 @@ end
 
 local function toggle_output()
 	if not (output_buf and vim.api.nvim_buf_is_valid(output_buf)) then
-		vim.notify("No build output yet", vim.log.levels.INFO)
+		notify("No build output yet", vim.log.levels.INFO)
 		return
 	end
 	local win = vim.fn.win_findbuf(output_buf)[1]
@@ -331,7 +358,7 @@ end
 
 local function stop()
 	if not active_run then
-		vim.notify("No build is running", vim.log.levels.INFO)
+		notify("No build is running", vim.log.levels.INFO)
 		return
 	end
 	kill_process_group(active_run)
