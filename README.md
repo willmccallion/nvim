@@ -39,7 +39,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 **Build**: `<leader>mb` builds the project in the background and loads compiler errors into quickfix. The build system is detected from the current file upward (stopping at the git root):
 - `Cargo.toml` runs `cargo build` from the outermost `Cargo.toml` (the workspace root).
-- `CMakeLists.txt` configures and builds into `build/` from the outermost `CMakeLists.txt`, exporting `compile_commands.json` for clangd.
+- `CMakeLists.txt` configures a Debug build (so the debugger works) into `build/` from the outermost `CMakeLists.txt`, exporting `compile_commands.json` for clangd.
 - `Makefile` runs `make` from the nearest `Makefile`.
 - When several appear in one directory, Cargo beats CMake beats Make.
 

@@ -42,7 +42,10 @@ local COMMANDS = {
 		{ cmd = "cargo clippy", compiler = "cargo" },
 	},
 	cmake = {
-		{ cmd = "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build", compiler = "gcc" },
+		{
+			cmd = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build",
+			compiler = "gcc",
+		},
 		{ cmd = "cmake --build build", compiler = "gcc" },
 		{ cmd = "ctest --test-dir build --output-on-failure", compiler = "gcc" },
 		{ cmd = "cmake --build build --target clean", compiler = "gcc" },
