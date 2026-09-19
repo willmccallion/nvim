@@ -1,30 +1,24 @@
 --- @module plugins.ui.diagnostic
---- @brief Diagnostic display and lsp_lines.nvim.
---- Configures diagnostic signs, disables virtual text by default, and adds
---- lsp_lines for togglable multiline diagnostic display (<leader>l).
-
-vim.pack.add({ "https://git.sr.ht/~whynothugo/lsp_lines.nvim" })
-
-require("lsp_lines").setup()
+--- @brief Diagnostic display.
+--- Configures diagnostic signs, disables virtual text by default, and toggles
+--- Neovim's native multiline diagnostics (virtual_lines) with <leader>l.
 
 vim.diagnostic.config({
 	virtual_lines = false,
 	virtual_text = false,
-	signs = true,
+	signs = {
+		text = {
+			[vim.diagnostic.severity.ERROR] = "x",
+			[vim.diagnostic.severity.WARN] = "!",
+			[vim.diagnostic.severity.INFO] = "i",
+			[vim.diagnostic.severity.HINT] = "h",
+		},
+	},
 	underline = true,
 	update_in_insert = false,
 	severity_sort = true,
 })
 
-local signs = { Error = "x", Warn = "!", Hint = "h", Info = "i" }
-for type, icon in pairs(signs) do
-	local hl = "DiagnosticSign" .. type
-	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-end
-
-vim.keymap.set(
-	{ "n", "x", "o" },
-	"<leader>l",
-	require("lsp_lines").toggle,
-	{ desc = "Toggle multiline diagnostic errors inline under code" }
-)
+vim.keymap.set("n", "<leader>l", function()
+	vim.diagnostic.config({ virtual_lines = not vim.diagnostic.config().virtual_lines })
+end, { desc = "Toggle multiline diagnostic errors inline under code" })

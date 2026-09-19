@@ -48,10 +48,6 @@
       "rev": "dd3f588bacbeb041be6facf1742e42097f62165d",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
-    "lsp_lines.nvim": {
-      "rev": "a92c755f182b89ea91bd8a6a2227208026f27b4d",
-      "src": "https://git.sr.ht/~whynothugo/lsp_lines.nvim"
-    },
     "neovim": {
       "rev": "6a961effd67f6130d36df6d1c05c48c739796dd2",
       "src": "https://github.com/rose-pine/neovim"
