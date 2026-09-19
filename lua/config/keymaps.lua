@@ -45,23 +45,23 @@ vim.keymap.set(
 	{ desc = "Find and replace selected text" }
 )
 
-vim.keymap.set("n", "<leader>sv", "<C-w>v", { desc = "Split window vertically" })
-vim.keymap.set("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally" })
-vim.keymap.set("n", "<leader>se", "<C-w>=", { desc = "Make splits equal size" })
-vim.keymap.set("n", "<leader>sx", "<cmd>close<CR>", { desc = "Close current split" })
+vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
+vim.keymap.set("n", "<leader>ws", "<C-w>s", { desc = "Window split horizontally" })
+vim.keymap.set("n", "<leader>we", "<C-w>=", { desc = "Window make splits equal size" })
+vim.keymap.set("n", "<leader>wx", "<cmd>close<CR>", { desc = "Window close current split" })
 
-vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Move to left window pane" })
-vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Move to below window pane" })
-vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Move to above window pane" })
-vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Move to right window pane" })
+vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Window move to left pane" })
+vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Window move to below pane" })
+vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Window move to above pane" })
+vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Window move to right pane" })
 
-vim.keymap.set("n", "<leader>sr", "<C-w>r", { desc = "Swap rotate window panes" })
-vim.keymap.set("n", "<leader>sH", "<C-w>H", { desc = "Swap move current pane to far left" })
-vim.keymap.set("n", "<leader>sL", "<C-w>L", { desc = "Swap move current pane to far right" })
-vim.keymap.set("n", "<leader>sJ", "<C-w>J", { desc = "Swap move current pane to bottom" })
-vim.keymap.set("n", "<leader>sK", "<C-w>K", { desc = "Swap move current pane to top" })
+vim.keymap.set("n", "<leader>wr", "<C-w>r", { desc = "Window rotate panes" })
+vim.keymap.set("n", "<leader>wH", "<C-w>H", { desc = "Window swap current pane to far left" })
+vim.keymap.set("n", "<leader>wL", "<C-w>L", { desc = "Window swap current pane to far right" })
+vim.keymap.set("n", "<leader>wJ", "<C-w>J", { desc = "Window swap current pane to bottom" })
+vim.keymap.set("n", "<leader>wK", "<C-w>K", { desc = "Window swap current pane to top" })
 
-vim.keymap.set("n", "<leader>sm", function()
+vim.keymap.set("n", "<leader>wm", function()
 	if vim.g._zoom_restore then
 		vim.cmd(vim.g._zoom_restore)
 		vim.g._zoom_restore = nil
@@ -69,7 +69,7 @@ vim.keymap.set("n", "<leader>sm", function()
 		vim.g._zoom_restore = vim.fn.winrestcmd()
 		vim.cmd("resize | vertical resize")
 	end
-end, { desc = "Toggle maximize zoom current pane" })
+end, { desc = "Window toggle maximize zoom current pane" })
 
 vim.keymap.set("n", "<C-Up>", ":resize +2<CR>", { desc = "Resize window height +" })
 vim.keymap.set("n", "<C-Down>", ":resize -2<CR>", { desc = "Resize window height -" })
