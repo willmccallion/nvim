@@ -1,7 +1,7 @@
 --- @module plugins.ui.colourscheme
 --- @brief Colorscheme setup.
---- Installs Nightfox, Tokyonight, and Rose Pine with transparent backgrounds.
---- Active scheme: Tokyonight (night).
+--- Installs Nightfox, Tokyonight, Rose Pine, and Vague with transparent backgrounds.
+--- Active scheme: Vague.
 
 vim.pack.add({
 	"https://github.com/EdenEast/nightfox.nvim",

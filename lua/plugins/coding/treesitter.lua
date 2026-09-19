@@ -58,7 +58,6 @@ tsto.setup({
 	},
 })
 
--- Text object selections (work with d, c, y, v)
 local sel_maps = {
 	{ "af", "@function.outer", "Select around function" },
 	{ "if", "@function.inner", "Select inside function body" },
@@ -78,7 +77,6 @@ for _, m in ipairs(sel_maps) do
 	end, { desc = m[3] })
 end
 
--- Move to next/previous function, argument, class
 local move_maps = {
 	{ "]f", "@function.outer", "goto_next_start", "Jump to next function" },
 	{ "]a", "@parameter.outer", "goto_next_start", "Jump to next argument" },

@@ -105,10 +105,8 @@ map("n", "<leader>sc", function()
 		:find()
 end, { desc = "Search grep only in git changed files" })
 
--- Git log with diff preview
 map("n", "<leader>sl", builtin.git_commits, { desc = "Search git log commits" })
 
--- Smart grep: supports "*.rs pattern" syntax for filetype filtering
 map("n", "<leader>sg", function()
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
@@ -134,11 +132,9 @@ map("n", "<leader>sg", function()
 		:find()
 end, { desc = "Search grep text (supports *.ext prefix to filter filetype)" })
 
--- Grep in current file's directory
 map("n", "<leader>s.", function()
 	local dir = vim.fn.expand("%:p:h")
 	builtin.live_grep({ search_dirs = { dir }, prompt_title = "Grep in " .. vim.fn.fnamemodify(dir, ":~:.") })
 end, { desc = "Search grep in current file directory" })
 
--- Marks
 map("n", "<leader>sM", builtin.marks, { desc = "Search marks and jump to them" })
