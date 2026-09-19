@@ -1,5 +1,5 @@
 --- Treesitter syntax highlighting and text objects.
---- Uses nvim-treesitter main branch targeting nvim 0.12+. Highlighting uses
+--- Uses the nvim-treesitter main branch. Highlighting uses
 --- vim.treesitter.start() per FileType. Incremental selection is built in:
 --- `an` grows and `in` shrinks the selection in visual mode.
 
