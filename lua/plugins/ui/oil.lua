@@ -1,8 +1,10 @@
 --- File explorer via oil.nvim.
 --- Edit the filesystem as a buffer. <leader>e opens parent dir, <leader>E floats.
 
-vim.pack.add({ "https://github.com/stevearc/oil.nvim" })
-vim.pack.add({ "https://github.com/nvim-tree/nvim-web-devicons" })
+vim.pack.add({
+	"https://github.com/stevearc/oil.nvim",
+	"https://github.com/nvim-tree/nvim-web-devicons",
+})
 
 require("oil").setup({
 	default_file_explorer = true,
