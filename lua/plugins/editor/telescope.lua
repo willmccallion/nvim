@@ -60,23 +60,31 @@ end, { desc = "Search fuzzy text in current buffer" })
 map("n", "<leader>so", builtin.oldfiles, { desc = "Search recently opened files" })
 map("n", "<leader>sq", builtin.search_history, { desc = "Search previous search queries" })
 
--- Grep only in git-changed files
+--- Modified and untracked files under the cwd, as cwd-relative paths.
+---@return string[]? files nil when git fails (not a repo, no commits yet, ...)
+local function git_changed_files()
+	local diff_cmd = { "git", "diff", "--name-only", "--relative", "--diff-filter=ACMR", "HEAD" }
+	local changed = vim.system(diff_cmd, { text = true }):wait()
+	local untracked = vim.system({ "git", "ls-files", "--others", "--exclude-standard" }, { text = true }):wait()
+	for _, result in ipairs({ changed, untracked }) do
+		if result.code ~= 0 then
+			vim.notify("git failed: " .. vim.trim(result.stderr), vim.log.levels.ERROR)
+			return nil
+		end
+	end
+	return vim.split(changed.stdout .. untracked.stdout, "\n", { trimempty = true })
+end
+
 map("n", "<leader>sc", function()
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
 	local make_entry = require("telescope.make_entry")
 
-	local changed = vim.fn.systemlist("git diff --name-only --diff-filter=ACMR HEAD")
-	local untracked = vim.fn.systemlist("git ls-files --others --exclude-standard")
-	local files = {}
-	for _, f in ipairs(changed) do
-		table.insert(files, f)
+	local files = git_changed_files()
+	if not files then
+		return
 	end
-	for _, f in ipairs(untracked) do
-		table.insert(files, f)
-	end
-
 	if #files == 0 then
 		vim.notify("No changed files", vim.log.levels.INFO)
 		return
