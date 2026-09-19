@@ -16,8 +16,7 @@ require("nvim-treesitter").setup({
 	install_dir = vim.fn.stdpath("data") .. "/site",
 })
 
--- Install parsers asynchronously on startup; no-op if already installed.
-require("nvim-treesitter").install({
+local parsers = {
 	"lua",
 	"vim",
 	"vimdoc",
@@ -29,28 +28,19 @@ require("nvim-treesitter").install({
 	"markdown_inline",
 	"bash",
 	"fish",
-})
+}
 
--- Highlighting is driven by Neovim's built-in vim.treesitter.start().
--- FileType names differ from parser names for a few languages:
---   vimdoc parser → "help" filetype
---   bash parser   → "sh" filetype
+-- Install parsers asynchronously on startup; no-op if already installed.
+require("nvim-treesitter").install(parsers)
+
 vim.api.nvim_create_autocmd("FileType", {
+	desc = "Start treesitter highlighting for filetypes with an installed parser",
 	group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
-	pattern = {
-		"lua",
-		"vim",
-		"help",
-		"c",
-		"zig",
-		"rust",
-		"python",
-		"markdown",
-		"sh",
-		"fish",
-	},
-	callback = function()
-		vim.treesitter.start()
+	callback = function(ev)
+		local lang = vim.treesitter.language.get_lang(ev.match)
+		if lang and vim.list_contains(parsers, lang) then
+			vim.treesitter.start(ev.buf, lang)
+		end
 	end,
 })
 
