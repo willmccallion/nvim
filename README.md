@@ -87,7 +87,6 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | `m` | Build (think "make") |
 | `d` | Debug |
 | `v` | Multi-cursor |
-| `q` | Quickfix window |
 | `L` | Lua: run code in Neovim |
 
 **Shift means bigger or stronger.** Lowercase acts on the current thing, uppercase on more of it or a
@@ -97,7 +96,7 @@ moving to a window vs moving the window.
 **Brackets are motions.** `]` goes forward and `[` back, followed by the object's letter:
 function, argument, class, hunk, quickfix entry, diagnostic, context.
 
-**Frequent actions get single keys** after leader (file explorer, undo tree, clipboard), and the
+**Frequent actions get single keys** after leader (file explorer, undo tree, clipboard, quickfix), and the
 LSP go-to motions stay on `g` like Vim's own.
 
 Every mapping's description starts with its domain word, so `<leader>sk` then typing a domain

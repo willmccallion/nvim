@@ -150,8 +150,15 @@ end
 
 vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "Rename current file on disk" })
 
-vim.keymap.set("n", "<leader>qo", "<Cmd>copen<CR>", { desc = "Quickfix open list" })
-vim.keymap.set("n", "<leader>qc", "<Cmd>cclose<CR>", { desc = "Quickfix close list" })
+local function toggle_quickfix()
+	if vim.fn.getqflist({ winid = 0 }).winid ~= 0 then
+		vim.cmd.cclose()
+	else
+		vim.cmd.copen()
+	end
+end
+
+vim.keymap.set("n", "<leader>q", toggle_quickfix, { desc = "Quickfix toggle list" })
 
 vim.keymap.set("n", "<leader>oh", "<Cmd>set hlsearch!<CR>", { desc = "Option toggle search match highlighting" })
 
