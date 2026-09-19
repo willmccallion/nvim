@@ -111,7 +111,14 @@ vim.keymap.set("x", "<leader>rw", function()
 	vim.api.nvim_feedkeys(vim.keycode("<Esc>") .. command .. vim.keycode("<Left><Left><Left>"), "ni", false)
 end, { desc = "Replace selected text in file" })
 
+---@param err string|lsp.ResponseError
+---@return string
+local function lsp_error_message(err)
+	return type(err) == "table" and err.message or tostring(err)
+end
+
 --- Renames on disk (keeping permissions), then points the buffer at the new path.
+--- Language servers first update references (e.g. `mod` lines), left unsaved like oil's.
 local function rename_current_file()
 	local old_path = vim.api.nvim_buf_get_name(0)
 	if vim.bo.buftype ~= "" or old_path == "" or not vim.uv.fs_stat(old_path) then
@@ -132,6 +139,13 @@ local function rename_current_file()
 		return
 	end
 
+	local lsp_files = require("oil.lsp.workspace")
+	local moves = { [old_path] = new_path }
+	local _, lsp_err = lsp_files.will_rename_files(moves)
+	if lsp_err then
+		vim.notify("Language servers did not update references: " .. lsp_error_message(lsp_err), vim.log.levels.WARN)
+	end
+
 	vim.fn.mkdir(vim.fs.dirname(new_path), "p")
 	local ok, err = vim.uv.fs_rename(old_path, new_path)
 	if not ok then
@@ -140,6 +154,7 @@ local function rename_current_file()
 	end
 	vim.api.nvim_buf_set_name(0, new_path)
 	vim.cmd("silent write!")
+	lsp_files.did_rename_files(moves)
 
 	local stale_buf = vim.fn.bufnr(old_path)
 	if stale_buf ~= -1 then
