@@ -1,7 +1,7 @@
 --- Fuzzy finder via Telescope with fzf-native and ui-select extensions.
 --- Find files, smart grep (supports *.ext prefix for filetype filtering),
---- git log, changed-file grep, directory-scoped grep, marks, and more
---- under the <leader>s prefix.
+--- directory-scoped grep, marks, and more under <leader>s; git log and
+--- changed-file grep under <leader>g.
 
 vim.pack.add({
 	"https://github.com/nvim-lua/plenary.nvim",
@@ -74,7 +74,7 @@ local function git_changed_files()
 	return vim.split(changed.stdout .. untracked.stdout, "\n", { trimempty = true })
 end
 
-map("n", "<leader>sc", function()
+map("n", "<leader>gc", function()
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
@@ -102,9 +102,9 @@ map("n", "<leader>sc", function()
 			sorter = require("telescope.sorters").highlighter_only({}),
 		})
 		:find()
-end, { desc = "Search grep only in git changed files" })
+end, { desc = "Git grep only in changed files" })
 
-map("n", "<leader>sl", builtin.git_commits, { desc = "Search git log commits" })
+map("n", "<leader>gl", builtin.git_commits, { desc = "Git log commits with diff preview" })
 
 map("n", "<leader>sg", function()
 	local pickers = require("telescope.pickers")
