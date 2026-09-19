@@ -1,7 +1,7 @@
 --- @module plugins.editor.undotree
---- @brief Visual undo history tree.
---- <leader>u to toggle the undo tree sidebar.
+--- @brief Visual undo history tree via Neovim's bundled nvim.undotree package.
+--- <leader>u toggles the tree; moving the cursor in it steps through history.
 
-vim.pack.add({ "https://github.com/mbbill/undotree" })
+vim.cmd.packadd("nvim.undotree")
 
-vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle, { desc = "Toggle undo history tree" })
+vim.keymap.set("n", "<leader>u", vim.cmd.Undotree, { desc = "Toggle undo history tree" })
