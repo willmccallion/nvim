@@ -1,8 +1,8 @@
 --- @module plugins.coding.treesitter
---- @brief Treesitter syntax highlighting, text objects, and incremental selection.
+--- @brief Treesitter syntax highlighting and text objects.
 --- Uses nvim-treesitter main branch targeting nvim 0.12+. Highlighting uses
---- vim.treesitter.start() per FileType. Incremental selection is implemented
---- directly via the built-in treesitter API. Textobjects remain unchanged.
+--- vim.treesitter.start() per FileType. Incremental selection is built in:
+--- `an` grows and `in` shrinks the selection in visual mode.
 
 vim.pack.add({
 	{
@@ -53,48 +53,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.treesitter.start()
 	end,
 })
-
--- Incremental selection using Neovim's built-in treesitter API.
--- Replaces the removed nvim-treesitter incremental_selection module.
--- Stack tracks history so <leader>V can shrink back to a previous node.
-local _ts_sel_stack = {}
-
-local function ts_select_node(node)
-	local sr, sc, er, ec = node:range()
-	vim.api.nvim_buf_set_mark(0, "<", sr + 1, sc, {})
-	vim.api.nvim_buf_set_mark(0, ">", er + 1, math.max(ec - 1, 0), {})
-	vim.cmd("normal! gv")
-end
-
-vim.keymap.set("n", "<leader>v", function()
-	local node = vim.treesitter.get_node()
-	if not node then
-		return
-	end
-	_ts_sel_stack = { node }
-	ts_select_node(node)
-end, { desc = "Start treesitter selection at cursor node" })
-
-vim.keymap.set("x", "<leader>v", function()
-	local current = _ts_sel_stack[#_ts_sel_stack]
-	if not current then
-		return
-	end
-	local parent = current:parent()
-	if not parent then
-		return
-	end
-	table.insert(_ts_sel_stack, parent)
-	ts_select_node(parent)
-end, { desc = "Expand treesitter selection to parent node" })
-
-vim.keymap.set("x", "<leader>V", function()
-	if #_ts_sel_stack <= 1 then
-		return
-	end
-	table.remove(_ts_sel_stack)
-	ts_select_node(_ts_sel_stack[#_ts_sel_stack])
-end, { desc = "Shrink treesitter selection to previous node" })
 
 local tsto = require("nvim-treesitter-textobjects")
 local move = require("nvim-treesitter-textobjects.move")
