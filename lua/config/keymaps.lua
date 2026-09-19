@@ -135,9 +135,6 @@ vim.keymap.set("n", "<leader>ba", "<cmd>%bd|e#|bd#<CR>", { desc = "Buffer close 
 
 vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)" })
 
-vim.keymap.set("v", "<Tab>", ">gv", { desc = "Indent right and stay in visual" })
-vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left and stay in visual" })
-
 vim.api.nvim_create_user_command("Update", function()
 	vim.pack.update()
 end, { desc = "Update Neovim packages" })
