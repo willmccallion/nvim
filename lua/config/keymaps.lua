@@ -1,7 +1,7 @@
 --- @module config.keymaps
 --- @brief Global keybindings (non-plugin).
 --- Navigation, buffer/window management, clipboard, quickfix, search/replace,
---- terminal toggle, file rename, and Lua execution shortcuts.
+--- file rename, and Lua execution shortcuts.
 
 vim.keymap.set({ "n", "x" }, "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "k", "gk", { desc = "Navigate up (visual line)" })
@@ -83,27 +83,6 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
 vim.keymap.set("n", "n", "nzzzv", { desc = "Next search result and center" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Prev search result and center" })
 
-vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode back to normal" })
-
-local _term_buf = nil
-vim.keymap.set({ "n", "t" }, "<leader>;", function()
-	if _term_buf and vim.api.nvim_buf_is_valid(_term_buf) then
-		local wins = vim.fn.win_findbuf(_term_buf)
-		if #wins > 0 then
-			vim.api.nvim_win_close(wins[1], true)
-			return
-		end
-	end
-	vim.cmd("botright vsplit")
-	if _term_buf and vim.api.nvim_buf_is_valid(_term_buf) then
-		vim.api.nvim_set_current_buf(_term_buf)
-	else
-		vim.cmd("terminal")
-		_term_buf = vim.api.nvim_get_current_buf()
-	end
-	vim.cmd("startinsert")
-end, { desc = "Toggle terminal split on right side" })
-
 vim.keymap.set("n", "<leader>rf", function()
 	local current_file = vim.fn.expand("%")
 	local new_name = vim.fn.input("Rename file: ", current_file)
@@ -133,51 +112,3 @@ vim.keymap.set("v", "<S-Tab>", "<gv", { desc = "Indent left" })
 vim.api.nvim_create_user_command("Update", function()
 	vim.pack.update()
 end, { desc = "Update Neovim packages" })
-
-local _repl_buf = nil
-vim.keymap.set({ "n", "t" }, "<leader>ri", function()
-	if _repl_buf and vim.api.nvim_buf_is_valid(_repl_buf) then
-		local wins = vim.fn.win_findbuf(_repl_buf)
-		if #wins > 0 then
-			vim.api.nvim_win_close(wins[1], true)
-			return
-		end
-	end
-	vim.cmd("botright split")
-	vim.cmd("resize 12")
-	if _repl_buf and vim.api.nvim_buf_is_valid(_repl_buf) then
-		vim.api.nvim_set_current_buf(_repl_buf)
-	else
-		vim.cmd("terminal python3")
-		_repl_buf = vim.api.nvim_get_current_buf()
-	end
-	vim.cmd("startinsert")
-end, { desc = "Toggle Python REPL split" })
-
-vim.keymap.set("n", "<leader>tr", ":vsplit | terminal<CR>", { desc = "Open terminal on right" })
-
-local term_buf = nil
-local term_win = nil
-
-function ToggleBottomTerminal()
-	if term_win and vim.api.nvim_win_is_valid(term_win) then
-		vim.api.nvim_win_close(term_win, true)
-		term_win = nil
-	else
-		vim.cmd("botright split")
-
-		vim.cmd("resize 15")
-
-		if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
-			vim.api.nvim_set_current_buf(term_buf)
-		else
-			vim.cmd("terminal")
-			term_buf = vim.api.nvim_get_current_buf()
-		end
-
-		term_win = vim.api.nvim_get_current_win()
-		vim.cmd("startinsert")
-	end
-end
-
-vim.keymap.set("n", "<leader>tt", ToggleBottomTerminal, { desc = "Toggle bottom terminal" })

@@ -8,6 +8,7 @@ require("config.globals")
 require("config.options")
 require("config.keymaps")
 require("config.autocmds")
+require("config.terminal")
 
 require("plugins.ui.colourscheme")
 require("plugins.ui.diagnostic")
