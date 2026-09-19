@@ -28,6 +28,7 @@ local parsers = {
 	"markdown_inline",
 	"bash",
 	"fish",
+	"nix",
 }
 
 -- Install parsers asynchronously on startup; no-op if already installed.

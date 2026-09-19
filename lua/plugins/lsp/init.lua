@@ -7,7 +7,7 @@ vim.lsp.config("*", {
 	capabilities = require("cmp_nvim_lsp").default_capabilities(),
 })
 
-vim.lsp.enable({ "clangd", "lua_ls", "rust_analyzer", "pyright" })
+vim.lsp.enable({ "clangd", "lua_ls", "rust_analyzer", "pyright", "nixd" })
 
 -- Built-in gr* maps would make the gr mapping wait for 'timeoutlen'.
 for _, lhs in ipairs({ "grr", "grn", "gri", "grt", "grx" }) do
