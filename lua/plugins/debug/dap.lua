@@ -1,6 +1,6 @@
 --- Debugging via nvim-dap with the lldb-dap adapter and nvim-dap-view UI.
---- Launches or attaches to C, C++ and Rust programs. F5 starts/continues,
---- F10/F11/F12 step over/into/out; everything else lives under <leader>D.
+--- Launches or attaches to C, C++ and Rust programs. All keys live under
+--- <leader>D; function keys are avoided because tmux binds F1-F9.
 --- The debug view opens and closes automatically with the session.
 
 vim.pack.add({
@@ -111,10 +111,10 @@ vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "Diagnostic
 vim.fn.sign_define("DapStopped", { text = "→", texthl = "DiagnosticOk", linehl = "Visual" })
 
 local map = vim.keymap.set
-map("n", "<F5>", dap.continue, { desc = "Debug start or continue" })
-map("n", "<F10>", dap.step_over, { desc = "Debug step over" })
-map("n", "<F11>", dap.step_into, { desc = "Debug step into" })
-map("n", "<F12>", dap.step_out, { desc = "Debug step out" })
+map("n", "<leader>Dd", dap.continue, { desc = "Debug start or continue" })
+map("n", "<leader>Dn", dap.step_over, { desc = "Debug step over (next line)" })
+map("n", "<leader>Di", dap.step_into, { desc = "Debug step into function" })
+map("n", "<leader>Do", dap.step_out, { desc = "Debug step out of function" })
 map("n", "<leader>Db", dap.toggle_breakpoint, { desc = "Debug toggle breakpoint" })
 map("n", "<leader>DB", function()
 	dap.set_breakpoint(vim.fn.input("Breakpoint condition: "))
