@@ -119,18 +119,10 @@ end
 
 --- Renames on disk (keeping permissions), then points the buffer at the new path.
 --- Language servers first update references (e.g. `mod` lines), left unsaved like oil's.
-local function rename_current_file()
-	local old_path = vim.api.nvim_buf_get_name(0)
-	if vim.bo.buftype ~= "" or old_path == "" or not vim.uv.fs_stat(old_path) then
-		vim.notify("Current buffer is not a file on disk", vim.log.levels.WARN)
-		return
-	end
-
-	local input = vim.fn.input({ prompt = "Rename file: ", default = old_path, completion = "file" })
-	if input == "" then
-		return
-	end
-	local new_path = vim.fn.fnamemodify(input, ":p")
+---@param old_path string
+---@param destination string as typed, so relative to the cwd
+local function rename_file(old_path, destination)
+	local new_path = vim.fn.fnamemodify(destination, ":p")
 	if new_path == old_path then
 		return
 	end
@@ -163,7 +155,23 @@ local function rename_current_file()
 	vim.notify("Renamed to " .. vim.fn.fnamemodify(new_path, ":~:."))
 end
 
-vim.keymap.set("n", "<leader>rf", rename_current_file, { desc = "Rename current file on disk" })
+local function prompt_rename_current_file()
+	local old_path = vim.api.nvim_buf_get_name(0)
+	if vim.bo.buftype ~= "" or old_path == "" or not vim.uv.fs_stat(old_path) then
+		vim.notify("Current buffer is not a file on disk", vim.log.levels.WARN)
+		return
+	end
+
+	local opts = { prompt = "Rename file: ", default = vim.fn.fnamemodify(old_path, ":~:."), completion = "file" }
+	vim.ui.input(opts, function(destination)
+		if not destination or destination == "" then
+			return
+		end
+		rename_file(old_path, destination)
+	end)
+end
+
+vim.keymap.set("n", "<leader>rf", prompt_rename_current_file, { desc = "Rename current file on disk" })
 
 local function toggle_quickfix()
 	if vim.fn.getqflist({ winid = 0 }).winid ~= 0 then
