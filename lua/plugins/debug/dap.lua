@@ -11,7 +11,11 @@ vim.pack.add({
 local dap = require("dap")
 local dap_view = require("dap-view")
 
-dap_view.setup({ auto_toggle = true })
+dap_view.setup({
+	auto_toggle = true,
+	-- Scope trees are wide and shallow, and the bottom is already the build output's.
+	windows = { size = 0.35, position = "right" },
+})
 
 dap.adapters.lldb = {
 	type = "executable",
