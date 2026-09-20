@@ -45,7 +45,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 You can pick another detected command or type your own; the choice is remembered per project in `stdpath("data")/build-commands.json`.
 
-**Debugging**: nvim-dap with `lldb-dap` for C, C++, and Rust, and nvim-dap-view as the UI, in a split on the right that opens and closes with the session. Starting a session prompts for the executable, defaulting to `target/debug/` or `build/`. While stopped, `<leader>dh` inspects the value under the cursor in a float you can expand into nested fields, and `<leader>dv` toggles every variable's value inline in the code. Rust sessions load rustc's LLDB formatters so `Vec`, `String`, etc. display readably.
+**Debugging**: nvim-dap with `lldb-dap` for C, C++, and Rust, and nvim-dap-view as the UI, in a split on the right that opens and closes with the session. Starting a session prompts for the executable, defaulting to `target/debug/` or `build/`. While stopped, `<leader>dh` inspects the value under the cursor in a float you can expand into nested fields, `<leader>dv` fuzzy-searches the frame's variables (struct fields included) and pins the one you pick to the Watches panel, and `<leader>dV` toggles every variable's value inline in the code. Rust sessions load rustc's LLDB formatters so `Vec`, `String`, etc. display readably.
 
 **Formatting**: Format-on-save via conform.nvim. Each language has its own formatter configured. Lua style is set by `.stylua.toml`.
 

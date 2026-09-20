@@ -1,0 +1,140 @@
+--- Fuzzy search over the variables visible in the stopped frame.
+--- Structured values are expanded one level, so a struct's fields are searchable
+--- by name too. Selecting one pins it to the debug view's Watches panel.
+--- Register banks are left out: they contribute hundreds of entries that bury
+--- the handful of locals you are actually looking for.
+
+local M = {}
+
+---@class (private) debug.Variable
+---@field scope string
+---@field expression string what to watch, e.g. "p.x"
+---@field type string
+---@field value string
+
+---@param scope dap.Scope
+---@return boolean
+local function is_searchable(scope)
+	return scope.presentationHint ~= "registers" and scope.variables ~= nil
+end
+
+---@param scope_name string
+---@param variable dap.Variable
+---@return debug.Variable
+local function to_entry(scope_name, variable)
+	return {
+		scope = scope_name,
+		expression = variable.evaluateName or variable.name,
+		type = variable.type or "",
+		-- A value spanning lines would break the one-line picker row.
+		value = (variable.value or ""):gsub("%s*\n%s*", " "),
+	}
+end
+
+--- Gathers the frame's variables, then each structured one's fields.
+---@param session dap.Session
+---@param on_done fun(variables: debug.Variable[])
+local function collect(session, on_done)
+	local variables = {}
+	-- Counts the loop itself, so an early reply cannot finish the gather short.
+	local pending = 1
+
+	local function settle()
+		pending = pending - 1
+		if pending > 0 then
+			return
+		end
+		table.sort(variables, function(a, b)
+			return a.expression < b.expression
+		end)
+		vim.schedule(function()
+			on_done(variables)
+		end)
+	end
+
+	for _, scope in ipairs(session.current_frame.scopes or {}) do
+		if is_searchable(scope) then
+			for _, variable in ipairs(scope.variables) do
+				table.insert(variables, to_entry(scope.name, variable))
+				if (variable.variablesReference or 0) > 0 then
+					pending = pending + 1
+					local params = { variablesReference = variable.variablesReference }
+					session:request("variables", params, function(_, response)
+						for _, child in ipairs(response and response.variables or {}) do
+							table.insert(variables, to_entry(scope.name, child))
+						end
+						settle()
+					end)
+				end
+			end
+		end
+	end
+
+	settle()
+end
+
+---@param variables debug.Variable[]
+local function open_picker(variables)
+	local pickers = require("telescope.pickers")
+	local finders = require("telescope.finders")
+	local actions = require("telescope.actions")
+	local action_state = require("telescope.actions.state")
+	local entry_display = require("telescope.pickers.entry_display")
+
+	local displayer = entry_display.create({
+		separator = " ",
+		items = { { width = 28 }, { width = 18 }, { remaining = true } },
+	})
+
+	pickers
+		.new({}, {
+			prompt_title = "Debug variables",
+			finder = finders.new_table({
+				results = variables,
+				entry_maker = function(variable)
+					return {
+						value = variable,
+						ordinal = variable.expression .. " " .. variable.type,
+						display = function(entry)
+							return displayer({
+								entry.value.expression,
+								{ entry.value.type, "Type" },
+								{ entry.value.value, "String" },
+							})
+						end,
+					}
+				end,
+			}),
+			sorter = require("telescope.config").values.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr)
+				actions.select_default:replace(function()
+					local selection = action_state.get_selected_entry()
+					actions.close(prompt_bufnr)
+					if selection then
+						require("dap-view").add_expr(selection.value.expression)
+					end
+				end)
+				return true
+			end,
+		})
+		:find()
+end
+
+--- Searches the stopped frame's variables, pinning the chosen one to Watches.
+function M.pick()
+	local session = require("dap").session()
+	if not session or not session.current_frame then
+		vim.notify("No debug session stopped at a frame", vim.log.levels.WARN)
+		return
+	end
+
+	collect(session, function(variables)
+		if vim.tbl_isempty(variables) then
+			vim.notify("No variables in the current frame", vim.log.levels.WARN)
+			return
+		end
+		open_picker(variables)
+	end)
+end
+
+return M
