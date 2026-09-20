@@ -37,23 +37,40 @@ local function default_program_dir()
 	return vim.fn.getcwd() .. "/"
 end
 
----@return string|dap.Abort
+--- Asks through vim.ui.input from inside dap's config resolution, which is
+--- synchronous. dap resumes a returned suspended coroutine with its own and then
+--- waits, so the answer is delivered by resuming that one from the callback.
+---@param opts {prompt: string, default?: string, completion?: string}
+---@param parse fun(answer: string?): any
+---@return thread
+local function prompt_in_coroutine(opts, parse)
+	return coroutine.create(function(dap_co)
+		vim.ui.input(opts, function(answer)
+			coroutine.resume(dap_co, parse(answer))
+		end)
+	end)
+end
+
+---@return thread
 local function prompt_program()
-	local program = vim.fn.input({
+	return prompt_in_coroutine({
 		prompt = "Executable: ",
 		default = last_program or default_program_dir(),
 		completion = "file",
-	})
-	if program == "" then
-		return dap.ABORT
-	end
-	last_program = vim.fn.fnamemodify(program, ":p")
-	return last_program
+	}, function(program)
+		if not program or program == "" then
+			return dap.ABORT
+		end
+		last_program = vim.fn.fnamemodify(program, ":p")
+		return last_program
+	end)
 end
 
----@return string[]
+---@return thread
 local function prompt_args()
-	return require("dap.utils").splitstr(vim.fn.input("Arguments: "))
+	return prompt_in_coroutine({ prompt = "Arguments: " }, function(args)
+		return require("dap.utils").splitstr(args or "")
+	end)
 end
 
 --- Loads rustc's LLDB formatters so Vec, String, Option, etc. display readably.
@@ -117,7 +134,11 @@ map("n", "<leader>di", dap.step_into, { desc = "Debug step into function" })
 map("n", "<leader>do", dap.step_out, { desc = "Debug step out of function" })
 map("n", "<leader>db", dap.toggle_breakpoint, { desc = "Debug toggle breakpoint" })
 map("n", "<leader>dB", function()
-	dap.set_breakpoint(vim.fn.input("Breakpoint condition: "))
+	vim.ui.input({ prompt = "Breakpoint condition: " }, function(condition)
+		if condition and condition ~= "" then
+			dap.set_breakpoint(condition)
+		end
+	end)
 end, { desc = "Debug set conditional breakpoint" })
 map("n", "<leader>dc", dap.run_to_cursor, { desc = "Debug run to cursor" })
 map("n", "<leader>dl", dap.run_last, { desc = "Debug rerun last configuration" })
