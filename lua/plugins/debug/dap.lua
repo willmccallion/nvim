@@ -17,11 +17,57 @@ dap_view.setup({
 	windows = { size = 0.35, position = "right" },
 })
 
-dap.adapters.lldb = {
-	type = "executable",
-	command = "lldb-dap",
-	name = "lldb",
-}
+--- The DAP adapter binary is lldb-dap, which was called lldb-vscode before LLVM 18.
+--- Neither `lldb` nor `lld` speaks DAP, so only these two names are worth trying.
+local LLDB_DAP_NAMES = { "lldb-dap", "lldb-vscode" }
+
+---@param paths string[]
+---@return string? the highest LLVM version among them
+local function newest_llvm(paths)
+	local newest, newest_version = nil, -1
+	for _, path in ipairs(paths) do
+		local version = tonumber(path:match("llvm%-(%d+)")) or 0
+		if version > newest_version then
+			newest, newest_version = path, version
+		end
+	end
+	return newest
+end
+
+--- Distributions often ship the adapter only inside the LLVM tree rather than on
+--- PATH. Set vim.g.lldb_dap_command to skip the search on a machine that hides it
+--- somewhere else.
+---@return string?
+local function find_lldb_dap()
+	if vim.g.lldb_dap_command then
+		return vim.g.lldb_dap_command
+	end
+	for _, name in ipairs(LLDB_DAP_NAMES) do
+		if vim.fn.executable(name) == 1 then
+			return name
+		end
+	end
+	local in_llvm_tree = {}
+	for _, name in ipairs(LLDB_DAP_NAMES) do
+		vim.list_extend(in_llvm_tree, vim.fn.glob("/usr/lib/llvm-*/bin/" .. name, false, true))
+	end
+	return newest_llvm(in_llvm_tree)
+end
+
+--- Resolved per session, so installing the adapter does not need a restart.
+dap.adapters.lldb = function(callback)
+	local command = find_lldb_dap()
+	if not command then
+		vim.notify(
+			("No DAP adapter found. Install LLVM's %s, or set vim.g.lldb_dap_command to its path."):format(
+				table.concat(LLDB_DAP_NAMES, " or ")
+			),
+			vim.log.levels.ERROR
+		)
+		return
+	end
+	callback({ type = "executable", command = command, name = "lldb" })
+end
 
 ---@type string?
 local last_program = nil

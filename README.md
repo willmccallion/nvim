@@ -9,7 +9,7 @@ Requires **Neovim 0.13+**, a **Nerd Font**, **ripgrep** (for grep/search), and a
 
 For LSP support, install the language servers you need: `clangd`, `rust-analyzer`, `lua-language-server`, `pyright`, `nixd`.
 Same for formatters: `clang-format`, `rustfmt`, `stylua`, `black`/`isort`, `nixfmt`.
-Debugging needs `lldb-dap` (ships with LLDB).
+Debugging needs `lldb-dap` (ships with LLDB, and is called `lldb-vscode` before LLVM 18). It is looked up on `PATH` and under `/usr/lib/llvm-*/bin`; set `vim.g.lldb_dap_command` to its path on a machine that keeps it elsewhere.
 The config picks them up automatically if they're on your PATH.
 
 ## How It's Organized
