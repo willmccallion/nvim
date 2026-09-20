@@ -18,13 +18,33 @@ local function is_searchable(scope)
 	return scope.presentationHint ~= "registers" and scope.variables ~= nil
 end
 
+--- lldb supplies evaluateName; gdb does not, so a child's expression has to be
+--- built from its parent's or a watch on it resolves against the wrong scope.
+---@param parent? string expression of the containing variable
+---@param variable dap.Variable
+---@return string
+local function expression_for(parent, variable)
+	if variable.evaluateName then
+		return variable.evaluateName
+	end
+	if not parent then
+		return variable.name
+	end
+	-- Subscripts already carry their brackets; named fields need the dot.
+	if variable.name:sub(1, 1) == "[" then
+		return parent .. variable.name
+	end
+	return parent .. "." .. variable.name
+end
+
 ---@param scope_name string
 ---@param variable dap.Variable
+---@param parent? string expression of the containing variable
 ---@return debug.Variable
-local function to_entry(scope_name, variable)
+local function to_entry(scope_name, variable, parent)
 	return {
 		scope = scope_name,
-		expression = variable.evaluateName or variable.name,
+		expression = expression_for(parent, variable),
 		type = variable.type or "",
 		-- A value spanning lines would break the one-line picker row.
 		value = (variable.value or ""):gsub("%s*\n%s*", " "),
@@ -55,13 +75,14 @@ local function collect(session, on_done)
 	for _, scope in ipairs(session.current_frame.scopes or {}) do
 		if is_searchable(scope) then
 			for _, variable in ipairs(scope.variables) do
-				table.insert(variables, to_entry(scope.name, variable))
+				local entry = to_entry(scope.name, variable)
+				table.insert(variables, entry)
 				if (variable.variablesReference or 0) > 0 then
 					pending = pending + 1
 					local params = { variablesReference = variable.variablesReference }
 					session:request("variables", params, function(_, response)
 						for _, child in ipairs(response and response.variables or {}) do
-							table.insert(variables, to_entry(scope.name, child))
+							table.insert(variables, to_entry(scope.name, child, entry.expression))
 						end
 						settle()
 					end)
