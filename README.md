@@ -63,7 +63,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.
 
-**Prompts**: `vim.ui.input` opens a small float at the cursor instead of asking on the command line, so the code you are working on stays in view. `<CR>` confirms, `<Esc>` cancels, and `<Tab>` completes when the prompt takes a path.
+**Prompts and messages**: `vim.ui.input` opens a small float at the cursor instead of asking on the command line, so the code you are working on stays in view. `<CR>` confirms, `<Esc>` cancels, and `<Tab>` completes when the prompt takes a path. Messages go to fidget in the bottom right rather than the command line, where a long one would stop for a "Press ENTER" prompt; `:Fidget history` brings back ones that have faded.
 
 **Theme**: Vague with transparent background.
 
