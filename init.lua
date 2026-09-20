@@ -5,6 +5,7 @@
 require("config.globals")
 
 require("config.options")
+require("config.input")
 require("config.keymaps")
 require("config.autocmds")
 require("config.terminal")

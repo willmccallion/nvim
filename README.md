@@ -18,7 +18,7 @@ The config picks them up automatically if they're on your PATH.
 init.lua             Loads config first, then plugins by category
 lsp/                 One file per language server (clangd, rust_analyzer, lua_ls, pyright, nixd)
 lua/
-  config/            Options, keymaps, globals, autocommands, terminal toggles
+  config/            Options, keymaps, globals, autocommands, terminal toggles, input prompt
   plugins/
     ui/              Colorscheme, file explorer (oil), diagnostics display, sticky context
     coding/          Completion, formatting, treesitter, autopairs, snippets
@@ -62,6 +62,8 @@ You can pick another detected command or type your own; the choice is remembered
 **Editing**: Built-in commenting, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor editing, autopairs, and Neovim's bundled undo tree.
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.
+
+**Prompts**: `vim.ui.input` opens a small float at the cursor instead of asking on the command line, so the code you are working on stays in view. `<CR>` confirms, `<Esc>` cancels, and `<Tab>` completes when the prompt takes a path.
 
 **Theme**: Vague with transparent background.
 
