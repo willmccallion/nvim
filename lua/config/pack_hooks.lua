@@ -3,7 +3,15 @@
 
 ---@param ev vim.api.keyset.create_autocmd.callback_args
 local function build_fzf_native(ev)
-	local result = vim.system({ "make" }, { cwd = ev.data.path, text = true }):wait()
+	-- vim.system raises rather than returning a code when the tool is absent, which a
+	-- machine without build tools would otherwise surface as a bare ENOENT traceback.
+	local ok, result = pcall(function()
+		return vim.system({ "make" }, { cwd = ev.data.path, text = true }):wait()
+	end)
+	if not ok then
+		vim.notify("Building telescope-fzf-native needs make: " .. tostring(result), vim.log.levels.ERROR)
+		return
+	end
 	if result.code ~= 0 then
 		vim.notify("Building telescope-fzf-native failed:\n" .. result.stderr, vim.log.levels.ERROR)
 	end
