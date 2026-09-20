@@ -151,6 +151,30 @@ vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "Diagnosti
 vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "DiagnosticHint" })
 vim.fn.sign_define("DapStopped", { text = "→", texthl = "DiagnosticOk", linehl = "Visual" })
 
+--- A program's own output and its exit status only reach the REPL view, which
+--- auto_toggle closes along with the session, so a crash or a bad invocation would
+--- otherwise look identical to a clean run.
+local EXIT_LISTENER = "report-failed-exit"
+
+---@type integer?
+local last_exit_code = nil
+
+dap.listeners.after.event_exited[EXIT_LISTENER] = function(_, body)
+	last_exit_code = body and body.exitCode
+end
+
+dap.listeners.after.event_terminated[EXIT_LISTENER] = function()
+	local code = last_exit_code
+	last_exit_code = nil
+	if not code or code == 0 then
+		return
+	end
+	vim.notify(("Debug: process exited with status %d"):format(code), vim.log.levels.WARN)
+	-- Runs after dap-view's own before-listener has closed the panel.
+	dap_view.open()
+	dap_view.show_view("repl")
+end
+
 local map = vim.keymap.set
 map("n", "<leader>dd", dap.continue, { desc = "Debug start or continue" })
 map("n", "<leader>dn", dap.step_over, { desc = "Debug step over (next line)" })
