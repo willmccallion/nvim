@@ -54,19 +54,65 @@ local function find_lldb_dap()
 	return newest_llvm(in_llvm_tree)
 end
 
+--- gdb has spoken DAP natively since version 14; older ones have no -i dap at all.
+local GDB_DAP_MIN_VERSION = 14
+
+---@return integer? major version, nil when gdb is absent or unreadable
+local function gdb_version()
+	if vim.fn.executable("gdb") ~= 1 then
+		return nil
+	end
+	local ok, result = pcall(function()
+		return vim.system({ "gdb", "--version" }, { text = true }):wait()
+	end)
+	if not ok or result.code ~= 0 then
+		return nil
+	end
+	return tonumber(result.stdout:match("GNU gdb[^%d]*(%d+)"))
+end
+
+--- Names what was actually searched, so a machine with only an old gdb says so
+--- rather than pointing at LLVM as if gdb had never been considered.
+---@return string
+local function no_adapter_message()
+	local parts = {
+		("No DAP adapter found. Install %s, or gdb %d+, or set vim.g.lldb_dap_command to its path."):format(
+			table.concat(LLDB_DAP_NAMES, " or "),
+			GDB_DAP_MIN_VERSION
+		),
+	}
+	local version = gdb_version()
+	if version then
+		table.insert(parts, ("Found gdb %d, which predates its DAP support."):format(version))
+	end
+	return table.concat(parts, " ")
+end
+
 --- Resolved per session, so installing the adapter does not need a restart.
 dap.adapters.lldb = function(callback)
 	local command = find_lldb_dap()
 	if not command then
-		vim.notify(
-			("No DAP adapter found. Install LLVM's %s, or set vim.g.lldb_dap_command to its path."):format(
-				table.concat(LLDB_DAP_NAMES, " or ")
-			),
-			vim.log.levels.ERROR
-		)
+		vim.notify(no_adapter_message(), vim.log.levels.ERROR)
 		return
 	end
 	callback({ type = "executable", command = command, name = "lldb" })
+end
+
+dap.adapters.gdb = {
+	type = "executable",
+	command = "gdb",
+	args = { "-i", "dap" },
+}
+
+--- Falls back to lldb when neither is usable, so starting a session reports the
+--- missing adapter rather than silently offering configurations that cannot run.
+---@return "lldb"|"gdb"
+local function available_adapter()
+	if find_lldb_dap() then
+		return "lldb"
+	end
+	local version = gdb_version()
+	return (version and version >= GDB_DAP_MIN_VERSION) and "gdb" or "lldb"
 end
 
 ---@type string?
@@ -154,42 +200,6 @@ local function init_commands(extra_commands)
 		end
 		return commands
 	end
-end
-
---- gdb has spoken DAP natively since version 14, and is the fallback on machines
---- with no LLDB at all. Its own pretty-printers cover what initCommands does for
---- lldb, so those are passed only to lldb.
-local GDB_DAP_MIN_VERSION = 14
-
-dap.adapters.gdb = {
-	type = "executable",
-	command = "gdb",
-	args = { "-i", "dap" },
-}
-
----@return boolean
-local function gdb_speaks_dap()
-	if vim.fn.executable("gdb") ~= 1 then
-		return false
-	end
-	local ok, result = pcall(function()
-		return vim.system({ "gdb", "--version" }, { text = true }):wait()
-	end)
-	if not ok or result.code ~= 0 then
-		return false
-	end
-	local major = tonumber(result.stdout:match("GNU gdb[^%d]*(%d+)"))
-	return major ~= nil and major >= GDB_DAP_MIN_VERSION
-end
-
---- Falls back to lldb when neither is present, so starting a session reports the
---- missing adapter rather than silently offering configurations that cannot run.
----@return "lldb"|"gdb"
-local function available_adapter()
-	if find_lldb_dap() then
-		return "lldb"
-	end
-	return gdb_speaks_dap() and "gdb" or "lldb"
 end
 
 ---@param adapter "lldb"|"gdb"
