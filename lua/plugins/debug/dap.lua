@@ -156,14 +156,51 @@ local function init_commands(extra_commands)
 	end
 end
 
+--- gdb has spoken DAP natively since version 14, and is the fallback on machines
+--- with no LLDB at all. Its own pretty-printers cover what initCommands does for
+--- lldb, so those are passed only to lldb.
+local GDB_DAP_MIN_VERSION = 14
+
+dap.adapters.gdb = {
+	type = "executable",
+	command = "gdb",
+	args = { "-i", "dap" },
+}
+
+---@return boolean
+local function gdb_speaks_dap()
+	if vim.fn.executable("gdb") ~= 1 then
+		return false
+	end
+	local ok, result = pcall(function()
+		return vim.system({ "gdb", "--version" }, { text = true }):wait()
+	end)
+	if not ok or result.code ~= 0 then
+		return false
+	end
+	local major = tonumber(result.stdout:match("GNU gdb[^%d]*(%d+)"))
+	return major ~= nil and major >= GDB_DAP_MIN_VERSION
+end
+
+--- Falls back to lldb when neither is present, so starting a session reports the
+--- missing adapter rather than silently offering configurations that cannot run.
+---@return "lldb"|"gdb"
+local function available_adapter()
+	if find_lldb_dap() then
+		return "lldb"
+	end
+	return gdb_speaks_dap() and "gdb" or "lldb"
+end
+
+---@param adapter "lldb"|"gdb"
 ---@param extra_commands? fun(): string[] run after the shared step-avoid settings
 ---@return dap.Configuration[]
-local function lldb_configurations(extra_commands)
-	local commands = init_commands(extra_commands)
+local function debug_configurations(adapter, extra_commands)
+	local commands = adapter == "lldb" and init_commands(extra_commands) or nil
 	return {
 		{
 			name = "Launch executable",
-			type = "lldb",
+			type = adapter,
 			request = "launch",
 			program = prompt_program,
 			cwd = "${workspaceFolder}",
@@ -171,7 +208,7 @@ local function lldb_configurations(extra_commands)
 		},
 		{
 			name = "Launch executable with arguments",
-			type = "lldb",
+			type = adapter,
 			request = "launch",
 			program = prompt_program,
 			args = prompt_args,
@@ -180,7 +217,7 @@ local function lldb_configurations(extra_commands)
 		},
 		{
 			name = "Attach to running process",
-			type = "lldb",
+			type = adapter,
 			request = "attach",
 			pid = require("dap.utils").pick_process,
 			initCommands = commands,
@@ -188,9 +225,10 @@ local function lldb_configurations(extra_commands)
 	}
 end
 
-dap.configurations.c = lldb_configurations()
-dap.configurations.cpp = lldb_configurations()
-dap.configurations.rust = lldb_configurations(rust_init_commands)
+local adapter = available_adapter()
+dap.configurations.c = debug_configurations(adapter)
+dap.configurations.cpp = debug_configurations(adapter)
+dap.configurations.rust = debug_configurations(adapter, rust_init_commands)
 
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
