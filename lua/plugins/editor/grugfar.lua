@@ -44,7 +44,8 @@ grug_far.setup({
 --- Path of the current buffer, or nil when it is not a file on disk.
 ---@return string?
 local function current_file()
-	if vim.bo.buftype ~= "" or vim.api.nvim_buf_get_name(0) == "" then
+	local path = vim.api.nvim_buf_get_name(0)
+	if vim.bo.buftype ~= "" or path == "" or not vim.uv.fs_stat(path) then
 		vim.notify("Current buffer is not a file on disk", vim.log.levels.WARN)
 		return nil
 	end
