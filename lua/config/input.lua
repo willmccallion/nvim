@@ -14,7 +14,7 @@ end
 ---@param title string
 ---@return integer
 local function window_width(default, title)
-	local wanted = math.max(vim.fn.strdisplaywidth(default) + 1, #title + 2, 24)
+	local wanted = math.max(vim.fn.strdisplaywidth(default) + 1, vim.fn.strdisplaywidth(title) + 2, 24)
 	return math.min(wanted, math.max(vim.o.columns - 4, 1))
 end
 
