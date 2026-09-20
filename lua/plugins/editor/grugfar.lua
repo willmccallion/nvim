@@ -49,7 +49,8 @@ local function current_file()
 		vim.notify("Current buffer is not a file on disk", vim.log.levels.WARN)
 		return nil
 	end
-	return vim.fn.expand("%")
+	-- grug-far splits its Paths field on unescaped spaces.
+	return (vim.fn.expand("%"):gsub(" ", "\\ "))
 end
 
 ---@return string
