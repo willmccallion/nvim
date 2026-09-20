@@ -13,6 +13,9 @@ vim.opt.mouse = ""
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
+-- Diagnostic virtual lines follow the cursor on CursorHold, so the default 4s reads as broken.
+vim.opt.updatetime = 250
+
 vim.opt.inccommand = "split"
 
 vim.opt.wrap = true

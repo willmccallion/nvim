@@ -55,7 +55,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Git**: Gitsigns shows changed/added/deleted lines in the sign column and stages, resets, previews and blames hunks.
 
-**Diagnostics**: Trouble.nvim gives you a list view of diagnostics, quickfix and symbols, and Neovim's native multiline diagnostics can be toggled under your code.
+**Diagnostics**: The message for the cursor's line shows under it, so the rest of the file stays quiet. `<leader>ol` widens that to every line and `<leader>cd` opens the full message in a float. Trouble.nvim gives you a list view of diagnostics, quickfix and symbols.
 
 **Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
 
