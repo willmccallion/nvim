@@ -91,9 +91,29 @@ local function rust_init_commands()
 	return { ('command script import "%s"'):format(lookup) }
 end
 
----@param init_commands? fun(): string[]
+--- A step that leaves the current frame otherwise stops wherever it lands, and
+--- libc and other code built without debug info have only disassembly to show.
+local STEP_AVOID_COMMANDS = {
+	"settings set target.process.thread.step-in-avoid-nodebug true",
+	"settings set target.process.thread.step-out-avoid-nodebug true",
+}
+
+---@param extra_commands? fun(): string[]
+---@return fun(): string[]
+local function init_commands(extra_commands)
+	return function()
+		local commands = vim.list_extend({}, STEP_AVOID_COMMANDS)
+		if extra_commands then
+			vim.list_extend(commands, extra_commands())
+		end
+		return commands
+	end
+end
+
+---@param extra_commands? fun(): string[] run after the shared step-avoid settings
 ---@return dap.Configuration[]
-local function lldb_configurations(init_commands)
+local function lldb_configurations(extra_commands)
+	local commands = init_commands(extra_commands)
 	return {
 		{
 			name = "Launch executable",
@@ -101,7 +121,7 @@ local function lldb_configurations(init_commands)
 			request = "launch",
 			program = prompt_program,
 			cwd = "${workspaceFolder}",
-			initCommands = init_commands,
+			initCommands = commands,
 		},
 		{
 			name = "Launch executable with arguments",
@@ -110,14 +130,14 @@ local function lldb_configurations(init_commands)
 			program = prompt_program,
 			args = prompt_args,
 			cwd = "${workspaceFolder}",
-			initCommands = init_commands,
+			initCommands = commands,
 		},
 		{
 			name = "Attach to running process",
 			type = "lldb",
 			request = "attach",
 			pid = require("dap.utils").pick_process,
-			initCommands = init_commands,
+			initCommands = commands,
 		},
 	}
 end
