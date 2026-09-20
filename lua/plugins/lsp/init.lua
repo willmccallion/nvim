@@ -56,4 +56,29 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 
+vim.api.nvim_create_autocmd("LspAttach", {
+	desc = "Highlight other references to the symbol under the cursor",
+	group = vim.api.nvim_create_augroup("lsp-document-highlight", { clear = true }),
+	callback = function(ev)
+		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+		if not client or not client:supports_method("textDocument/documentHighlight") then
+			return
+		end
+
+		-- A second client attaching to the same buffer would otherwise double these up.
+		local group = vim.api.nvim_create_augroup("lsp-document-highlight-buffer", { clear = false })
+		vim.api.nvim_clear_autocmds({ group = group, buffer = ev.buf })
+		vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+			group = group,
+			buffer = ev.buf,
+			callback = vim.lsp.buf.document_highlight,
+		})
+		vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+			group = group,
+			buffer = ev.buf,
+			callback = vim.lsp.buf.clear_references,
+		})
+	end,
+})
+
 vim.api.nvim_create_user_command("LspInfo", "checkhealth vim.lsp", { desc = "Show LSP configs and attached clients" })
