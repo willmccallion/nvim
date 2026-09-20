@@ -33,7 +33,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 ## What's In Here
 
-**LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources.
+**LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources. Renaming a symbol goes through inc-rename, so `'inccommand'` previews every affected site as you type.
 
 **Treesitter**: Syntax highlighting, text objects and motions for functions, classes, arguments, conditionals and loops, and Neovim's built-in incremental selection by syntax node. nvim-treesitter-context pins the enclosing function/loop to the top of the window.
 

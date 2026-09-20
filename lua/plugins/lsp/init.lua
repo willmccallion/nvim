@@ -1,6 +1,12 @@
 --- LSP client lifecycle and keybindings.
 --- Enables the server configs in the top-level lsp/ directory via vim.lsp.enable
 --- and sets up LSP keybindings (go-to-definition, references, rename, etc.) on attach.
+--- Renaming goes through inc-rename so 'inccommand' previews every affected site
+--- as you type, instead of applying the edit unseen.
+
+vim.pack.add({ "https://github.com/smjonas/inc-rename.nvim" })
+
+require("inc_rename").setup()
 
 vim.lsp.config("*", {
 	capabilities = require("cmp_nvim_lsp").default_capabilities(),
@@ -38,7 +44,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gK", vim.lsp.buf.signature_help, "LSP show function signature and parameters")
 		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
 		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
-		map("<leader>cr", vim.lsp.buf.rename, "Code rename symbol across all files")
+		vim.keymap.set("n", "<leader>cr", function()
+			return ":IncRename " .. vim.fn.expand("<cword>")
+		end, { buffer = ev.buf, expr = true, desc = "Code rename symbol across all files" })
+
 		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)", { "n", "x" })
 
 		map("<leader>oi", function()
