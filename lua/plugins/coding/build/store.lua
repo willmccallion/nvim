@@ -7,6 +7,8 @@ local M = {}
 ---@class build.ProjectState
 ---@field selected? string command run by <leader>mb
 ---@field custom string[] commands typed in by the user, most recent first
+---@field run? string command run by <leader>mr
+---@field run_custom string[] run commands typed in by the user, most recent first
 
 local path = vim.fs.joinpath(vim.fn.stdpath("data"), "build-commands.json")
 
@@ -38,7 +40,12 @@ end
 function M.load(root)
 	local states = read_all() or {}
 	local state = states[root] or {}
-	return { selected = state.selected, custom = state.custom or {} }
+	return {
+		selected = state.selected,
+		custom = state.custom or {},
+		run = state.run,
+		run_custom = state.run_custom or {},
+	}
 end
 
 --- Refuses to write if the existing file is corrupt, so it is never clobbered.

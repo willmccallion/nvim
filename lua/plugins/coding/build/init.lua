@@ -18,11 +18,12 @@ local output_buf = nil
 
 local ROOT_LINE_PREFIX = "build-root: "
 
----@alias build.Status "building" | "passed" | "failed" | "stopped"
+---@alias build.Status "building" | "running" | "passed" | "failed" | "stopped"
 
 ---@type table<build.Status, {annote: string, hl: string}>
 local STATUS_STYLE = {
 	building = { annote = "Building", hl = "DiagnosticInfo" },
+	running = { annote = "Running", hl = "DiagnosticInfo" },
 	passed = { annote = "Passed", hl = "DiagnosticOk" },
 	failed = { annote = "Failed", hl = "DiagnosticError" },
 	stopped = { annote = "Stopped", hl = "DiagnosticWarn" },
@@ -227,27 +228,33 @@ local function load_quickfix(root, output, command)
 	return valid
 end
 
----@param command build.Command
+---@param cmd string
 ---@param result vim.SystemCompleted
----@param issues integer
+---@param issues integer quickfix entries loaded, zero for a plain run
 ---@param seconds number
-local function report(command, result, issues, seconds)
+local function report(cmd, result, issues, seconds)
 	local elapsed = ("%.1fs"):format(seconds)
 	if result.signal ~= 0 then
-		notify_status("stopped", short_command(command.cmd))
+		notify_status("stopped", short_command(cmd))
 	elseif result.code == 0 then
 		local suffix = issues > 0 and (", %d quickfix entries"):format(issues) or ""
-		notify_status("passed", ("%s (%s%s)"):format(short_command(command.cmd), elapsed, suffix))
+		notify_status("passed", ("%s (%s%s)"):format(short_command(cmd), elapsed, suffix))
 	else
 		local hint = issues > 0 and "" or "; <leader>mo shows the output"
-		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(command.cmd), result.code, elapsed, hint))
-		vim.cmd("botright cwindow")
+		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(cmd), result.code, elapsed, hint))
+		if issues > 0 then
+			-- Guarded, or a failing run would surface whatever a past build left behind.
+			vim.cmd("botright cwindow")
+		end
 	end
 end
 
+--- Streams a command's output into the output buffer and reports how it ended.
 ---@param project build.Project
----@param command build.Command
-local function run(project, command)
+---@param cmd string
+---@param status build.Status shown while it is still going
+---@param collect_issues fun(output: string[]): integer quickfix entries loaded
+local function start_command(project, cmd, status, collect_issues)
 	if active_run then
 		notify(("Already running: %s (<leader>mk stops it)"):format(short_command(active_run.cmd)), vim.log.levels.WARN)
 		return
@@ -261,8 +268,8 @@ local function run(project, command)
 	end
 	local started = vim.uv.hrtime()
 
-	notify_status("building", ("%s in %s"):format(short_command(command.cmd), vim.fn.fnamemodify(project.root, ":t")))
-	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, command.cmd }, {
+	notify_status(status, ("%s in %s"):format(short_command(cmd), vim.fn.fnamemodify(project.root, ":t")))
+	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, cmd }, {
 		cwd = project.root,
 		text = true,
 		detach = true,
@@ -271,11 +278,27 @@ local function run(project, command)
 	}, function(result)
 		vim.schedule(function()
 			active_run = nil
-			local issues = load_quickfix(project.root, output, command)
-			report(command, result, issues, (vim.uv.hrtime() - started) / 1e9)
+			report(cmd, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9)
 		end)
 	end)
-	active_run = { job = job, cmd = command.cmd }
+	active_run = { job = job, cmd = cmd }
+end
+
+---@param project build.Project
+---@param command build.Command
+local function run(project, command)
+	start_command(project, command.cmd, "building", function(output)
+		return load_quickfix(project.root, output, command)
+	end)
+end
+
+--- A program's own output is not compiler diagnostics, so none of it reaches quickfix.
+---@param project build.Project
+---@param cmd string
+local function execute(project, cmd)
+	start_command(project, cmd, "running", function()
+		return 0
+	end)
 end
 
 ---@param project build.Project
@@ -407,7 +430,81 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 	end,
 })
 
+---@param project build.Project
+---@param state build.ProjectState
+---@param cmd string
+local function select_and_execute(project, state, cmd)
+	state.run = cmd
+	state.run_custom = vim.tbl_filter(function(existing)
+		return existing ~= cmd
+	end, state.run_custom)
+	table.insert(state.run_custom, 1, cmd)
+	store.save(project.root, state)
+	execute(project, cmd)
+end
+
+---@param project build.Project
+---@param state build.ProjectState
+local function prompt_run_command(project, state)
+	vim.ui.input({ prompt = "Run command: ", default = state.run }, function(input)
+		if not input or vim.trim(input) == "" then
+			return
+		end
+		select_and_execute(project, state, vim.trim(input))
+	end)
+end
+
+--- Nothing is detected for a run the way build systems are, so the first run of a
+--- project asks for the command and every later one reuses it.
+local function execute_selected()
+	local project = current_project()
+	local state = store.load(project.root)
+	if state.run then
+		execute(project, state.run)
+	else
+		prompt_run_command(project, state)
+	end
+end
+
+local function pick_run_command()
+	local project = current_project()
+	local state = store.load(project.root)
+	if #state.run_custom == 0 then
+		prompt_run_command(project, state)
+		return
+	end
+
+	---@type build.PickItem[]
+	local items = {}
+	for _, cmd in ipairs(state.run_custom) do
+		table.insert(items, { cmd = cmd, saved = true })
+	end
+	table.insert(items, { saved = false })
+
+	vim.ui.select(items, {
+		prompt = ("Run command (%s)"):format(vim.fn.fnamemodify(project.root, ":~")),
+		---@param item build.PickItem
+		format_item = function(item)
+			if not item.cmd then
+				return "Custom..."
+			end
+			return (item.cmd == state.run and "* " or "  ") .. item.cmd
+		end,
+	}, function(item)
+		if not item then
+			return
+		end
+		if item.cmd then
+			select_and_execute(project, state, item.cmd)
+		else
+			prompt_run_command(project, state)
+		end
+	end)
+end
+
 vim.keymap.set("n", "<leader>mb", build, { desc = "Build project with its selected command" })
 vim.keymap.set("n", "<leader>mp", pick, { desc = "Build pick or type a command for this project" })
+vim.keymap.set("n", "<leader>mr", execute_selected, { desc = "Build run the project's run command" })
+vim.keymap.set("n", "<leader>mR", pick_run_command, { desc = "Build pick or type the run command" })
 vim.keymap.set("n", "<leader>mo", toggle_output, { desc = "Build toggle output window" })
 vim.keymap.set("n", "<leader>mk", stop, { desc = "Build stop the running command" })
