@@ -1,8 +1,6 @@
 --- Global keybindings (non-plugin).
 --- Grouped by domain: editing and navigation, clipboard, buffer, window,
---- replace/rename, quickfix, option toggles, and Lua.
-
-local substitute = require("util.substitute")
+--- rename, quickfix, option toggles, and Lua.
 
 vim.keymap.set("x", "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set("x", "k", "gk", { desc = "Navigate up (visual line)" })
@@ -92,24 +90,6 @@ vim.keymap.set("n", "<C-Up>", "<Cmd>resize +2<CR>", { desc = "Window increase he
 vim.keymap.set("n", "<C-Down>", "<Cmd>resize -2<CR>", { desc = "Window decrease height" })
 vim.keymap.set("n", "<C-Left>", "<Cmd>vertical resize -2<CR>", { desc = "Window decrease width" })
 vim.keymap.set("n", "<C-Right>", "<Cmd>vertical resize +2<CR>", { desc = "Window increase width" })
-
-vim.keymap.set(
-	"n",
-	"<leader>rw",
-	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-	{ desc = "Replace word under cursor in file" }
-)
-
-vim.keymap.set("x", "<leader>rw", function()
-	local selected =
-		table.concat(vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() }), "\n")
-	local command = ":%s/"
-		.. substitute.literal_pattern(selected)
-		.. "/"
-		.. substitute.literal_replacement(selected)
-		.. "/gI"
-	vim.api.nvim_feedkeys(vim.keycode("<Esc>") .. command .. vim.keycode("<Left><Left><Left>"), "ni", false)
-end, { desc = "Replace selected text in file" })
 
 ---@param err string|lsp.ResponseError
 ---@return string
