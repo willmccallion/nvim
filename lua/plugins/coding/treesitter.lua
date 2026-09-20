@@ -43,7 +43,9 @@ vim.api.nvim_create_autocmd("FileType", {
 	group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
 	callback = function(ev)
 		local lang = vim.treesitter.language.get_lang(ev.match)
-		if lang and vim.list_contains(parsers, lang) then
+		-- install() is asynchronous and needs a C compiler, so a wanted parser is not
+		-- necessarily a present one. add() reports that rather than raising in start().
+		if lang and vim.list_contains(parsers, lang) and vim.treesitter.language.add(lang) then
 			vim.treesitter.start(ev.buf, lang)
 		end
 	end,
