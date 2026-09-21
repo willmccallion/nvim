@@ -169,6 +169,15 @@ vim.keymap.set("n", "<leader>Ls", "<Cmd>source %<CR>", { desc = "Lua source curr
 vim.keymap.set("n", "<leader>Ll", "<Cmd>.lua<CR>", { desc = "Lua execute current line" })
 vim.keymap.set("x", "<leader>L", ":lua<CR>", { desc = "Lua execute selection" })
 
-vim.api.nvim_create_user_command("Update", function()
-	vim.pack.update()
-end, { desc = "Update Neovim packages" })
+--- Forwards to :packupdate rather than calling vim.pack.update(), so the plugin
+--- names, ++offline and ++lockfile all work and complete as they do there.
+vim.api.nvim_create_user_command("Update", function(opts)
+	vim.cmd({ cmd = "packupdate", bang = opts.bang, args = opts.fargs })
+end, {
+	bang = true,
+	nargs = "*",
+	complete = function(arglead)
+		return vim.fn.getcompletion("packupdate " .. arglead, "cmdline")
+	end,
+	desc = "Update Neovim packages (:packupdate)",
+})

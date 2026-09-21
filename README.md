@@ -126,4 +126,4 @@ you cannot tell what to.
 - Format-on-save can be disabled globally (`vim.g.autoformat = false`) or per-buffer (`vim.b.autoformat = false`).
 - Supports local project config via `.nvim.lua` / `.exrc` files.
 - Run `:LspInfo` (or `:checkhealth vim.lsp`) to see configured servers and attached clients.
-- Run `:Update` to update all plugins, then commit the updated `nvim-pack-lock.json`.
+- Run `:Update` to update all plugins, then commit the updated `nvim-pack-lock.json`. It forwards to `:packupdate`, so it also takes plugin names, `++offline` and `++lockfile`, and completes all three.
