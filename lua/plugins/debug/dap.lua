@@ -235,10 +235,25 @@ local function debug_configurations(adapter, extra_commands)
 	}
 end
 
-local adapter = available_adapter()
-dap.configurations.c = debug_configurations(adapter)
-dap.configurations.cpp = debug_configurations(adapter)
-dap.configurations.rust = debug_configurations(adapter, rust_init_commands)
+--- Rebuilt whenever a session starts, for the same reason dap.adapters.lldb
+--- resolves its command per session: an adapter installed since Neovim started
+--- would otherwise never be picked up, and the configurations would still name
+--- the one that was missing. Detection costs a process spawn when lldb-dap is
+--- absent, so nothing runs until a debuggable filetype is opened.
+local function refresh_configurations()
+	local adapter = available_adapter()
+	dap.configurations.c = debug_configurations(adapter)
+	dap.configurations.cpp = debug_configurations(adapter)
+	dap.configurations.rust = debug_configurations(adapter, rust_init_commands)
+end
+
+vim.api.nvim_create_autocmd("FileType", {
+	desc = "Register debug configurations for the languages dap is set up for",
+	group = vim.api.nvim_create_augroup("dap-configurations", { clear = true }),
+	pattern = { "c", "cpp", "rust" },
+	once = true,
+	callback = refresh_configurations,
+})
 
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
@@ -270,7 +285,10 @@ dap.listeners.after.event_terminated[EXIT_LISTENER] = function()
 end
 
 local map = vim.keymap.set
-map("n", "<leader>dd", dap.continue, { desc = "Debug start or continue" })
+map("n", "<leader>dd", function()
+	refresh_configurations()
+	dap.continue()
+end, { desc = "Debug start or continue" })
 map("n", "<leader>dn", dap.step_over, { desc = "Debug step over (next line)" })
 map("n", "<leader>di", dap.step_into, { desc = "Debug step into function" })
 map("n", "<leader>do", dap.step_out, { desc = "Debug step out of function" })
