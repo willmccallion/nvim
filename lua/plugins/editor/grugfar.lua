@@ -34,9 +34,13 @@ local function current_file()
 	return (vim.fn.expand("%"):gsub(" ", "\\ "))
 end
 
+--- Reads the selection and leaves visual mode before returning. The "x" flag is
+--- what makes the <Esc> take effect now: queued, it would arrive after grug-far
+--- had already opened its window, landing in that buffer instead.
 ---@return string
-local function visual_selection()
+local function take_visual_selection()
 	local lines = vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() })
+	vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "nx", false)
 	return table.concat(lines, "\n")
 end
 
@@ -72,9 +76,8 @@ vim.keymap.set("n", "<leader>rw", function()
 end, { desc = "Replace word under cursor in this file" })
 
 vim.keymap.set("x", "<leader>rw", function()
-	local search = visual_selection()
+	local search = take_visual_selection()
 	local file = current_file()
-	vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
 	if file then
 		replace(search, false, file)
 	end
@@ -85,7 +88,6 @@ vim.keymap.set("n", "<leader>rp", function()
 end, { desc = "Replace word under cursor across all project files" })
 
 vim.keymap.set("x", "<leader>rp", function()
-	local search = visual_selection()
-	vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
+	local search = take_visual_selection()
 	replace(search, false, nil)
 end, { desc = "Replace selected text across all project files" })
