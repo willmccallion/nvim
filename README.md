@@ -25,6 +25,7 @@ lua/
       build/         Build runner (detection, per-project storage, runner)
     debug/           Debugger (nvim-dap + nvim-dap-view)
     editor/          Navigation, search, git, surround, multi-cursor, undo tree
+      telescope/     Fuzzy finder (setup, glob filter, file/grep/keymap pickers)
     lsp/             LSP enablement and keymaps
 ```
 
@@ -103,8 +104,14 @@ function, argument, class, hunk, quickfix entry, diagnostic, context.
 **Frequent actions get single keys** after leader (file explorer, undo tree, clipboard, quickfix), and the
 LSP go-to motions stay on `g` like Vim's own.
 
-Every mapping's description starts with its domain word, so `<leader>sk` then typing a domain
-(`Git`, `Debug`, ...) lists all of its keys.
+`<leader>sk` reads the grammar back to you. Every mapping is filed under the domain its key sequence
+belongs to — the table above for leader keys, plus `Motion` for `[`/`]`, `Textobject` for `a`/`i` pairs,
+`LSP` for the `g` go-tos and `Surround` for `ys`/`cs`/`ds` — and the list is ordered by domain, so an
+empty prompt is already grouped and typing a domain (`git`, `debug`, ...) narrows to its keys. A mapping
+that exists in several modes is one row, marked `nxo`, and `@` marks one that only the current buffer has.
+Descriptions still lead with their domain word, so a search matches whether you think in keys or in words.
+`<leader>sK` adds every unlabelled mapping Neovim and the plugins install, for when something is bound and
+you cannot tell what to.
 
 ## Notes
 
