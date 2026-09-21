@@ -1,6 +1,8 @@
 --- Main entry point for the Neovim configuration.
 --- Loads core config (globals, options, keymaps, autocommands) then plugins
 --- organized by category: ui, coding, debug, editor, and lsp.
+--- fidget comes first among the plugins because it takes over vim.notify, and
+--- anything loaded before it would report problems to the command line instead.
 
 require("config.globals")
 
@@ -11,6 +13,7 @@ require("config.autocmds")
 require("config.terminal")
 require("config.pack_hooks")
 
+require("plugins.ui.notifications")
 require("plugins.ui.colourscheme")
 require("plugins.ui.diagnostic")
 require("plugins.ui.oil")
@@ -35,5 +38,4 @@ require("plugins.editor.todo_comments")
 require("plugins.editor.trouble")
 require("plugins.editor.undotree")
 
-require("plugins.lsp.fidget")
 require("plugins.lsp")

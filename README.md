@@ -20,7 +20,7 @@ lsp/                 One file per language server (clangd, rust_analyzer, lua_ls
 lua/
   config/            Options, keymaps, globals, autocommands, terminal toggles, input prompt
   plugins/
-    ui/              Colorscheme, file explorer (oil), diagnostics display, sticky context
+    ui/              Notifications, colorscheme, file explorer (oil), diagnostics, sticky context
     coding/          Completion, formatting, treesitter, autopairs, snippets
       build/         Build runner (detection, per-project storage, runner)
     debug/           Debugger (nvim-dap + nvim-dap-view)

@@ -1,7 +1,8 @@
---- LSP progress and every vim.notify message, via fidget.nvim.
---- Shows LSP activity, build status and notifications in the bottom right, in
+--- Every vim.notify message and LSP progress, via fidget.nvim.
+--- Shows notifications, build status and LSP activity in the bottom right, in
 --- normal text colour. Routing vim.notify here keeps messages out of the command
---- line, where long ones would stop for a "Press ENTER" prompt.
+--- line, where long ones would stop for a "Press ENTER" prompt. Loaded before the
+--- other plugins so their own startup messages arrive here too.
 --- `:Fidget history` lists messages that have already faded.
 
 vim.pack.add({ "https://github.com/j-hui/fidget.nvim" })

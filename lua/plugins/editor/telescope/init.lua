@@ -44,13 +44,10 @@ telescope.setup({
 -- fzf-native is a compiled sorter. Without its library telescope still works on the
 -- built-in one, so this must not raise: failing here would abort the rest of init.lua.
 if not pcall(telescope.load_extension, "fzf") then
-	-- Deferred so the message reaches fidget, which loads after this module.
-	vim.schedule(function()
-		vim.notify(
-			"telescope-fzf-native is not built (needs make and a C compiler); using the slower built-in sorter",
-			vim.log.levels.WARN
-		)
-	end)
+	vim.notify(
+		"telescope-fzf-native is not built (needs make and a C compiler); using the slower built-in sorter",
+		vim.log.levels.WARN
+	)
 end
 telescope.load_extension("ui-select")
 
