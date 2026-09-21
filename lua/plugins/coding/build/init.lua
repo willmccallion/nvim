@@ -244,7 +244,12 @@ local function report(cmd, result, issues, seconds)
 		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(cmd), result.code, elapsed, hint))
 		if issues > 0 then
 			-- Guarded, or a failing run would surface whatever a past build left behind.
+			-- Builds finish in the background, so the cursor stays where it was typing.
+			local focused = vim.api.nvim_get_current_win()
 			vim.cmd("botright cwindow")
+			if vim.api.nvim_win_is_valid(focused) then
+				vim.api.nvim_set_current_win(focused)
+			end
 		end
 	end
 end
