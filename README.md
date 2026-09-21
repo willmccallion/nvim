@@ -104,7 +104,8 @@ moving to a window vs moving the window.
 argument, hunk and context here, plus the quickfix, location, diagnostic and buffer motions Neovim
 itself provides. Classes sit on `]]` and `[[`, the pair nvim-treesitter-textobjects
 uses, because `]c` and `[c` are Vim's diff-change motions. `]a` and `[a` take parameters rather than
-Neovim's argument-list, which this config never uses. A shifted letter moves the thing rather than moving
+Neovim's argument-list, which this config never uses. `;` repeats the last of these forward and `,` back,
+whichever it was. A shifted letter moves the thing rather than moving
 to it, as `<leader>wH` moves a window where `<leader>wh` moves to one: `]A` and `]F` swap the argument or
 function with its neighbour, carrying the separators with it.
 
