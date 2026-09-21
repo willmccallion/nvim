@@ -39,6 +39,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gD", vim.lsp.buf.declaration, "LSP go to declaration (header file)")
 		map("<leader>ci", builtin.lsp_implementations, "Code go to implementation")
 		map("<leader>ct", builtin.lsp_type_definitions, "Code go to type definition")
+		map("<leader>cc", builtin.lsp_incoming_calls, "Code find callers of this function")
+		map("<leader>cC", builtin.lsp_outgoing_calls, "Code find functions this one calls")
 		map("gr", builtin.lsp_references, "LSP find references to symbol")
 		map("K", vim.lsp.buf.hover, "LSP show hover documentation")
 		map("gK", vim.lsp.buf.signature_help, "LSP show function signature and parameters")
