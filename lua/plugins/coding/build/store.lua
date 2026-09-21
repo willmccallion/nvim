@@ -57,13 +57,22 @@ function M.save(root, state)
 		return
 	end
 	states[root] = state
-	local file, open_err = io.open(path, "w")
+
+	-- Written beside the real file and renamed over it: a write cut short would
+	-- otherwise leave the invalid JSON that read_all then refuses to touch.
+	local tmp = path .. ".tmp"
+	local file, open_err = io.open(tmp, "w")
 	if not file then
-		vim.notify(("Could not write %s: %s"):format(path, open_err), vim.log.levels.ERROR)
+		vim.notify(("Could not write %s: %s"):format(tmp, open_err), vim.log.levels.ERROR)
 		return
 	end
 	file:write(vim.json.encode(states))
 	file:close()
+
+	local renamed, rename_err = vim.uv.fs_rename(tmp, path)
+	if not renamed then
+		vim.notify(("Could not replace %s: %s"):format(path, rename_err), vim.log.levels.ERROR)
+	end
 end
 
 return M
