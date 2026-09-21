@@ -99,3 +99,21 @@ for _, m in ipairs(move_maps) do
 		move[m[3]](m[2], "textobjects")
 	end, { desc = m[4] })
 end
+
+local swap = require("nvim-treesitter-textobjects.swap")
+
+--- A shifted bracket moves the thing rather than moving to it, as <leader>wH moves
+--- a window where <leader>wh moves to one. Separators come along with the node, so
+--- a swapped argument does not leave its commas behind.
+local swap_maps = {
+	{ "]A", swap.swap_next, "@parameter.inner", "Swap argument with the next one" },
+	{ "[A", swap.swap_previous, "@parameter.inner", "Swap argument with the previous one" },
+	{ "]F", swap.swap_next, "@function.outer", "Swap function with the next one" },
+	{ "[F", swap.swap_previous, "@function.outer", "Swap function with the previous one" },
+}
+
+for _, m in ipairs(swap_maps) do
+	vim.keymap.set("n", m[1], function()
+		m[2](m[3], "textobjects")
+	end, { desc = m[4] })
+end
