@@ -31,9 +31,8 @@ vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Clipboard copy to sys
 vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from system clipboard after cursor" })
 vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from system clipboard before cursor" })
 
+-- Next and previous buffer are Neovim's own ]b and [b.
 vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate (last used) buffer" })
-vim.keymap.set("n", "<leader>bn", "<Cmd>bnext<CR>", { desc = "Buffer go to next buffer" })
-vim.keymap.set("n", "<leader>bp", "<Cmd>bprevious<CR>", { desc = "Buffer go to previous buffer" })
 
 vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Buffer close current buffer" })
 
