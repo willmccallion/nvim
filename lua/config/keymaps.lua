@@ -34,7 +34,8 @@ vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from 
 -- Next and previous buffer are Neovim's own ]b and [b.
 vim.keymap.set("n", "<leader>bb", "<C-^>", { desc = "Buffer switch to alternate (last used) buffer" })
 
-vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Buffer close current buffer" })
+-- :confirm asks about unsaved changes instead of failing, the way <leader>bo keeps them.
+vim.keymap.set("n", "<leader>bd", "<Cmd>confirm bdelete<CR>", { desc = "Buffer close current buffer" })
 
 --- Keeps buffers with unsaved changes and terminals, whose shells would be killed.
 local function close_other_buffers()
