@@ -49,10 +49,15 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end, { buffer = ev.buf, expr = true, desc = "Code rename symbol across all files" })
 
 		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)", { "n", "x" })
+		map("<leader>cl", vim.lsp.codelens.run, "Code run the lens on this line")
 
 		map("<leader>oi", function()
 			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
 		end, "Option toggle inlay hints (inline type annotations)")
+
+		map("<leader>oc", function()
+			vim.lsp.codelens.enable(not vim.lsp.codelens.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
+		end, "Option toggle code lenses (run, debug, implementation counts)")
 	end,
 })
 
