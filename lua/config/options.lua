@@ -10,6 +10,10 @@ vim.opt.list = true
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 vim.opt.mouse = ""
 
+-- Accelerated j/k covers ground fast enough that a cursor on the last visible
+-- line gives no warning that the window is about to end.
+vim.opt.scrolloff = 4
+
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
