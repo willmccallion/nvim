@@ -73,15 +73,15 @@ vim.keymap.set("n", "<leader>wL", "<C-w>L", { desc = "Window swap current pane t
 vim.keymap.set("n", "<leader>wJ", "<C-w>J", { desc = "Window swap current pane to bottom" })
 vim.keymap.set("n", "<leader>wK", "<C-w>K", { desc = "Window swap current pane to top" })
 
----@type string? winrestcmd() output captured before maximizing
-local layout_before_zoom = nil
-
+--- Held per tabpage (t:layout_before_zoom): winrestcmd() addresses windows by
+--- number, so one tabpage's saved layout would resize another's windows.
 vim.keymap.set("n", "<leader>wm", function()
-	if layout_before_zoom then
-		vim.cmd(layout_before_zoom)
-		layout_before_zoom = nil
+	local saved = vim.t.layout_before_zoom
+	if saved then
+		vim.cmd(saved)
+		vim.t.layout_before_zoom = nil
 	else
-		layout_before_zoom = vim.fn.winrestcmd()
+		vim.t.layout_before_zoom = vim.fn.winrestcmd()
 		vim.cmd("resize | vertical resize")
 	end
 end, { desc = "Window toggle maximize zoom current pane" })
