@@ -284,6 +284,21 @@ dap.listeners.after.event_terminated[EXIT_LISTENER] = function()
 	dap_view.show_view("repl")
 end
 
+--- Two sessions at once would share the debug view, the breakpoint signs and the
+--- stepping keys, with nothing to say which one is answering. dap offers to start
+--- an additional session from its own prompt when the current one is not stopped,
+--- and from :DapNew, so the limit is enforced on the session rather than on the
+--- keys that start one. Restarting is unaffected: a session leaves dap.sessions()
+--- as it closes, before the replacement is started.
+dap.listeners.after.event_initialized["one-session-only"] = function(new_session)
+	if vim.tbl_count(dap.sessions()) <= 1 then
+		return
+	end
+	vim.notify("A debug session is already running; stopped the new one", vim.log.levels.WARN)
+	dap.set_session(new_session)
+	dap.terminate()
+end
+
 local map = vim.keymap.set
 map("n", "<leader>dd", function()
 	refresh_configurations()
