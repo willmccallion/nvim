@@ -169,10 +169,23 @@ local function append_output(buf, lines)
 	if not vim.api.nvim_buf_is_valid(buf) then
 		return
 	end
-	local is_empty = vim.api.nvim_buf_line_count(buf) == 1 and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
-	vim.api.nvim_buf_set_lines(buf, is_empty and 0 or -1, -1, false, lines)
+	local line_count = vim.api.nvim_buf_line_count(buf)
+
+	-- Only a window already at the end tails the output; scrolling back to read an
+	-- earlier error would otherwise be yanked forward by the next line the build prints.
+	local tailing = {}
 	for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-		vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+		tailing[win] = vim.api.nvim_win_get_cursor(win)[1] >= line_count
+	end
+
+	local is_empty = line_count == 1 and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
+	vim.api.nvim_buf_set_lines(buf, is_empty and 0 or -1, -1, false, lines)
+
+	local last_line = vim.api.nvim_buf_line_count(buf)
+	for win, at_end in pairs(tailing) do
+		if at_end and vim.api.nvim_win_is_valid(win) then
+			vim.api.nvim_win_set_cursor(win, { last_line, 0 })
+		end
 	end
 end
 
