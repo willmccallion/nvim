@@ -413,16 +413,28 @@ end
 
 --- Builds run in their own process group, so this also stops compilers the shell spawned.
 ---@param run_to_stop build.Run
-local function kill_process_group(run_to_stop)
-	vim.uv.kill(-run_to_stop.job.pid, "sigterm")
+---@param signal "sigterm"|"sigkill"
+local function signal_process_group(run_to_stop, signal)
+	vim.uv.kill(-run_to_stop.job.pid, signal)
 end
+
+--- How long a command gets to exit on its own before it is killed outright.
+local STOP_GRACE_MS = 3000
 
 local function stop()
 	if not active_run then
 		notify("No build is running", vim.log.levels.INFO)
 		return
 	end
-	kill_process_group(active_run)
+	local stopping = active_run
+	signal_process_group(stopping, "sigterm")
+	-- active_run is only cleared when the process is reaped, so one that ignores
+	-- SIGTERM would leave every later build refusing to start for the whole session.
+	vim.defer_fn(function()
+		if active_run == stopping then
+			signal_process_group(stopping, "sigkill")
+		end
+	end, STOP_GRACE_MS)
 end
 
 vim.api.nvim_create_autocmd("VimLeavePre", {
@@ -430,7 +442,7 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 	group = vim.api.nvim_create_augroup("build-runner", { clear = true }),
 	callback = function()
 		if active_run then
-			kill_process_group(active_run)
+			signal_process_group(active_run, "sigterm")
 		end
 	end,
 })
