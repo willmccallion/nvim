@@ -323,10 +323,7 @@ local function prompt_custom_command(project, state)
 			return
 		end
 		local cmd = vim.trim(input)
-		state.custom = vim.tbl_filter(function(existing)
-			return existing ~= cmd
-		end, state.custom)
-		table.insert(state.custom, 1, cmd)
+		state.custom = store.remember(state.custom, cmd)
 		select_and_run(project, state, cmd)
 	end)
 end
@@ -452,10 +449,7 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 ---@param cmd string
 local function select_and_execute(project, state, cmd)
 	state.run = cmd
-	state.run_custom = vim.tbl_filter(function(existing)
-		return existing ~= cmd
-	end, state.run_custom)
-	table.insert(state.run_custom, 1, cmd)
+	state.run_custom = store.remember(state.run_custom, cmd)
 	store.save(project.root, state)
 	execute(project, cmd)
 end

@@ -75,4 +75,22 @@ function M.save(root, state)
 	end
 end
 
+--- How many commands typed in by hand are kept per project.
+local HISTORY_LIMIT = 10
+
+--- Puts `cmd` at the front of `history`, dropping any duplicate and the oldest
+--- entries past the limit.
+---@param history string[]
+---@param cmd string
+---@return string[]
+function M.remember(history, cmd)
+	local kept = { cmd }
+	for _, existing in ipairs(history) do
+		if existing ~= cmd and #kept < HISTORY_LIMIT then
+			table.insert(kept, existing)
+		end
+	end
+	return kept
+end
+
 return M
