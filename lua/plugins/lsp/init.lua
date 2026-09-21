@@ -41,6 +41,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("<leader>ct", builtin.lsp_type_definitions, "Code go to type definition")
 		map("<leader>cc", builtin.lsp_incoming_calls, "Code find callers of this function")
 		map("<leader>cC", builtin.lsp_outgoing_calls, "Code find functions this one calls")
+
+		-- Telescope has no type hierarchy picker, so these land in the quickfix list.
+		map("<leader>ch", function()
+			vim.lsp.buf.typehierarchy("subtypes")
+		end, "Code find subtypes (what implements or derives from this)")
+		map("<leader>cH", function()
+			vim.lsp.buf.typehierarchy("supertypes")
+		end, "Code find supertypes (what this implements or derives from)")
 		map("gr", builtin.lsp_references, "LSP find references to symbol")
 		map("K", vim.lsp.buf.hover, "LSP show hover documentation")
 		map("gK", vim.lsp.buf.signature_help, "LSP show function signature and parameters")
