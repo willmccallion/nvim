@@ -1,6 +1,8 @@
 --- Leader keys and global flags.
---- Sets mapleader/maplocalleader to Space and enables Nerd Font support.
+--- Leader is Space. Local leader is "," so that a plugin mapping <localleader>
+--- keys in its own buffer cannot shadow a leader domain; grug-far's buffer keys
+--- are the ones that rely on it.
 
 vim.g.mapleader = " "
-vim.g.maplocalleader = " "
+vim.g.maplocalleader = ","
 vim.g.have_nerd_font = true

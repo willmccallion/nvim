@@ -4,8 +4,7 @@
 --- mode. Matches are listed with the replacement rendered in place, and nothing
 --- touches disk until <C-s> syncs it back.
 ---
---- Buffer keys keep grug-far's own letters but sit behind "," rather than its
---- default <localleader>, which is Space here and would shadow the leader domains.
+--- Buffer keys are grug-far's own <localleader> ones, which "," makes reachable.
 
 vim.pack.add({ "https://github.com/MagicDuck/grug-far.nvim" })
 
@@ -14,25 +13,7 @@ local grug_far = require("grug-far")
 grug_far.setup({
 	windowCreationCommand = "vsplit",
 	keymaps = {
-		replace = { n = ",r" },
-		syncLocations = { n = ",s" },
-		syncLine = { n = ",l" },
-		syncFile = { n = ",v" },
-		syncNext = { n = ",n" },
-		syncPrev = { n = ",p" },
-		qflist = { n = ",q" },
-		close = { n = ",c" },
-		refresh = { n = ",f" },
-		abort = { n = ",b" },
-		openLocation = { n = ",o" },
-		previewLocation = { n = ",i" },
-		historyOpen = { n = ",t" },
-		historyAdd = { n = ",a" },
-		swapEngine = { n = ",e" },
-		toggleShowCommand = { n = ",w" },
-		swapReplacementInterpreter = { n = ",x" },
-		applyNext = { n = ",j" },
-		applyPrev = { n = ",k" },
+		-- <Down>/<Up> are gj/gk here, which a result list should not inherit.
 		openNextLocation = { n = "<C-j>" },
 		openPrevLocation = { n = "<C-k>" },
 		-- The buffer opens in insert mode on Search, so field movement has to work there too.
