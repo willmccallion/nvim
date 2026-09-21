@@ -258,6 +258,7 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
 vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "DiagnosticHint" })
+vim.fn.sign_define("DapLogPoint", { text = "◇", texthl = "DiagnosticInfo" })
 vim.fn.sign_define("DapStopped", { text = "→", texthl = "DiagnosticOk", linehl = "Visual" })
 
 --- A program's own output and its exit status only reach the REPL view, which
@@ -315,6 +316,15 @@ map("n", "<leader>dB", function()
 		end
 	end)
 end, { desc = "Debug set conditional breakpoint" })
+--- Prints and carries on rather than stopping. {} interpolates an expression,
+--- so "i = {i}, len = {vec.len}" reads like the printf you would have added.
+map("n", "<leader>dp", function()
+	vim.ui.input({ prompt = "Log point message: " }, function(message)
+		if message and message ~= "" then
+			dap.set_breakpoint(nil, nil, message)
+		end
+	end)
+end, { desc = "Debug set log point (prints without stopping)" })
 map("n", "<leader>dC", dap.run_to_cursor, { desc = "Debug continue to cursor" })
 map("n", "<leader>dl", dap.run_last, { desc = "Debug rerun last configuration" })
 map("n", "<leader>dr", dap.restart, { desc = "Debug restart session" })
