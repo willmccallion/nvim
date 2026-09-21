@@ -16,6 +16,12 @@ vim.pack.add({
 local telescope = require("telescope")
 local actions = require("telescope.actions")
 
+--- Telescope indents the selected row with selection_caret and every other row
+--- with entry_prefix, so the row under the cursor slides sideways unless the two
+--- are the same width. Derived rather than written out, to stay that way.
+local selection_caret = vim.g.have_nerd_font and " " or "-> "
+local entry_prefix = (" "):rep(vim.fn.strdisplaywidth(selection_caret))
+
 telescope.setup({
 	defaults = {
 		path_display = { "truncate" },
@@ -26,7 +32,8 @@ telescope.setup({
 		layout_config = { horizontal = { preview_width = 0.55 } },
 		borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
 		prompt_prefix = vim.g.have_nerd_font and "  " or "> ",
-		selection_caret = vim.g.have_nerd_font and " " or "-> ",
+		selection_caret = selection_caret,
+		entry_prefix = entry_prefix,
 	},
 	extensions = {
 		["fzf"] = { override_generic_sorter = true, override_file_sorter = true, case_mode = "smart_case" },
