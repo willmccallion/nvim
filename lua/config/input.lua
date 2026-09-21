@@ -38,6 +38,9 @@ local function float_input(opts, on_confirm)
 
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.bo[buf].bufhidden = "wipe"
+	-- Read by the completion plugin: a one-line prompt has no room for a popup
+	-- menu, and it would take the keys <Tab> completes the answer with.
+	vim.b[buf].ui_input = true
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default })
 
 	local win = vim.api.nvim_open_win(buf, true, {

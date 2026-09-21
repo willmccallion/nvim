@@ -19,6 +19,14 @@ require("luasnip.loaders.from_vscode").lazy_load()
 vim.opt.pumheight = 5
 
 cmp.setup({
+	--- cmp's own default only skips prompt buffers, and the vim.ui.input float is
+	--- a scratch one, so it has to opt out by name.
+	enabled = function()
+		if vim.b.ui_input then
+			return false
+		end
+		return require("cmp.config.default")().enabled()
+	end,
 	snippet = {
 		expand = function(args)
 			luasnip.lsp_expand(args.body)
