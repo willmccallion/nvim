@@ -34,7 +34,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 ## What's In Here
 
-**LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources. Renaming a symbol goes through inc-rename, so `'inccommand'` previews every affected site as you type.
+**LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources. Renaming a symbol goes through inc-rename, so `'inccommand'` previews every affected site as you type. `<leader>oc` shows code lenses and `<leader>cl` runs the one on the cursor's line; `<leader>oi` does the same for inlay hints. Both start off, so a buffer stays quiet until you ask.
 
 **Treesitter**: Syntax highlighting, text objects and motions for functions, classes, arguments, conditionals and loops, and Neovim's built-in incremental selection by syntax node. nvim-treesitter-context pins the enclosing function/loop to the top of the window.
 
@@ -46,7 +46,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 You can pick another detected command or type your own; the choice is remembered per project in `stdpath("data")/build-commands.json`.
 
-`<leader>mr` runs the project's run command, asking for one the first time and reusing it afterwards; `<leader>mR` picks from the ones you have used or takes a new one. A run shares the build's output window and status, but its output is the program's own, so none of it is parsed into quickfix.
+`<leader>mr` runs the project's run command, asking for one the first time and reusing it afterwards; `<leader>mP` picks from the ones you have used or takes a new one. A run shares the build's output window and status, but its output is the program's own, so none of it is parsed into quickfix.
 
 **Debugging**: nvim-dap with `lldb-dap` for C, C++, and Rust, and nvim-dap-view as the UI, in a split on the right that opens and closes with the session. Starting a session prompts for the executable, defaulting to `target/debug/` or `build/`. While stopped, `<leader>dh` inspects the value under the cursor in a float you can expand into nested fields, `<leader>dv` fuzzy-searches the frame's variables (struct fields included) and pins the one you pick to the Watches panel, and `<leader>dV` toggles every variable's value inline in the code. A run that ends with a non-zero status reopens the view on the REPL, where the program's own output and its exit status are, rather than closing and leaving a failure looking like a clean run. Rust sessions load rustc's LLDB formatters so `Vec`, `String`, etc. display readably.
 
@@ -81,11 +81,11 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | Domain | Meaning |
 |---|---|
 | `s` | Search: find things with Telescope |
-| `c` | Code: LSP actions, formatting, navigation to implementations |
+| `c` | Code: LSP actions, formatting, renaming, navigation to implementations |
 | `g` | Git: hunks, blame, log |
 | `x` | Problems: diagnostic and quickfix lists |
 | `o` | Option toggles: switch a display option on or off |
-| `r` | Replace and rename |
+| `r` | Replace: search and replace across a file or the project |
 | `w` | Window |
 | `b` | Buffer |
 | `t` | Terminal |
@@ -98,11 +98,17 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 heavier version: symbols in this file vs the project, a breakpoint vs a conditional breakpoint,
 moving to a window vs moving the window.
 
-**Brackets are motions.** `]` goes forward and `[` back, followed by the object's letter:
-function, argument, class, hunk, quickfix entry, diagnostic, context.
+**Brackets are motions.** `]` goes forward and `[` back, followed by the object's letter: function,
+argument, hunk and context here, plus the quickfix, location, diagnostic and buffer motions Neovim
+itself provides. Classes sit on `]]` and `[[`, the pair nvim-treesitter-textobjects
+uses, because `]c` and `[c` are Vim's diff-change motions. `]a` and `[a` take parameters rather than
+Neovim's argument-list, which this config never uses.
 
 **Frequent actions get single keys** after leader (file explorer, undo tree, clipboard, quickfix), and the
 LSP go-to motions stay on `g` like Vim's own.
+
+**Local leader is `,`**, kept distinct from leader so a plugin that maps `<localleader>` keys inside its
+own buffer cannot shadow a leader domain. grug-far's buffer keys are the ones that use it.
 
 `<leader>sk` reads the grammar back to you. Every mapping is filed under the domain its key sequence
 belongs to — the table above for leader keys, plus `Motion` for `[`/`]`, `Textobject` for `a`/`i` pairs,
