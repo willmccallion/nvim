@@ -12,10 +12,12 @@ local M = {}
 ---@field type string
 ---@field value string
 
+--- An expensive scope is one the adapter asks not to be read without being asked
+--- for; nvim-dap leaves those unfetched too.
 ---@param scope dap.Scope
 ---@return boolean
 local function is_searchable(scope)
-	return scope.presentationHint ~= "registers" and scope.variables ~= nil
+	return scope.presentationHint ~= "registers" and not scope.expensive
 end
 
 --- lldb supplies evaluateName; gdb does not, so a child's expression has to be
@@ -72,21 +74,39 @@ local function collect(session, on_done)
 		end)
 	end
 
+	--- Adds a scope's variables, then asks for the fields of each structured one.
+	---@param scope_name string
+	---@param scope_variables dap.Variable[]
+	local function add_scope(scope_name, scope_variables)
+		for _, variable in ipairs(scope_variables) do
+			local entry = to_entry(scope_name, variable)
+			table.insert(variables, entry)
+			if (variable.variablesReference or 0) > 0 then
+				pending = pending + 1
+				local params = { variablesReference = variable.variablesReference }
+				session:request("variables", params, function(_, response)
+					for _, child in ipairs(response and response.variables or {}) do
+						table.insert(variables, to_entry(scope_name, child, entry.expression))
+					end
+					settle()
+				end)
+			end
+		end
+	end
+
 	for _, scope in ipairs(session.current_frame.scopes or {}) do
 		if is_searchable(scope) then
-			for _, variable in ipairs(scope.variables) do
-				local entry = to_entry(scope.name, variable)
-				table.insert(variables, entry)
-				if (variable.variablesReference or 0) > 0 then
-					pending = pending + 1
-					local params = { variablesReference = variable.variablesReference }
-					session:request("variables", params, function(_, response)
-						for _, child in ipairs(response and response.variables or {}) do
-							table.insert(variables, to_entry(scope.name, child, entry.expression))
-						end
-						settle()
-					end)
-				end
+			if scope.variables then
+				add_scope(scope.name, scope.variables)
+			else
+				-- nvim-dap requests each scope's variables when the session stops, so
+				-- searching straight after a stop can arrive before they have landed.
+				pending = pending + 1
+				local params = { variablesReference = scope.variablesReference }
+				session:request("variables", params, function(_, response)
+					add_scope(scope.name, response and response.variables or {})
+					settle()
+				end)
 			end
 		end
 	end
