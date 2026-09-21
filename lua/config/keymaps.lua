@@ -1,6 +1,6 @@
 --- Global keybindings (non-plugin).
 --- Grouped by domain: editing and navigation, clipboard, buffer, window,
---- rename, quickfix, option toggles, and Lua.
+--- code rename, quickfix, option toggles, and Lua.
 
 vim.keymap.set("x", "j", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set("x", "k", "gk", { desc = "Navigate up (visual line)" })
@@ -54,7 +54,7 @@ local function close_other_buffers()
 	end
 end
 
-vim.keymap.set("n", "<leader>ba", close_other_buffers, { desc = "Buffer close all but current buffer" })
+vim.keymap.set("n", "<leader>bo", close_other_buffers, { desc = "Buffer close every other buffer" })
 
 vim.keymap.set("n", "<leader>wv", "<C-w>v", { desc = "Window split vertically" })
 vim.keymap.set("n", "<leader>ws", "<C-w>s", { desc = "Window split horizontally" })
@@ -150,7 +150,7 @@ local function prompt_rename_current_file()
 	end)
 end
 
-vim.keymap.set("n", "<leader>rf", prompt_rename_current_file, { desc = "Rename current file on disk" })
+vim.keymap.set("n", "<leader>cR", prompt_rename_current_file, { desc = "Code rename this file on disk" })
 
 local function toggle_quickfix()
 	if vim.fn.getqflist({ winid = 0 }).winid ~= 0 then

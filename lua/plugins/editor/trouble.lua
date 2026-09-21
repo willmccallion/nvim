@@ -1,5 +1,5 @@
 --- Diagnostic and symbol browser via Trouble.nvim.
---- Diagnostics and quickfix lists under <leader>x; symbol outline under <leader>co.
+--- Diagnostics and quickfix lists under <leader>x; symbol outline under <leader>cs.
 
 vim.pack.add({ "https://github.com/folke/trouble.nvim" })
 
@@ -13,13 +13,13 @@ vim.keymap.set(
 )
 vim.keymap.set(
 	"n",
-	"<leader>xb",
+	"<leader>xX",
 	"<Cmd>Trouble diagnostics toggle filter.buf=0<CR>",
 	{ desc = "Problems toggle current buffer list" }
 )
 vim.keymap.set(
 	"n",
-	"<leader>co",
+	"<leader>cs",
 	"<Cmd>Trouble symbols toggle focus=false<CR>",
 	{ desc = "Code toggle symbol outline sidebar (functions classes)" }
 )

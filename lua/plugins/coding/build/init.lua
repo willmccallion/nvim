@@ -516,6 +516,6 @@ end
 vim.keymap.set("n", "<leader>mb", build, { desc = "Build project with its selected command" })
 vim.keymap.set("n", "<leader>mp", pick, { desc = "Build pick or type a command for this project" })
 vim.keymap.set("n", "<leader>mr", execute_selected, { desc = "Build run the project's run command" })
-vim.keymap.set("n", "<leader>mR", pick_run_command, { desc = "Build pick or type the run command" })
+vim.keymap.set("n", "<leader>mP", pick_run_command, { desc = "Build pick or type the run command" })
 vim.keymap.set("n", "<leader>mo", toggle_output, { desc = "Build toggle output window" })
 vim.keymap.set("n", "<leader>mk", stop, { desc = "Build stop the running command" })

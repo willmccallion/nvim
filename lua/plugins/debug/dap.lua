@@ -315,7 +315,7 @@ map("n", "<leader>dB", function()
 		end
 	end)
 end, { desc = "Debug set conditional breakpoint" })
-map("n", "<leader>dc", dap.run_to_cursor, { desc = "Debug run to cursor" })
+map("n", "<leader>dC", dap.run_to_cursor, { desc = "Debug continue to cursor" })
 map("n", "<leader>dl", dap.run_last, { desc = "Debug rerun last configuration" })
 map("n", "<leader>dr", dap.restart, { desc = "Debug restart session" })
 map("n", "<leader>dq", dap.terminate, { desc = "Debug stop session" })

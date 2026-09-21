@@ -67,7 +67,7 @@ map("n", "<leader>sh", builtin.help_tags, { desc = "Search help documentation" }
 map("n", "<leader>sd", builtin.diagnostics, { desc = "Search diagnostics errors and warnings" })
 map("n", "<leader>sm", builtin.marks, { desc = "Search marks and jump to them" })
 map("n", "<leader>so", builtin.oldfiles, { desc = "Search recently opened files" })
-map("n", "<leader>sq", builtin.search_history, { desc = "Search previous search queries" })
+map("n", "<leader>s/", builtin.search_history, { desc = "Search previous search queries" })
 
 map("n", "<leader>sk", keymaps.pick, { desc = "Search keymaps by domain" })
 map("n", "<leader>sK", function()
