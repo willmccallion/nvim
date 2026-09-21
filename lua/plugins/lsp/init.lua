@@ -62,6 +62,22 @@ vim.api.nvim_create_autocmd("LspAttach", {
 })
 
 vim.api.nvim_create_autocmd("LspAttach", {
+	desc = "Fold by the server's ranges rather than the syntax tree",
+	group = vim.api.nvim_create_augroup("lsp-folding", { clear = true }),
+	callback = function(ev)
+		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+		if not client or not client:supports_method("textDocument/foldingRange") then
+			return
+		end
+		-- 'foldexpr' is window-local, so every window on the buffer needs it, not
+		-- just the one that happened to be current when the server attached.
+		for _, win in ipairs(vim.fn.win_findbuf(ev.buf)) do
+			vim.wo[win][0].foldexpr = "v:lua.vim.lsp.foldexpr()"
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd("LspAttach", {
 	desc = "Highlight other references to the symbol under the cursor",
 	group = vim.api.nvim_create_augroup("lsp-document-highlight", { clear = true }),
 	callback = function(ev)

@@ -62,6 +62,8 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
 
+**Folding**: Folds follow the syntax tree, and a language server that reports folding ranges takes over per window when it attaches, since it knows about things the tree does not, like a run of imports. Files open with every fold up, so folding collapses what you choose rather than hiding a file on arrival. Vim's own `z` keys drive it: `za` toggles the fold under the cursor, `zR` opens all and `zM` closes all.
+
 **Editing**: Built-in commenting, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor editing, autopairs, and Neovim's bundled undo tree.
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.

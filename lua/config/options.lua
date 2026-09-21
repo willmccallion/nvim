@@ -35,6 +35,14 @@ vim.opt.splitbelow = true
 
 vim.opt.undofile = true
 
+--- Folds follow the syntax tree. A language server that reports folding ranges
+--- takes over per window in lua/plugins/lsp/init.lua, since it knows about things
+--- the tree does not, like a run of imports. Files open with every fold up:
+--- folding is here to collapse what you choose, not to hide a file on arrival.
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+vim.opt.foldlevelstart = 99
+
 vim.opt.exrc = true
 
 vim.opt.winborder = "rounded"
