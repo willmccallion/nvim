@@ -60,7 +60,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Diagnostics**: The message for the cursor's line shows under it, so the rest of the file stays quiet. `<leader>ol` widens that to every line and `<leader>cd` opens the full message in a float. Trouble.nvim gives you a list view of diagnostics, quickfix and symbols.
 
-**Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search.
+**Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search. `S` labels every syntax node enclosing the cursor at once and selects the one you pick, where Neovim's own `an` widens the selection a node per press; it stays out of visual mode, which is nvim-surround's `S`.
 
 **Folding**: Folds follow the syntax tree, and a language server that reports folding ranges takes over per window when it attaches, since it knows about things the tree does not, like a run of imports. Files open with every fold up, so folding collapses what you choose rather than hiding a file on arrival. Vim's own `z` keys drive it: `za` toggles the fold under the cursor, `zR` opens all and `zM` closes all.
 

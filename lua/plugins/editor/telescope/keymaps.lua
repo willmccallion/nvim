@@ -39,6 +39,8 @@ local KEY_DOMAINS = {
 	["*"] = "Motion",
 	["#"] = "Motion",
 	["-"] = "File",
+	[";"] = "Motion",
+	[","] = "Motion",
 	["]A"] = "Swap",
 	["[A"] = "Swap",
 	["]F"] = "Swap",
@@ -101,6 +103,7 @@ local KEY_DOMAINS = {
 local MODE_DOMAINS = {
 	["<C-U>"] = { i = "Editing" },
 	["<C-W>"] = { i = "Editing" },
+	S = { n = "Motion" },
 }
 
 local MODES = { "n", "x", "o", "i", "s", "c", "t" }
