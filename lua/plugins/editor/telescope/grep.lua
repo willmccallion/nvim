@@ -10,6 +10,11 @@ local M = {}
 ---@param title string
 ---@param rg_args_for fun(prompt: string): string[]? nil skips the search; the pattern must follow "--"
 local function live_rg_picker(title, rg_args_for)
+	if vim.fn.executable("rg") == 0 then
+		vim.notify(title .. " needs ripgrep on PATH", vim.log.levels.ERROR)
+		return
+	end
+
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
