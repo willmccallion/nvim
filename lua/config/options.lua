@@ -8,7 +8,31 @@ vim.opt.signcolumn = "yes"
 vim.opt.cursorline = true
 vim.opt.list = true
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
-vim.opt.mouse = ""
+
+-- Disables any mouse usage, including scrolling
+vim.opt.mouse = "a"
+local mouse_keys = {
+	"<ScrollWheelUp>",
+	"<ScrollWheelDown>",
+	"<ScrollWheelLeft>",
+	"<ScrollWheelRight>",
+	"<LeftMouse>",
+	"<RightMouse>",
+	"<MiddleMouse>",
+	"<2-LeftMouse>",
+	"<3-LeftMouse>",
+	"<4-LeftMouse>",
+	"<LeftDrag>",
+	"<LeftRelease>",
+	"<RightDrag>",
+	"<RightRelease>",
+}
+for _, key in ipairs(mouse_keys) do
+	for _, mod in ipairs({ "", "S-", "C-", "A-" }) do
+		local k = mod == "" and key or key:gsub("^<", "<" .. mod)
+		vim.keymap.set({ "n", "i", "v", "c", "t" }, k, "<Nop>")
+	end
+end
 
 -- Accelerated j/k covers ground fast enough that a cursor on the last visible
 -- line gives no warning that the window is about to end.
