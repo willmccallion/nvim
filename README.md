@@ -36,7 +36,7 @@ To add a treesitter language, add the parser name to the `parsers` list in `lua/
 
 **LSP**: Native `vim.lsp.config`/`vim.lsp.enable`, with server configs in the runtime `lsp/` directory. Completion is handled by nvim-cmp with LSP, snippet, path, and buffer sources. Renaming a symbol goes through inc-rename, so `'inccommand'` previews every affected site as you type. `<leader>oc` shows code lenses and `<leader>cl` runs the one on the cursor's line; `<leader>oi` does the same for inlay hints. Both start off, so a buffer stays quiet until you ask. `<leader>cc` and `<leader>cC` list the callers of the symbol under the cursor and the functions it calls; `<leader>ch` and `<leader>cH` do the same for subtypes and supertypes, in the quickfix list since Telescope has no picker for them. In a flake that defines `nixosConfigurations.<this host>`, nixd completes and documents that system's own options, home-manager and other module options included, evaluated from the flake and its locked nixpkgs.
 
-**Treesitter**: Syntax highlighting, indentation (for languages whose parser has indent rules; the rest keep Vim's own), text objects and motions for functions, classes, arguments, conditionals and loops, and Neovim's built-in incremental selection by syntax node. nvim-treesitter-context pins the enclosing function/loop to the top of the window.
+**Treesitter**: Syntax highlighting, indentation (for languages whose parser has indent rules; the rest keep Vim's own), text objects and motions for functions, classes, arguments, conditionals and loops, and Neovim's built-in incremental selection by syntax node. nvim-treesitter-context pins the enclosing function/loop to the top of the window. Tags in comments (`TODO:`, `FIXME:`, `NOTE:`, `HACK:`) are coloured by the `comment` parser.
 
 **Build**: Builds the project in the background and loads compiler errors into quickfix. The build system is detected from the current file upward (stopping at the git root):
 - `Cargo.toml` runs `cargo build` from the outermost `Cargo.toml` (the workspace root).
@@ -52,7 +52,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Formatting**: Format-on-save via conform.nvim. Each language has its own formatter configured. Lua style is set by `.stylua.toml`.
 
-**Search**: Telescope for finding files, grepping, searching buffers/diagnostics/help/keymaps/TODOs/symbols. In the file finder and grep, two spaces start a glob filter: `config  *.lua` or `TODO  src/** !*.test.ts`. Search and replace is grug-far: `<leader>rw` for the current file and `<leader>rp` for the project, both prefilled from the word under the cursor or the visual selection. Matches are listed with the replacement rendered in place, and nothing is written until you sync it back.
+**Search**: Telescope for finding files, grepping, searching buffers/diagnostics/help/keymaps/symbols. In the file finder and grep, two spaces start a glob filter: `config  *.lua` or `TODO  src/** !*.test.ts`. Search and replace is grug-far: `<leader>rw` for the current file and `<leader>rp` for the project, both prefilled from the word under the cursor or the visual selection. Matches are listed with the replacement rendered in place, and nothing is written until you sync it back.
 
 **File Explorer**: Oil.nvim lets you edit your filesystem like a regular buffer.
 

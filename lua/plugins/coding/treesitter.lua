@@ -26,6 +26,7 @@ local parsers = {
 	"python",
 	"markdown",
 	"markdown_inline",
+	"comment",
 	"bash",
 	"fish",
 	"nix",
