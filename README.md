@@ -24,7 +24,7 @@ lua/
     coding/          Completion, formatting, treesitter, autopairs, snippets
       build/         Build runner (detection, per-project storage, runner)
     debug/           Debugger (nvim-dap + nvim-dap-view)
-    editor/          Navigation, search, git, surround, multi-cursor, undo tree
+    editor/          Navigation, search, git, surround, undo tree
       telescope/     Fuzzy finder (setup, glob filter, file/grep/keymap pickers)
     lsp/             LSP enablement and keymaps
 ```
@@ -64,7 +64,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Folding**: Folds follow the syntax tree, and a language server that reports folding ranges takes over per window when it attaches, since it knows about things the tree does not, like a run of imports. Files open with every fold up, so folding collapses what you choose rather than hiding a file on arrival. Vim's own `z` keys drive it: `za` toggles the fold under the cursor, `zR` opens all and `zM` closes all.
 
-**Editing**: Built-in commenting, nvim-surround for manipulating pairs, vim-visual-multi for multi-cursor editing, autopairs, and Neovim's bundled undo tree.
+**Editing**: Built-in commenting, nvim-surround for manipulating pairs, autopairs, and Neovim's bundled undo tree.
 
 **Terminals**: Toggleable splits that keep their session when hidden: a bottom shell, a right shell, and a Python REPL.
 
@@ -92,7 +92,6 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | `t` | Terminal |
 | `m` | Build (think "make") |
 | `d` | Debug |
-| `v` | Multi-cursor |
 | `L` | Lua: run code in Neovim |
 
 **Shift means bigger or stronger.** Lowercase acts on the current thing, uppercase on more of it or a
