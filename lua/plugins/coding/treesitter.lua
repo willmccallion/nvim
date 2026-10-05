@@ -1,7 +1,8 @@
---- Treesitter syntax highlighting and text objects.
+--- Treesitter syntax highlighting, indentation and text objects.
 --- Uses the nvim-treesitter main branch. Highlighting uses
---- vim.treesitter.start() per FileType. Incremental selection is built in:
---- `an` grows and `in` shrinks the selection in visual mode.
+--- vim.treesitter.start() per FileType, and indentation the plugin's
+--- indentexpr. Incremental selection is built in: `an` grows and `in` shrinks
+--- the selection in visual mode.
 
 vim.pack.add({
 	{
@@ -39,14 +40,20 @@ local parsers = {
 require("nvim-treesitter").install(parsers)
 
 vim.api.nvim_create_autocmd("FileType", {
-	desc = "Start treesitter highlighting for filetypes with an installed parser",
+	desc = "Start treesitter highlighting and indentation for filetypes with an installed parser",
 	group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
 	callback = function(ev)
 		local lang = vim.treesitter.language.get_lang(ev.match)
 		-- install() is asynchronous and needs a C compiler, so a wanted parser is not
 		-- necessarily a present one. add() reports that rather than raising in start().
-		if lang and vim.list_contains(parsers, lang) and vim.treesitter.language.add(lang) then
-			vim.treesitter.start(ev.buf, lang)
+		if not (lang and vim.list_contains(parsers, lang) and vim.treesitter.language.add(lang)) then
+			return
+		end
+		vim.treesitter.start(ev.buf, lang)
+		-- Without an indents query every line would indent to 0, so those filetypes
+		-- (vim, make) keep their own indent scripts.
+		if vim.treesitter.query.get(lang, "indents") then
+			vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 		end
 	end,
 })
