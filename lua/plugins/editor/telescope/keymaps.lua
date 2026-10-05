@@ -26,7 +26,6 @@ local LEADER_DOMAINS = {
 	u = "Undo",
 	v = "Multi-cursor",
 	w = "Window",
-	x = "Problems",
 	y = "Clipboard",
 	[" "] = "Search",
 }

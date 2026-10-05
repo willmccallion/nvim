@@ -58,7 +58,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Git**: Gitsigns shows changed/added/deleted lines in the sign column and stages, resets, previews and blames hunks.
 
-**Diagnostics**: The message for the cursor's line shows under it, so the rest of the file stays quiet. `<leader>ol` widens that to every line and `<leader>cd` opens the full message in a float. Trouble.nvim gives you a list view of diagnostics, quickfix and symbols.
+**Diagnostics**: The message for the cursor's line shows under it, so the rest of the file stays quiet. `<leader>ol` widens that to every line and `<leader>cd` opens the full message in a float.
 
 **Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, accelerated j/k so holding the key speeds up over time, and centered scrolling/search. `S` labels every syntax node enclosing the cursor at once and selects the one you pick, where Neovim's own `an` widens the selection a node per press; it stays out of visual mode, which is nvim-surround's `S`.
 
@@ -85,7 +85,6 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | `s` | Search: find things with Telescope |
 | `c` | Code: LSP actions, formatting, renaming, navigation to implementations |
 | `g` | Git: hunks, blame, log |
-| `x` | Problems: diagnostic and quickfix lists |
 | `o` | Option toggles: switch a display option on or off |
 | `r` | Replace: search and replace across a file or the project |
 | `w` | Window |

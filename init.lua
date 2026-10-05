@@ -36,7 +36,6 @@ require("plugins.editor.multicursor")
 require("plugins.editor.surround")
 require("plugins.editor.telescope")
 require("plugins.editor.todo_comments")
-require("plugins.editor.trouble")
 require("plugins.editor.undotree")
 
 require("plugins.lsp")
