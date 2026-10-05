@@ -21,13 +21,13 @@ require("gitsigns").setup({
 			vim.keymap.set(mode, l, r, opts)
 		end
 
-		map("n", "]h", function()
+		local next_hunk, prev_hunk = require("plugins.editor.motion_repeat").pair(function()
 			gs.nav_hunk("next")
-		end, { desc = "Git go to next changed hunk" })
-
-		map("n", "[h", function()
+		end, function()
 			gs.nav_hunk("prev")
-		end, { desc = "Git go to previous changed hunk" })
+		end)
+		map("n", "]h", next_hunk, { desc = "Git go to next changed hunk" })
+		map("n", "[h", prev_hunk, { desc = "Git go to previous changed hunk" })
 
 		map("n", "<leader>gs", gs.stage_hunk, { desc = "Git stage or unstage hunk" })
 		map("n", "<leader>gr", gs.reset_hunk, { desc = "Git reset hunk (discard changes)" })
