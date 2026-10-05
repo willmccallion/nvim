@@ -4,10 +4,6 @@
       "rev": "0abc8f390b278c3b4aabc4c004ac8a088b65cf24",
       "src": "https://github.com/L3MON4D3/LuaSnip"
     },
-    "accelerated-jk": {
-      "rev": "156c5158b72059404f6b8aaf15b59f87dd0aaa88",
-      "src": "https://github.com/rhysd/accelerated-jk"
-    },
     "cmp-buffer": {
       "rev": "b74fab3656eea9de20a9b8116afa3cfc4ec09657",
       "src": "https://github.com/hrsh7th/cmp-buffer"

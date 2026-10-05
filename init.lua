@@ -27,7 +27,6 @@ require("plugins.coding.build")
 
 require("plugins.debug.dap")
 
-require("plugins.editor.accelerate")
 require("plugins.editor.flash")
 require("plugins.editor.gitsigns")
 require("plugins.editor.grugfar")

@@ -2,8 +2,13 @@
 --- Grouped by domain: editing and navigation, clipboard, buffer, window,
 --- code rename, quickfix, option toggles, and Lua.
 
-vim.keymap.set("x", "j", "gj", { desc = "Navigate down (visual line)" })
-vim.keymap.set("x", "k", "gk", { desc = "Navigate up (visual line)" })
+--- A count moves by real lines, so 5j lands where 'relativenumber' says it will.
+vim.keymap.set({ "n", "x" }, "j", function()
+	return vim.v.count == 0 and "gj" or "j"
+end, { expr = true, desc = "Navigate down (visual line, or real lines with a count)" })
+vim.keymap.set({ "n", "x" }, "k", function()
+	return vim.v.count == 0 and "gk" or "k"
+end, { expr = true, desc = "Navigate up (visual line, or real lines with a count)" })
 vim.keymap.set({ "n", "x" }, "<Down>", "gj", { desc = "Navigate down (visual line)" })
 vim.keymap.set({ "n", "x" }, "<Up>", "gk", { desc = "Navigate up (visual line)" })
 vim.keymap.set("i", "<Down>", "<C-\\><C-o>gj", { desc = "Navigate down (visual line)" })

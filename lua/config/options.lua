@@ -34,8 +34,6 @@ for _, key in ipairs(mouse_keys) do
 	end
 end
 
--- Accelerated j/k covers ground fast enough that a cursor on the last visible
--- line gives no warning that the window is about to end.
 vim.opt.scrolloff = 4
 
 vim.opt.ignorecase = true
