@@ -1,5 +1,6 @@
 --- Pyright LSP config for Python.
 --- Auto search paths, library type stubs, and workspace-level diagnostics.
+--- Imports are ruff's to organize, so the code action is not offered twice.
 
 ---@type vim.lsp.Config
 return {
@@ -13,6 +14,7 @@ return {
 		".git",
 	},
 	settings = {
+		pyright = { disableOrganizeImports = true },
 		python = {
 			analysis = {
 				autoSearchPaths = true,

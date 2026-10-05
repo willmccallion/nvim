@@ -1,6 +1,6 @@
 --- Code formatting via conform.nvim.
 --- Format-on-save for Rust (rustfmt), C/C++ (clang-format), Lua (stylua),
---- Python (isort, black), and Nix (nixfmt).
+--- Python (ruff), and Nix (nixfmt).
 --- Disable per-buffer with vim.b.autoformat = false.
 
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" })
@@ -11,7 +11,7 @@ require("conform").setup({
 		c = { "clang-format" },
 		cpp = { "clang-format" },
 		lua = { "stylua" },
-		python = { "isort", "black" },
+		python = { "ruff_organize_imports", "ruff_format" },
 		nix = { "nixfmt" },
 	},
 	format_on_save = function(bufnr)
