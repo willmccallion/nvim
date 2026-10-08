@@ -7,8 +7,8 @@ Everything is in Lua and uses the built-in `vim.pack` plugin system. Plugin vers
 
 Requires **Neovim 0.13+**, a **Nerd Font**, **ripgrep** (for grep/search), and a **C compiler** (for treesitter parsers).
 
-For LSP support, install the language servers you need: `clangd`, `rust-analyzer`, `lua-language-server`, `pyright`, `ruff`, `nixd`.
-Same for formatters: `clang-format`, `rustfmt`, `stylua`, `ruff`, `nixfmt`.
+For LSP support, install the language servers you need: `clangd`, `rust-analyzer`, `lua-language-server`, `pyright`, `ruff`, `nixd`, `slang-server`.
+Same for formatters: `clang-format`, `rustfmt`, `stylua`, `ruff`, `nixfmt`, `verible-verilog-format`.
 Debugging prefers `lldb-dap` (ships with LLDB, and is called `lldb-vscode` before LLVM 18), looked up on `PATH` and under `/usr/lib/llvm-*/bin`; set `vim.g.lldb_dap_command` to its path on a machine that keeps it elsewhere. Failing that it falls back to `gdb`, which has spoken DAP natively since version 14.
 The config picks them up automatically if they're on your PATH.
 
@@ -16,7 +16,7 @@ The config picks them up automatically if they're on your PATH.
 
 ```
 init.lua             Loads config first, then plugins by category
-lsp/                 One file per language server (clangd, rust_analyzer, lua_ls, pyright, ruff, nixd)
+lsp/                 One file per language server (clangd, rust_analyzer, lua_ls, pyright, ruff, nixd, slang_server)
 lua/
   config/            Options, keymaps, globals, autocommands, terminal toggles, input prompt
   plugins/

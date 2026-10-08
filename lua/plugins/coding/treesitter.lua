@@ -35,6 +35,7 @@ local parsers = {
 	"make",
 	"json",
 	"yaml",
+	"systemverilog",
 }
 
 -- Install parsers asynchronously on startup; no-op if already installed.
