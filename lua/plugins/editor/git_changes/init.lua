@@ -1,9 +1,10 @@
---- Changed files panel. <leader>gd lists the repository's changes in a split on
---- the left, grouped by folder. The file under the cursor previews on the right
+--- Changed files panel. <leader>gd lists the repository's uncommitted changes in
+--- a split on the left, grouped by folder, and <leader>gD everything changed since
+--- a commit picked from the log. The file under the cursor previews on the right
 --- at its first change, folded down to the changes and the lines around them,
 --- with gitsigns tinting the changed lines and words; <CR> moves into it. The
---- panel stays open, and <leader>gd again closes it, returns to the file it was
---- opened from and puts the folds and tint back.
+--- panel stays open, and <leader>gd closes it, returns to the file it was opened
+--- from and puts the folds, tint and gitsigns' base back.
 
 local gitsigns = require("gitsigns")
 local devicons = require("nvim-web-devicons")
@@ -23,7 +24,12 @@ local ns = vim.api.nvim_create_namespace("git-changes")
 
 ---@class ChangedFile
 ---@field path string relative to the repository root
----@field status string one porcelain letter, or "?" for untracked
+---@field status string one git status letter, or "?" for untracked
+---@field old_path string? where a renamed or copied file came from
+
+---@class Since
+---@field commit string the commit the changes are listed since
+---@field summary string its short hash and subject, shown above the list
 
 ---@class PanelMark
 ---@field row integer 0-based
@@ -46,9 +52,18 @@ local ns = vim.api.nvim_create_namespace("git-changes")
 ---@field preview_buf integer? a buffer the preview loaded, closed once superseded
 ---@field origin_buf integer the buffer the panel was opened from, shown again on close
 ---@field origin_view vim.fn.winsaveview.ret its view at the time
+---@field since Since? nil for the uncommitted changes
+---@field ready boolean false until gitsigns diffs against the panel's base, so no preview attaches early
+
+---@class BaseChange
+---@field base string? nil for gitsigns' usual base, the index
+---@field on_done fun()
 
 ---@type Panel?
 local panel = nil
+
+---@type BaseChange[]
+local base_changes = {}
 
 --- The worktree letter wins over the index one, since it is what the buffer shows.
 ---@param index string
@@ -90,20 +105,64 @@ local function parse_porcelain(output)
 	while i <= #fields do
 		local record = fields[i]
 		local index, worktree = record:sub(1, 1), record:sub(2, 2)
-		table.insert(files, { path = record:sub(4), status = status_letter(index, worktree) })
-		i = i + ((index == "R" or index == "C") and 2 or 1)
+		local file = { path = record:sub(4), status = status_letter(index, worktree) }
+		if index == "R" or index == "C" then
+			file.old_path = fields[i + 1]
+			i = i + 1
+		end
+		table.insert(files, file)
+		i = i + 1
 	end
 	table.sort(files, by_folder_then_name)
 	return files
 end
 
+--- Parses `git diff --name-status -z`, where each letter is its own field and a
+--- rename or copy carries a similarity score and both its old and new paths.
+---@param output string
+---@return ChangedFile[]
+local function parse_name_status(output)
+	local files = {}
+	local fields = vim.split(output, "\0", { plain = true, trimempty = true })
+	local i = 1
+	while i <= #fields do
+		local letter = fields[i]:sub(1, 1)
+		if letter == "R" or letter == "C" then
+			table.insert(files, { status = letter, old_path = fields[i + 1], path = fields[i + 2] })
+			i = i + 3
+		else
+			table.insert(files, { status = letter, path = fields[i + 1] })
+			i = i + 2
+		end
+	end
+	return files
+end
+
+---@param output string `git ls-files -z` paths
+---@return ChangedFile[]
+local function parse_untracked(output)
+	return vim.tbl_map(function(path)
+		return { status = "?", path = path }
+	end, vim.split(output, "\0", { plain = true, trimempty = true }))
+end
+
 ---@param files ChangedFile[]
+---@param title string? a line above the list
 ---@return PanelContent
-local function render(files)
+local function render(files, title)
 	local content = { lines = {}, marks = {}, files_by_line = {} }
+	local notes = {}
+	if title then
+		table.insert(notes, title)
+	end
 	if #files == 0 then
-		content.lines = { "No changes" }
-		table.insert(content.marks, { row = 0, col_start = 0, col_end = #"No changes", group = "Comment" })
+		table.insert(notes, "No changes")
+	end
+	for _, note in ipairs(notes) do
+		table.insert(content.lines, note)
+		table.insert(content.marks, { row = #content.lines - 1, col_start = 0, col_end = #note, group = "Comment" })
+	end
+	if #files == 0 then
 		return content
 	end
 
@@ -152,6 +211,46 @@ local function set_change_tint(enabled)
 	gitsigns.toggle_word_diff(enabled)
 end
 
+--- change_base is asynchronous and sets the global base only once every attached
+--- buffer is re-diffed, so a buffer attaching meanwhile gets the old base, and a
+--- change started before another ends can be overtaken by it. Changes run one at
+--- a time here, each calling its on_done once the base is in place.
+local function run_next_base_change()
+	local change = base_changes[1]
+	if not change then
+		return
+	end
+	gitsigns.change_base(change.base, true, function(err)
+		vim.schedule(function()
+			if err then
+				vim.notify("gitsigns could not change its base: " .. tostring(err), vim.log.levels.ERROR)
+			end
+			table.remove(base_changes, 1)
+			change.on_done()
+			run_next_base_change()
+		end)
+	end)
+end
+
+---@param base string? nil for gitsigns' usual base
+---@param on_done fun()
+local function set_gitsigns_base(base, on_done)
+	if #base_changes == 0 and require("gitsigns.config").config.base == base then
+		on_done()
+		return
+	end
+	table.insert(base_changes, { base = base, on_done = on_done })
+	if #base_changes == 1 then
+		run_next_base_change()
+	end
+end
+
+---@param since Since?
+---@return string
+local function base_rev(since)
+	return since and since.commit or "HEAD"
+end
+
 --- The repository of the current file, or of the cwd for buffers that are not files.
 ---@return string?
 local function repo_root()
@@ -164,15 +263,35 @@ local function repo_root()
 end
 
 ---@param root string
----@return ChangedFile[]?
-local function changed_files(root)
-	local cmd = { "git", "status", "--porcelain=v1", "-z", "--untracked-files=all" }
-	local result = vim.system(cmd, { cwd = root, text = true }):wait()
+---@param args string[]
+---@return string? # stdout, or nil after reporting the failure
+local function git_output(root, args)
+	local result = vim.system(vim.list_extend({ "git" }, args), { cwd = root, text = true }):wait()
 	if result.code ~= 0 then
-		vim.notify("git status failed: " .. vim.trim(result.stderr), vim.log.levels.ERROR)
+		vim.notify(("git %s failed: %s"):format(args[1], vim.trim(result.stderr)), vim.log.levels.ERROR)
 		return nil
 	end
-	return parse_porcelain(result.stdout)
+	return result.stdout
+end
+
+--- Uncommitted changes from `git status`, or with since, everything that differs
+--- from its commit: committed after it, staged, unstaged and untracked.
+---@param root string
+---@param since Since?
+---@return ChangedFile[]?
+local function changed_files(root, since)
+	if not since then
+		local status = git_output(root, { "status", "--porcelain=v1", "-z", "--untracked-files=all" })
+		return status and parse_porcelain(status)
+	end
+	local diff = git_output(root, { "diff", "--name-status", "-z", "-M", since.commit })
+	local untracked = git_output(root, { "ls-files", "--others", "--exclude-standard", "-z" })
+	if not diff or not untracked then
+		return nil
+	end
+	local files = vim.list_extend(parse_name_status(diff), parse_untracked(untracked))
+	table.sort(files, by_folder_then_name)
+	return files
 end
 
 ---@param files_by_line table<integer, ChangedFile>
@@ -195,7 +314,7 @@ local function draw(files)
 	local cursor_line = vim.api.nvim_win_get_cursor(panel.win)[1]
 	local file_under_cursor = panel.files_by_line[cursor_line]
 
-	local content = render(files)
+	local content = render(files, panel.since and "since " .. panel.since.summary)
 	vim.bo[panel.buf].modifiable = true
 	vim.api.nvim_buf_set_lines(panel.buf, 0, -1, false, content.lines)
 	vim.bo[panel.buf].modifiable = false
@@ -216,7 +335,7 @@ local function refresh()
 	if not panel then
 		return
 	end
-	local files = changed_files(panel.root)
+	local files = changed_files(panel.root, panel.since)
 	if files then
 		draw(files)
 	end
@@ -239,21 +358,26 @@ local function deleted_buffer_name(file)
 	return "git-deleted://" .. file.path
 end
 
---- A deleted file has nothing on disk, so it shows what was removed: the
---- staged copy if there is one, otherwise the last commit's.
+--- A deleted file has nothing on disk, so it shows what was removed: with since,
+--- its commit's copy; otherwise the staged copy if there is one, else the last commit's.
 ---@param root string
+---@param since Since?
 ---@param file ChangedFile
 ---@return integer?
-local function deleted_file_buffer(root, file)
+local function deleted_file_buffer(root, since, file)
 	local name = deleted_buffer_name(file)
 	local existing = buffer_named(name)
 	if existing then
 		return existing
 	end
 
-	local result = vim.system({ "git", "show", ":" .. file.path }, { cwd = root, text = true }):wait()
-	if result.code ~= 0 then
-		result = vim.system({ "git", "show", "HEAD:" .. file.path }, { cwd = root, text = true }):wait()
+	local sources = since and { since.commit .. ":" } or { ":", "HEAD:" }
+	local result
+	for _, source in ipairs(sources) do
+		result = vim.system({ "git", "show", source .. file.path }, { cwd = root, text = true }):wait()
+		if result.code == 0 then
+			break
+		end
 	end
 	if result.code ~= 0 then
 		vim.notify("No earlier version of " .. file.path, vim.log.levels.WARN)
@@ -298,16 +422,18 @@ local function target_window()
 	return win
 end
 
---- The buffer's changes since the last commit, staged or not, as gitsigns tints
---- and ]h visits both. Diffed here because gitsigns reports no hunks while it
---- refreshes, which turning the tint on sets off. A file the last commit does not
---- have, untracked or newly added, has none: it is all new.
+--- The buffer's changes since rev, staged or not, as gitsigns tints and ]h
+--- visits both. Diffed here because gitsigns reports no hunks while it refreshes,
+--- which turning the tint on sets off. A file rev does not have, untracked or
+--- added since, has none: it is all new.
 ---@param root string
+---@param rev string
 ---@param file ChangedFile
 ---@param buf integer
 ---@return GitHunk[]
-local function hunks_since_commit(root, file, buf)
-	local committed = vim.system({ "git", "show", "HEAD:" .. file.path }, { cwd = root, text = true }):wait()
+local function hunks_since(root, rev, file, buf)
+	local spec = rev .. ":" .. (file.old_path or file.path)
+	local committed = vim.system({ "git", "show", spec }, { cwd = root, text = true }):wait()
 	if committed.code ~= 0 then
 		return {}
 	end
@@ -366,7 +492,7 @@ local function show_file(file)
 	panel.target_win = win
 	local previous_preview = panel.preview_buf
 	if file.status == "D" then
-		local buf = deleted_file_buffer(panel.root, file)
+		local buf = deleted_file_buffer(panel.root, panel.since, file)
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
 		end
@@ -378,7 +504,7 @@ local function show_file(file)
 			vim.cmd.edit(vim.fn.fnameescape(path))
 		end)
 		local buf = vim.api.nvim_win_get_buf(win)
-		focus_changes(win, buf, hunks_since_commit(panel.root, file, buf))
+		focus_changes(win, buf, hunks_since(panel.root, base_rev(panel.since), file, buf))
 		panel.preview_buf = not loaded_before and buf or nil
 	end
 	if previous_preview ~= panel.preview_buf then
@@ -390,7 +516,7 @@ end
 --- Shows the file under the panel's cursor unless it already is.
 ---@return integer? win showing it, or nil on a folder line
 local function show_file_under_cursor()
-	if not panel then
+	if not panel or not panel.ready then
 		return nil
 	end
 	local file = panel.files_by_line[vim.api.nvim_win_get_cursor(panel.win)[1]]
@@ -443,6 +569,9 @@ local function leave_review(closed)
 	close_unused_preview(closed.preview_buf)
 	folds.release_all()
 	set_change_tint(false)
+	if closed.since then
+		set_gitsigns_base(nil, function() end)
+	end
 end
 
 ---@return integer
@@ -485,18 +614,15 @@ local function create_panel_buffer()
 	return buf
 end
 
-local function open_panel()
-	local root = repo_root()
-	if not root then
-		vim.notify("Not inside a git repository", vim.log.levels.WARN)
-		return
-	end
-	local files = changed_files(root)
+---@param root string
+---@param since Since?
+local function open_panel(root, since)
+	local files = changed_files(root, since)
 	if not files then
 		return
 	end
 	if #files == 0 then
-		vim.notify("No changes")
+		vim.notify(since and "No changes since " .. since.summary or "No changes")
 		return
 	end
 
@@ -504,7 +630,7 @@ local function open_panel()
 	local origin_buf = vim.api.nvim_get_current_buf()
 	local origin_view = vim.fn.winsaveview()
 	local buf = create_panel_buffer()
-	local width = panel_width(render(files))
+	local width = panel_width(render(files, since and "since " .. since.summary))
 	local win = vim.api.nvim_open_win(buf, true, { split = "left", win = -1, width = width })
 	set_panel_window_options(win)
 	panel = {
@@ -516,31 +642,86 @@ local function open_panel()
 		files_by_line = {},
 		origin_buf = origin_buf,
 		origin_view = origin_view,
+		since = since,
+		ready = false,
 	}
 	draw(files)
 	set_change_tint(true)
+	local opened = panel
+	set_gitsigns_base(since and since.commit, function()
+		if panel == opened then
+			opened.ready = true
+			show_file_under_cursor()
+		end
+	end)
 end
 
---- The panel's buffer wipes when its window closes, which runs the cleanup. As
---- the last window it cannot close, so it gives way to an empty buffer instead.
+--- Leaves the review straight away, where the wipe handler would only schedule
+--- it, so a panel opened next does not have its tint undone. As the last window
+--- the panel cannot close, so it gives way to an empty buffer instead.
 local function close_panel()
 	assert(panel, "close_panel needs an open panel")
+	local closed = panel
+	panel = nil
 	local normal_wins = vim.tbl_filter(function(win)
 		return vim.api.nvim_win_get_config(win).relative == ""
 	end, vim.api.nvim_tabpage_list_wins(0))
-	if #normal_wins == 1 and normal_wins[1] == panel.win then
-		vim.api.nvim_win_set_buf(panel.win, vim.api.nvim_create_buf(true, false))
+	if #normal_wins == 1 and normal_wins[1] == closed.win then
+		vim.api.nvim_win_set_buf(closed.win, vim.api.nvim_create_buf(true, false))
 	else
-		vim.api.nvim_win_close(panel.win, false)
+		vim.api.nvim_win_close(closed.win, false)
 	end
+	leave_review(closed)
+end
+
+---@return string?
+local function current_repo_root()
+	local root = repo_root()
+	if not root then
+		vim.notify("Not inside a git repository", vim.log.levels.WARN)
+	end
+	return root
 end
 
 local function toggle_panel()
 	if panel and vim.api.nvim_win_is_valid(panel.win) then
 		close_panel()
-	else
-		open_panel()
+		return
 	end
+	local root = current_repo_root()
+	if root then
+		open_panel(root, nil)
+	end
+end
+
+--- Picks a commit from the log, with each one's diff previewed, and opens the
+--- panel on everything changed since it, replacing a panel already open.
+local function pick_commit_then_open_panel()
+	local root = current_repo_root()
+	if not root then
+		return
+	end
+	local actions = require("telescope.actions")
+	local action_state = require("telescope.actions.state")
+	require("telescope.builtin").git_commits({
+		cwd = root,
+		prompt_title = "Diff Changes Since Commit",
+		-- Replaces the picker's own <CR>, which would check the commit out.
+		attach_mappings = function(prompt_bufnr)
+			actions.select_default:replace(function()
+				local entry = action_state.get_selected_entry()
+				actions.close(prompt_bufnr)
+				if not entry then
+					return
+				end
+				if panel and vim.api.nvim_win_is_valid(panel.win) then
+					close_panel()
+				end
+				open_panel(root, { commit = entry.value, summary = entry.value .. " " .. entry.msg })
+			end)
+			return true
+		end,
+	})
 end
 
 local group = vim.api.nvim_create_augroup("git-changes-panel", { clear = true })
@@ -562,3 +743,9 @@ vim.api.nvim_create_autocmd("BufEnter", {
 })
 
 vim.keymap.set("n", "<leader>gd", toggle_panel, { desc = "Git diff toggle changed files panel" })
+vim.keymap.set(
+	"n",
+	"<leader>gD",
+	pick_commit_then_open_panel,
+	{ desc = "Git diff files changed since a commit picked from the log" }
+)
