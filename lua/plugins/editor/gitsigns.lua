@@ -21,10 +21,11 @@ require("gitsigns").setup({
 			vim.keymap.set(mode, l, r, opts)
 		end
 
+		-- Staged hunks are tinted too, so the motions visit them rather than skip past.
 		local next_hunk, prev_hunk = require("plugins.editor.motion_repeat").pair(function()
-			gs.nav_hunk("next")
+			gs.nav_hunk("next", { target = "all" })
 		end, function()
-			gs.nav_hunk("prev")
+			gs.nav_hunk("prev", { target = "all" })
 		end)
 		map("n", "]h", next_hunk, { desc = "Git go to next changed hunk" })
 		map("n", "[h", prev_hunk, { desc = "Git go to previous changed hunk" })

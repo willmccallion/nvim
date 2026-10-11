@@ -29,6 +29,7 @@ require("plugins.debug.dap")
 
 require("plugins.editor.flash")
 require("plugins.editor.gitsigns")
+require("plugins.editor.git_changes")
 require("plugins.editor.grugfar")
 require("plugins.editor.motion_repeat")
 require("plugins.editor.surround")
