@@ -31,17 +31,19 @@ local STATUS_STYLE = {
 
 local FIDGET_GROUP = "build"
 
+local fidget = require("fidget")
+
+fidget.notification.set_config(FIDGET_GROUP, {
+	name = "Build",
+	icon = vim.g.have_nerd_font and "\u{f085}" or nil,
+	group_style = "Title",
+}, false)
+
 --- Shown by fidget in the corner, so long commands never trigger a "Press ENTER" prompt.
 ---@param msg string
 ---@param level integer|string vim.log.levels value, or a highlight group for the annote
 ---@param opts table fidget notification options
 local function fidget_notify(msg, level, opts)
-	local fidget = require("fidget")
-	fidget.notification.set_config(FIDGET_GROUP, {
-		name = "Build",
-		icon = vim.g.have_nerd_font and "\u{f085}" or nil,
-		group_style = "Title",
-	}, false)
 	fidget.notify(msg, level, vim.tbl_extend("force", { group = FIDGET_GROUP }, opts))
 end
 

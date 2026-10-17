@@ -29,7 +29,7 @@ end
 --- Compiles one glob into a predicate over a cwd-relative path, following rg:
 --- a glob without a separator is matched against the file name alone.
 ---@param pattern string
----@return fun(path: string, name: string): boolean? nil when the glob does not parse
+---@return (fun(path: string, name: string): boolean)? matches nil when the glob does not parse
 local function compile(pattern)
 	local ok, lpeg = pcall(vim.glob.to_lpeg, pattern)
 	if not ok then

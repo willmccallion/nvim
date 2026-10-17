@@ -175,11 +175,11 @@ local function rust_init_commands()
 	if vim.fn.executable("rustc") == 0 then
 		return {}
 	end
-	local sysroot = vim.trim(vim.fn.system({ "rustc", "--print", "sysroot" }))
-	if vim.v.shell_error ~= 0 then
+	local result = vim.system({ "rustc", "--print", "sysroot" }, { text = true }):wait()
+	if result.code ~= 0 then
 		return {}
 	end
-	local lookup = vim.fs.joinpath(sysroot, "lib", "rustlib", "etc", "lldb_lookup.py")
+	local lookup = vim.fs.joinpath(vim.trim(result.stdout), "lib", "rustlib", "etc", "lldb_lookup.py")
 	return { ('command script import "%s"'):format(lookup) }
 end
 
