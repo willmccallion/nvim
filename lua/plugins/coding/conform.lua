@@ -1,6 +1,6 @@
 --- Code formatting via conform.nvim.
 --- Format-on-save for Rust (rustfmt), C/C++ (clang-format), Lua (stylua),
---- Python (ruff), Nix (nixfmt), and SystemVerilog/Verilog (verible).
+--- Python (ruff), Nix (nixfmt), SystemVerilog/Verilog (verible), and Zig (zig fmt).
 --- Disable per-buffer with vim.b.autoformat = false, or everywhere with vim.g.autoformat = false.
 
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" })
@@ -15,6 +15,7 @@ require("conform").setup({
 		nix = { "nixfmt" },
 		systemverilog = { "verible" },
 		verilog = { "verible" },
+		zig = { "zigfmt" },
 	},
 	format_on_save = function(bufnr)
 		if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then

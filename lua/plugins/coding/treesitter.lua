@@ -36,6 +36,7 @@ local parsers = {
 	"json",
 	"yaml",
 	"systemverilog",
+	"zig",
 }
 
 -- Install parsers asynchronously on startup; no-op if already installed.
