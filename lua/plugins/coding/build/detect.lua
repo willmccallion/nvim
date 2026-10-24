@@ -115,4 +115,22 @@ function M.commands(project)
 	return vim.deepcopy(COMMANDS[project.kind])
 end
 
+--- The shell's `p build -d` does what these do, plus its own fixes (stale CMake caches,
+--- coloured diagnostics), so it is used wherever it is installed.
+local P_DEBUG_BUILD = "fish -c 'p build -d'"
+
+--- A build that leaves the project's binaries with debug info, in the places a normal
+--- build puts them (target/debug for Cargo, build/ for CMake).
+---@param project build.Project
+---@param has_p boolean whether the fish `p` command is available
+---@return build.Command? nil for plain Makefiles, which have no standard debug switch
+function M.debug_build_command(project, has_p)
+	if project.kind == "cargo" then
+		return { cmd = has_p and P_DEBUG_BUILD or "cargo build", compiler = "cargo" }
+	elseif project.kind == "cmake" then
+		return { cmd = has_p and P_DEBUG_BUILD or COMMANDS.cmake[1].cmd, compiler = "gcc" }
+	end
+	return nil
+end
+
 return M

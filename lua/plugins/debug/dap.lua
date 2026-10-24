@@ -10,6 +10,8 @@ vim.pack.add({
 
 local dap = require("dap")
 local dap_view = require("dap-view")
+local build = require("plugins.coding.build")
+local elf = require("plugins.debug.elf")
 
 dap_view.setup({
 	auto_toggle = true,
@@ -147,18 +149,114 @@ local function prompt_in_coroutine(opts, parse)
 	end)
 end
 
+---@param program string
+---@return string
+local function display_path(program)
+	return vim.fn.fnamemodify(program, ":~:.")
+end
+
+--- Why the program cannot be debugged as it is, or nil when it can. fs_stat follows
+--- symlinks, so one pointing at a binary that was never built counts as missing.
+--- Binaries that are not ELF (the Mac's Mach-O) are never reported as lacking debug info.
+---@param program string
+---@return string?
+local function undebuggable_reason(program)
+	if not vim.uv.fs_stat(program) then
+		return "does not exist"
+	end
+	if elf.debug_info(program) == "missing" then
+		return "has no debug info"
+	end
+	return nil
+end
+
+--- Cargo's release profile drops debug info; the debug build writes target/debug instead.
+---@param program string
+---@return string
+local function debug_build_path(program)
+	return (program:gsub("/target/release/", "/target/debug/", 1))
+end
+
+---@param program string
+---@param deliver fun(program: string|table) receives the program to launch, or dap.ABORT
+local function build_then_deliver(program, deliver)
+	build.debug_build(function(succeeded)
+		if not succeeded then
+			deliver(dap.ABORT)
+			return
+		end
+		local built = debug_build_path(program)
+		local reason = undebuggable_reason(built)
+		if reason then
+			vim.notify(("Built with debug info, but %s %s"):format(display_path(built), reason), vim.log.levels.WARN)
+			deliver(dap.ABORT)
+			return
+		end
+		last_program = built
+		deliver(built)
+	end)
+end
+
+local BUILD_CHOICE = "Build it with debug info, then debug it"
+local ANYWAY_CHOICE = "Debug it anyway"
+
+--- Offers a debug build when the program is missing or was built without debug info,
+--- where breakpoints would never be hit and no variables would show.
+---@param program string
+---@param deliver fun(program: string|table) receives the program to launch, or dap.ABORT
+local function ensure_debuggable(program, deliver)
+	local reason = undebuggable_reason(program)
+	if not reason then
+		deliver(program)
+		return
+	end
+	local problem = ("%s %s"):format(display_path(program), reason)
+	local choices = {}
+	if build.has_debug_build() then
+		table.insert(choices, BUILD_CHOICE)
+	else
+		vim.notify(
+			problem
+				.. ". Only Cargo and CMake projects can be rebuilt from here; for a Makefile, add -g -O0 to its CFLAGS/CXXFLAGS",
+			vim.log.levels.WARN
+		)
+	end
+	if vim.uv.fs_stat(program) then
+		table.insert(choices, ANYWAY_CHOICE)
+	end
+	if #choices == 0 then
+		deliver(dap.ABORT)
+		return
+	end
+	vim.ui.select(choices, { prompt = problem }, function(choice)
+		if choice == BUILD_CHOICE then
+			build_then_deliver(program, deliver)
+		elseif choice == ANYWAY_CHOICE then
+			deliver(program)
+		else
+			deliver(dap.ABORT)
+		end
+	end)
+end
+
+--- Same handoff as prompt_in_coroutine, but the answer may arrive only after a build.
 ---@return thread
 local function prompt_program()
-	return prompt_in_coroutine({
-		prompt = "Executable: ",
-		default = last_program or default_program_dir(),
-		completion = "file",
-	}, function(program)
-		if not program or program == "" then
-			return dap.ABORT
-		end
-		last_program = vim.fn.fnamemodify(program, ":p")
-		return last_program
+	return coroutine.create(function(dap_co)
+		vim.ui.input({
+			prompt = "Executable: ",
+			default = last_program or default_program_dir(),
+			completion = "file",
+		}, function(program)
+			if not program or program == "" then
+				coroutine.resume(dap_co, dap.ABORT)
+				return
+			end
+			last_program = vim.fn.fnamemodify(program, ":p")
+			ensure_debuggable(last_program, function(result)
+				coroutine.resume(dap_co, result)
+			end)
+		end)
 	end)
 end
 

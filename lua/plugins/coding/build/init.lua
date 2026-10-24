@@ -282,9 +282,13 @@ end
 ---@param cmd string
 ---@param status build.Status shown while it is still going
 ---@param collect_issues fun(output: string[]): integer quickfix entries loaded
-local function start_command(project, cmd, status, collect_issues)
+---@param on_done? fun(succeeded: boolean) called once the command ends, or could not start
+local function start_command(project, cmd, status, collect_issues, on_done)
 	if active_run then
 		notify(("Already running: %s (<leader>mk stops it)"):format(short_command(active_run.cmd)), vim.log.levels.WARN)
+		if on_done then
+			on_done(false)
+		end
 		return
 	end
 
@@ -308,6 +312,9 @@ local function start_command(project, cmd, status, collect_issues)
 		vim.schedule(function()
 			active_run = nil
 			report(cmd, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9)
+			if on_done then
+				on_done(result.code == 0 and result.signal == 0)
+			end
 		end)
 	end)
 	active_run = { job = job, cmd = cmd }
@@ -315,10 +322,11 @@ end
 
 ---@param project build.Project
 ---@param command build.Command
-local function run(project, command)
+---@param on_done? fun(succeeded: boolean)
+local function run(project, command, on_done)
 	start_command(project, command.cmd, "building", function(output)
 		return load_quickfix(project.root, output, command)
-	end)
+	end, on_done)
 end
 
 --- A program's own output is not compiler diagnostics, so none of it reaches quickfix.
@@ -543,3 +551,37 @@ vim.keymap.set("n", "<leader>mr", execute_selected, { desc = "Build run the proj
 vim.keymap.set("n", "<leader>mP", pick_run_command, { desc = "Build pick or type the run command" })
 vim.keymap.set("n", "<leader>mo", toggle_output, { desc = "Build toggle output window" })
 vim.keymap.set("n", "<leader>mk", stop, { desc = "Build stop the running command" })
+
+---@return boolean
+local function has_p_command()
+	if vim.fn.executable("fish") ~= 1 then
+		return false
+	end
+	return vim.system({ "fish", "-c", "functions -q p" }):wait().code == 0
+end
+
+local M = {}
+
+--- Whether the current buffer's project has a debug build M.debug_build can run.
+---@return boolean
+function M.has_debug_build()
+	return detect.debug_build_command(current_project(), false) ~= nil
+end
+
+--- Builds the current buffer's project with debug info, like <leader>mb does with its
+--- own command: output in the build window, errors in quickfix.
+---@param on_done fun(succeeded: boolean, project: build.Project)
+---@return boolean started false when the project has no standard debug build
+function M.debug_build(on_done)
+	local project = current_project()
+	local command = detect.debug_build_command(project, has_p_command())
+	if not command then
+		return false
+	end
+	run(project, command, function(succeeded)
+		on_done(succeeded, project)
+	end)
+	return true
+end
+
+return M
