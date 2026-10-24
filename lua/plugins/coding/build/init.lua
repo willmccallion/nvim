@@ -191,6 +191,14 @@ local function append_output(buf, lines)
 	end
 end
 
+--- Compilers colour their messages when a build asks for it (p configures CMake with
+--- CMAKE_COLOR_DIAGNOSTICS), and 'errorformat' cannot match through the escape codes.
+---@param line string
+---@return string
+local function strip_colour_codes(line)
+	return (line:gsub("\27%[[%d;]*[A-Za-z]", ""))
+end
+
 --- Returns a vim.system stream handler that emits whole lines on the main loop.
 ---@param on_lines fun(lines: string[])
 ---@return fun(err?: string, data?: string)
@@ -283,6 +291,7 @@ local function start_command(project, cmd, status, collect_issues)
 	local buf = reset_output_buffer()
 	local output = {}
 	local on_lines = function(lines)
+		lines = vim.tbl_map(strip_colour_codes, lines)
 		vim.list_extend(output, lines)
 		append_output(buf, lines)
 	end
