@@ -584,4 +584,28 @@ function M.debug_build(on_done)
 	return true
 end
 
+---@class build.DebugTarget
+---@field root string project the target belongs to
+---@field program? string absolute path last debugged there
+---@field args? string its arguments as typed, empty for none
+
+--- What was last debugged in the current buffer's project.
+---@return build.DebugTarget
+function M.debug_target()
+	local root = current_project().root
+	local state = store.load(root)
+	return { root = root, program = state.debug_program, args = state.debug_args }
+end
+
+--- Takes the root rather than the current buffer's project, since a debug build can
+--- finish after the cursor has moved to another file.
+---@param root string
+---@param changes {program?: string, args?: string}
+function M.remember_debug_target(root, changes)
+	local state = store.load(root)
+	state.debug_program = changes.program or state.debug_program
+	state.debug_args = changes.args or state.debug_args
+	store.save(root, state)
+end
+
 return M

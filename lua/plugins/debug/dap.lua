@@ -119,9 +119,6 @@ local function available_adapter()
 	return (version and version >= GDB_DAP_MIN_VERSION) and "gdb" or "lldb"
 end
 
----@type string?
-local last_program = nil
-
 --- Where freshly built binaries usually live: Cargo's target/debug or a CMake build/ dir.
 ---@return string
 local function default_program_dir()
@@ -194,7 +191,6 @@ local function build_then_deliver(program, deliver)
 			deliver(dap.ABORT)
 			return
 		end
-		last_program = built
 		deliver(built)
 	end)
 end
@@ -241,32 +237,54 @@ local function ensure_debuggable(program, deliver)
 	end)
 end
 
+--- Hands dap the program once it is debuggable, remembering it for the project so
+--- the next <leader>dd launches it without asking.
+---@param root string
+---@param program string
+---@param dap_co thread
+local function deliver_program(root, program, dap_co)
+	ensure_debuggable(program, function(result)
+		if type(result) == "string" then
+			build.remember_debug_target(root, { program = result })
+		end
+		coroutine.resume(dap_co, result)
+	end)
+end
+
 --- Same handoff as prompt_in_coroutine, but the answer may arrive only after a build.
 ---@return thread
 local function prompt_program()
 	return coroutine.create(function(dap_co)
+		local target = build.debug_target()
 		vim.ui.input({
 			prompt = "Executable: ",
-			default = last_program or default_program_dir(),
+			default = target.program or default_program_dir(),
 			completion = "file",
 		}, function(program)
 			if not program or program == "" then
 				coroutine.resume(dap_co, dap.ABORT)
 				return
 			end
-			last_program = vim.fn.fnamemodify(program, ":p")
-			ensure_debuggable(last_program, function(result)
-				coroutine.resume(dap_co, result)
-			end)
+			deliver_program(target.root, vim.fn.fnamemodify(program, ":p"), dap_co)
 		end)
 	end)
 end
 
 ---@return thread
 local function prompt_args()
-	return prompt_in_coroutine({ prompt = "Arguments: " }, function(args)
+	local target = build.debug_target()
+	return prompt_in_coroutine({ prompt = "Arguments: ", default = target.args }, function(args)
+		build.remember_debug_target(target.root, { args = args or "" })
 		return require("dap.utils").splitstr(args or "")
 	end)
+end
+
+--- "Launch executable" takes no arguments, so a later <leader>dd should not reuse
+--- ones remembered from an earlier launch that had some.
+---@return string[]
+local function no_args()
+	build.remember_debug_target(build.debug_target().root, { args = "" })
+	return {}
 end
 
 --- Loads rustc's LLDB formatters so Vec, String, Option, etc. display readably.
@@ -313,6 +331,7 @@ local function debug_configurations(adapter, extra_commands)
 			type = adapter,
 			request = "launch",
 			program = prompt_program,
+			args = no_args,
 			cwd = "${workspaceFolder}",
 			initCommands = commands,
 		},
@@ -354,6 +373,45 @@ vim.api.nvim_create_autocmd("FileType", {
 	once = true,
 	callback = refresh_configurations,
 })
+
+--- Files dap has no configurations for, like a compiler's test inputs, still debug the
+--- project's program, with the C and C++ setup.
+local function pick_and_debug()
+	refresh_configurations()
+	if dap.configurations[vim.bo.filetype] then
+		dap.continue()
+		return
+	end
+	vim.ui.select(dap.configurations.cpp, {
+		prompt = "Configuration: ",
+		format_item = function(config)
+			return config.name
+		end,
+	}, function(config)
+		if config then
+			dap.run(config)
+		end
+	end)
+end
+
+--- Launches the project's remembered program and arguments without asking, still
+--- offering a debug build when it is missing or was built without debug info.
+---@param target build.DebugTarget
+---@param program string the target's remembered program
+local function debug_remembered(target, program)
+	local extra_commands = vim.bo.filetype == "rust" and rust_init_commands or nil
+	local config = debug_configurations(available_adapter(), extra_commands)[1]
+	config.name = "Launch " .. display_path(program)
+	config.program = function()
+		return coroutine.create(function(dap_co)
+			deliver_program(target.root, program, dap_co)
+		end)
+	end
+	config.args = require("dap.utils").splitstr(target.args or "")
+	local shown_args = (target.args or "") ~= "" and (" " .. target.args) or ""
+	vim.notify(("Debugging %s%s (<leader>dD picks another)"):format(display_path(program), shown_args))
+	dap.run(config)
+end
 
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
@@ -402,9 +460,24 @@ end
 
 local map = vim.keymap.set
 map("n", "<leader>dd", function()
-	refresh_configurations()
-	dap.continue()
-end, { desc = "Debug start or continue" })
+	if dap.session() then
+		dap.continue()
+		return
+	end
+	local target = build.debug_target()
+	if target.program then
+		debug_remembered(target, target.program)
+	else
+		pick_and_debug()
+	end
+end, { desc = "Debug continue, or start what this project debugged last" })
+map("n", "<leader>dD", function()
+	if dap.session() then
+		vim.notify("A debug session is already running; <leader>dq stops it", vim.log.levels.WARN)
+		return
+	end
+	pick_and_debug()
+end, { desc = "Debug start, picking the program and arguments" })
 map("n", "<leader>dn", dap.step_over, { desc = "Debug step over (next line)" })
 map("n", "<leader>di", dap.step_into, { desc = "Debug step into function" })
 map("n", "<leader>do", dap.step_out, { desc = "Debug step out of function" })

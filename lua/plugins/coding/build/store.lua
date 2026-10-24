@@ -1,6 +1,7 @@
 --- Per-project build command persistence.
---- Stores the selected and custom commands for each project root in a single
---- JSON file under stdpath("data"), so nothing is written into repositories.
+--- Stores the selected and custom commands, and what was last debugged, for each
+--- project root in a single JSON file under stdpath("data"), so nothing is written
+--- into repositories.
 
 local M = {}
 
@@ -9,6 +10,8 @@ local M = {}
 ---@field custom string[] commands typed in by the user, most recent first
 ---@field run? string command run by <leader>mr
 ---@field run_custom string[] run commands typed in by the user, most recent first
+---@field debug_program? string absolute path of the program last debugged
+---@field debug_args? string its arguments as typed, empty for none
 
 local path = vim.fs.joinpath(vim.fn.stdpath("data"), "build-commands.json")
 
@@ -45,6 +48,8 @@ function M.load(root)
 		custom = state.custom or {},
 		run = state.run,
 		run_custom = state.run_custom or {},
+		debug_program = state.debug_program,
+		debug_args = state.debug_args,
 	}
 end
 
