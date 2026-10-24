@@ -7,6 +7,7 @@
 require("config.globals")
 
 require("config.options")
+require("config.statusline")
 require("config.clipboard")
 require("config.input")
 require("config.keymaps")
