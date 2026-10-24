@@ -15,6 +15,8 @@ local elf = require("plugins.debug.elf")
 
 dap_view.setup({
 	auto_toggle = true,
+	-- Watches is empty until something is added; Scopes always shows the frame.
+	winbar = { default_section = "scopes" },
 	-- Scope trees are wide and shallow, and the bottom is already the build output's.
 	windows = { size = 0.35, position = "right" },
 })
