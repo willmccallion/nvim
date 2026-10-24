@@ -18,6 +18,21 @@ for mode, lhss in pairs(builtin_gr_maps) do
 	end
 end
 
+--- clangd's own extension: opens parser.cpp from parser.h and back, matched by its index.
+---@param client vim.lsp.Client
+---@param bufnr integer
+local function switch_source_header(client, bufnr)
+	client:request("textDocument/switchSourceHeader", vim.lsp.util.make_text_document_params(bufnr), function(err, uri)
+		if err then
+			vim.notify("clangd could not find the matching file: " .. err.message, vim.log.levels.ERROR)
+		elseif not uri or uri == "" then
+			vim.notify("No matching header or source file", vim.log.levels.WARN)
+		else
+			vim.cmd.edit(vim.fn.fnameescape(vim.uri_to_fname(uri)))
+		end
+	end, bufnr)
+end
+
 vim.api.nvim_create_autocmd("LspAttach", {
 	desc = "Set LSP keymaps in the attached buffer",
 	group = vim.api.nvim_create_augroup("lsp-attach", { clear = true }),
@@ -49,6 +64,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
 		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
 		map("<leader>cr", vim.lsp.buf.rename, "Code rename symbol across all files")
+
+		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+		if client and client.name == "clangd" then
+			map("<leader>co", function()
+				switch_source_header(client, ev.buf)
+			end, "Code open the other file of a header/source pair")
+		end
 
 		map("<leader>ca", vim.lsp.buf.code_action, "Code action (quick fix, refactor)", { "n", "x" })
 		map("<leader>cl", vim.lsp.codelens.run, "Code run the lens on this line")
