@@ -41,5 +41,8 @@ require("gitsigns").setup({
 		map("n", "<leader>gb", function()
 			gs.blame_line({ full = true })
 		end, { desc = "Git blame show who changed this line" })
+		map("n", "<leader>ob", gs.toggle_current_line_blame, {
+			desc = "Option toggle git blame at the end of the cursor's line",
+		})
 	end,
 })
