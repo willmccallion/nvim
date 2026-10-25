@@ -8,6 +8,12 @@
 
 --- The second key after <leader> names the domain, as in the README's table.
 local LEADER_DOMAINS = {
+	a = "Pin",
+	A = "Pin",
+	["1"] = "Pin",
+	["2"] = "Pin",
+	["3"] = "Pin",
+	["4"] = "Pin",
 	b = "Buffer",
 	c = "Code",
 	d = "Debug",
