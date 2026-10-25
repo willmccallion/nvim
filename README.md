@@ -66,6 +66,8 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Pinned files**: `<leader>a` pins the current file and `<leader>1` to `<leader>4` open pins 1 to 4, where the cursor last was in them. Each project (the git root) has its own pins, kept in `stdpath("data")/pins.json`. `<leader>A` shows them as a buffer, numbered by line: move lines to renumber them, `dd` to unpin, `<CR>` to open one; it saves when it closes.
 
+`<leader>cy` copies the cursor's place as `path:line`, relative to the git root, or `path:first-last` for the lines of a visual selection, to paste into a chat, an issue or a note.
+
 **Navigation**: Flash.nvim for label-based jumping and multi-line `f`/`t` motions, `j`/`k` that move by screen line unless given a count, and centered scrolling/search. `S` labels every syntax node enclosing the cursor at once and selects the one you pick, where Neovim's own `an` widens the selection a node per press; it stays out of visual mode, which is nvim-surround's `S`.
 
 **Folding**: Folds follow the syntax tree, and a language server that reports folding ranges takes over per window when it attaches, since it knows about things the tree does not, like a run of imports. Files open with every fold up, so folding collapses what you choose rather than hiding a file on arrival. Vim's own `z` keys drive it: `za` toggles the fold under the cursor, `zR` opens all and `zM` closes all.

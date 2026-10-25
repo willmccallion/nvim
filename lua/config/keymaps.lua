@@ -164,6 +164,36 @@ end
 
 vim.keymap.set("n", "<leader>cR", prompt_rename_current_file, { desc = "Code rename this file on disk" })
 
+--- Relative to the git root, which is how Claude, GitHub and compilers name files.
+---@param file string absolute
+---@return string
+local function location_path(file)
+	local root = vim.fs.root(file, ".git")
+	return root and vim.fs.relpath(root, file) or vim.fn.fnamemodify(file, ":~:.")
+end
+
+--- Copies `path:line`, or `path:first-last` for a visual selection, to the clipboard.
+local function copy_code_location()
+	local file = vim.api.nvim_buf_get_name(0)
+	if vim.bo.buftype ~= "" or file == "" then
+		vim.notify("Current buffer is not a file", vim.log.levels.WARN)
+		return
+	end
+	local first, last = vim.fn.line("v"), vim.fn.line(".")
+	if first > last then
+		first, last = last, first
+	end
+	local lines = first == last and tostring(first) or ("%d-%d"):format(first, last)
+	local location = location_path(file) .. ":" .. lines
+	vim.fn.setreg("+", location)
+	if vim.fn.mode():match("^[vV\22]") then
+		vim.cmd("normal! \27")
+	end
+	vim.notify("Copied " .. location)
+end
+
+vim.keymap.set({ "n", "x" }, "<leader>cy", copy_code_location, { desc = "Code copy file:line (or file:first-last)" })
+
 local function toggle_quickfix()
 	if vim.fn.getqflist({ winid = 0 }).winid ~= 0 then
 		vim.cmd.cclose()
