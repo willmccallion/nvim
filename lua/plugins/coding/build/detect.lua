@@ -17,6 +17,7 @@ local M = {}
 ---@class build.Command
 ---@field cmd string shell command, run from the project root
 ---@field compiler? string :compiler plugin whose 'errorformat' parses the output
+---@field label? string shown in the status instead of `cmd`
 
 ---@class (private) build.Marker
 ---@field kind build.Kind

@@ -5,6 +5,8 @@
 
 local detect = require("plugins.coding.build.detect")
 local store = require("plugins.coding.build.store")
+local test_at_cursor = require("plugins.coding.build.test_at_cursor")
+local tests = require("plugins.coding.build.tests")
 
 ---@class (private) build.Run
 ---@field job vim.SystemObj
@@ -18,12 +20,13 @@ local output_buf = nil
 
 local ROOT_LINE_PREFIX = "build-root: "
 
----@alias build.Status "building" | "running" | "passed" | "failed" | "stopped"
+---@alias build.Status "building" | "running" | "testing" | "passed" | "failed" | "stopped"
 
 ---@type table<build.Status, {annote: string, hl: string}>
 local STATUS_STYLE = {
 	building = { annote = "Building", hl = "DiagnosticInfo" },
 	running = { annote = "Running", hl = "DiagnosticInfo" },
+	testing = { annote = "Testing", hl = "DiagnosticInfo" },
 	passed = { annote = "Passed", hl = "DiagnosticOk" },
 	failed = { annote = "Failed", hl = "DiagnosticError" },
 	stopped = { annote = "Stopped", hl = "DiagnosticWarn" },
@@ -55,7 +58,7 @@ local function notify_status(status, msg)
 	fidget_notify(msg, style.hl, {
 		key = "status",
 		annote = style.annote,
-		ttl = status == "building" and math.huge or 0,
+		ttl = (status == "building" or status == "testing") and math.huge or 0,
 	})
 end
 
@@ -120,8 +123,15 @@ end
 local errorformat_cache = {}
 
 --- make's "*** [target] Error N" lines name recipe files, not the failing source.
+--- Cargo's own format predates the panic line tests print now, and reads the
+--- assertion's left/right values and libtest's notes as errors with no file. The
+--- panic is one line, named by its test: a multi-line one would also end rustc's.
 ---@type table<string, string>
-local ERRORFORMAT_PREFIX = { gcc = "%-G%.%#make%.%#: ***%.%#," }
+local ERRORFORMAT_PREFIX = {
+	gcc = "%-G%.%#make%.%#: ***%.%#,",
+	cargo = "thread '%m' %.%#panicked at %f:%l:%c:,%-G  left: %.%#,%-G right: %.%#,"
+		.. "%-Gnote: run with `RUST_BACKTRACE%.%#,%-Gerror: test failed\\, to rerun%.%#,",
+}
 
 ---@param compiler? string
 ---@return string
@@ -251,20 +261,20 @@ local function load_quickfix(root, output, command)
 	return valid
 end
 
----@param cmd string
+---@param shown string what the status calls the command
 ---@param result vim.SystemCompleted
 ---@param issues integer quickfix entries loaded, zero for a plain run
 ---@param seconds number
-local function report(cmd, result, issues, seconds)
+local function report(shown, result, issues, seconds)
 	local elapsed = ("%.1fs"):format(seconds)
 	if result.signal ~= 0 then
-		notify_status("stopped", short_command(cmd))
+		notify_status("stopped", short_command(shown))
 	elseif result.code == 0 then
 		local suffix = issues > 0 and (", %d quickfix entries"):format(issues) or ""
-		notify_status("passed", ("%s (%s%s)"):format(short_command(cmd), elapsed, suffix))
+		notify_status("passed", ("%s (%s%s)"):format(short_command(shown), elapsed, suffix))
 	else
 		local hint = issues > 0 and "" or "; <leader>mo shows the output"
-		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(cmd), result.code, elapsed, hint))
+		notify_status("failed", ("%s (exit %d, %s%s)"):format(short_command(shown), result.code, elapsed, hint))
 		if issues > 0 then
 			-- Guarded, or a failing run would surface whatever a past build left behind.
 			-- Builds finish in the background, so the cursor stays where it was typing.
@@ -283,7 +293,9 @@ end
 ---@param status build.Status shown while it is still going
 ---@param collect_issues fun(output: string[]): integer quickfix entries loaded
 ---@param on_done? fun(succeeded: boolean) called once the command ends, or could not start
-local function start_command(project, cmd, status, collect_issues, on_done)
+---@param label? string shown in the status instead of the command
+local function start_command(project, cmd, status, collect_issues, on_done, label)
+	local shown = label or cmd
 	if active_run then
 		notify(("Already running: %s (<leader>mk stops it)"):format(short_command(active_run.cmd)), vim.log.levels.WARN)
 		if on_done then
@@ -301,7 +313,7 @@ local function start_command(project, cmd, status, collect_issues, on_done)
 	end
 	local started = vim.uv.hrtime()
 
-	notify_status(status, ("%s in %s"):format(short_command(cmd), vim.fn.fnamemodify(project.root, ":t")))
+	notify_status(status, ("%s in %s"):format(short_command(shown), vim.fn.fnamemodify(project.root, ":t")))
 	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, cmd }, {
 		cwd = project.root,
 		text = true,
@@ -311,7 +323,7 @@ local function start_command(project, cmd, status, collect_issues, on_done)
 	}, function(result)
 		vim.schedule(function()
 			active_run = nil
-			report(cmd, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9)
+			report(shown, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9)
 			if on_done then
 				on_done(result.code == 0 and result.signal == 0)
 			end
@@ -336,6 +348,87 @@ local function execute(project, cmd)
 	start_command(project, cmd, "running", function()
 		return 0
 	end)
+end
+
+--- Runs like a build, failures in quickfix. A filter that matches nothing still
+--- passes in libtest, so when `count_tests` finds none ran the status says so.
+---@param project build.Project
+---@param command build.Command
+---@param count_tests? fun(output: string[]): integer
+local function run_test(project, command, count_tests)
+	local tests_run
+	start_command(project, command.cmd, "testing", function(output)
+		tests_run = count_tests and count_tests(output)
+		return load_quickfix(project.root, output, command)
+	end, function(succeeded)
+		if succeeded and tests_run == 0 then
+			notify_status("failed", ("No test matched %s"):format(short_command(command.label or command.cmd)))
+		end
+	end, command.label)
+end
+
+---@param file string
+local function run_rust_test(file)
+	local project = current_project()
+	local package_root = vim.fs.root(file, "Cargo.toml")
+	if project.kind ~= "cargo" or not package_root then
+		notify("No Cargo.toml above this file", vim.log.levels.WARN)
+		return
+	end
+	local target = tests.rust_target(vim.fs.relpath(package_root, file) or "")
+	if not target then
+		notify("Cargo builds no tests from this file (only src/ and tests/)", vim.log.levels.WARN)
+		return
+	end
+	local place = test_at_cursor.rust(0)
+	if not place then
+		notify("No #[test] function or mod block under the cursor", vim.log.levels.INFO)
+		return
+	end
+	local manifest = package_root ~= project.root
+			and vim.fs.relpath(project.root, vim.fs.joinpath(package_root, "Cargo.toml"))
+		or nil
+	local command = tests.rust_command({
+		manifest = manifest,
+		target = target,
+		modules = place.scopes,
+		name = place.name,
+	})
+	run_test(project, command, tests.cargo_tests_run)
+end
+
+--- pytest names files relative to its rootdir, the nearest directory with its config.
+---@param file string
+local function run_python_test(file)
+	local place = test_at_cursor.python(0)
+	if not place then
+		notify("No test function or Test class under the cursor", vim.log.levels.INFO)
+		return
+	end
+	local root = vim.fs.root(file, { "pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini" })
+		or vim.fs.root(file, ".git")
+		or vim.fs.dirname(file)
+	local command = tests.pytest_command({
+		file = vim.fs.relpath(root, file) or file,
+		classes = place.scopes,
+		name = place.name,
+	})
+	run_test({ root = root }, command)
+end
+
+local function run_test_under_cursor()
+	local file = vim.api.nvim_buf_get_name(0)
+	if vim.bo.buftype ~= "" or file == "" then
+		notify("Not a file", vim.log.levels.WARN)
+		return
+	end
+	if vim.bo.filetype == "rust" then
+		run_rust_test(file)
+	elseif vim.bo.filetype == "python" then
+		run_python_test(file)
+	else
+		notify(("<leader>mt runs Rust and pytest tests, not %s"):format(vim.bo.filetype), vim.log.levels.INFO)
+	end
 end
 
 ---@param project build.Project
@@ -549,6 +642,7 @@ vim.keymap.set("n", "<leader>mb", build, { desc = "Build project with its select
 vim.keymap.set("n", "<leader>mp", pick, { desc = "Build pick or type a command for this project" })
 vim.keymap.set("n", "<leader>mr", execute_selected, { desc = "Build run the project's run command" })
 vim.keymap.set("n", "<leader>mP", pick_run_command, { desc = "Build pick or type the run command" })
+vim.keymap.set("n", "<leader>mt", run_test_under_cursor, { desc = "Build run the test under the cursor" })
 vim.keymap.set("n", "<leader>mo", toggle_output, { desc = "Build toggle output window" })
 vim.keymap.set("n", "<leader>mk", stop, { desc = "Build stop the running command" })
 
