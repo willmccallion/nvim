@@ -945,8 +945,21 @@ local function since_of(root, commit)
 	return { commit = short, summary = vim.trim(summary) }
 end
 
+--- The commit before commit, or nil for a repository's first commit.
+---@param root string
+---@param commit string
+---@return string?
+local function parent_of(root, commit)
+	local result = vim.system(
+		{ "git", "rev-parse", "--verify", "--quiet", "--short", commit .. "^" },
+		{ cwd = root, text = true }
+	):wait()
+	return result.code == 0 and vim.trim(result.stdout) or nil
+end
+
 --- Opens the panel on the changes since older, up to newer or to the files as
---- they are now, replacing a panel already open.
+--- they are now, replacing a panel already open. When the files as they are now
+--- have nothing new since older, it shows what older itself changed instead.
 ---@param root string
 ---@param older string
 ---@param newer string?
@@ -960,6 +973,19 @@ local function open_range(root, older, newer)
 		if not since.to then
 			return
 		end
+	elseif #(changed_files(root, since) or { true }) == 0 then
+		local parent = parent_of(root, since.commit)
+		if not parent then
+			vim.notify(("No changes since %s, the first commit"):format(since.summary))
+			return
+		end
+		vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
+		local commit = since
+		since = since_of(root, parent)
+		if not since then
+			return
+		end
+		since.to = commit
 	end
 	if panel and vim.api.nvim_win_is_valid(panel.win) then
 		close_panel()
@@ -1089,7 +1115,8 @@ local function pick_commit(title, root, rows_for, diff_base, on_pick)
 end
 
 --- Picks a commit from the log, then where the changes since it run up to: the
---- files as they are now, first, or a later commit. Opens the panel on them.
+--- files as they are now, first, or a later commit (asked only when there is
+--- one). Opens the panel on them.
 local function pick_commit_then_open_panel()
 	local root = current_repo_root()
 	if not root then
@@ -1099,6 +1126,11 @@ local function pick_commit_then_open_panel()
 		return commit_rows(root, nil, mine)
 	end
 	pick_commit("Diff Changes Since Commit", root, history, nil, function(older)
+		-- With nothing after it, the second picker would only offer the files as they are now.
+		if #commit_rows(root, older.commit .. "..HEAD", false) == 0 then
+			open_range(root, older.commit, nil)
+			return
+		end
 		local function later(mine)
 			local rows = commit_rows(root, older.commit .. "..HEAD", mine)
 			table.insert(rows, 1, { author = "", when = "", subject = "Your files as they are now" })
