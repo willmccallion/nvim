@@ -8,6 +8,7 @@ local CONTEXT_LINES = 3
 
 ---@class GitHunk
 ---@field added {start: integer, count: integer}
+---@field removed {start: integer, count: integer}
 
 ---@class FoldRange
 ---@field first integer
