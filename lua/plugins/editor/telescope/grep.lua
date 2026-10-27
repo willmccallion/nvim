@@ -79,6 +79,19 @@ function M.grep_with_glob_filter()
 	end)
 end
 
+--- The tags the colourscheme draws as labels, written `TAG:` or `TAG(who):`.
+--- ERROR is left out because nearly every `ERROR:` is a message string.
+local COMMENT_TAG_PATTERN = [[\b(TODO|WIP|HACK|WARN|WARNING|FIX|FIXME|BUG)(\([^)]*\))?:]]
+
+function M.grep_comment_tags()
+	require("telescope.builtin").grep_string({
+		prompt_title = "TODO / WARN / FIXME Comments",
+		search = COMMENT_TAG_PATTERN,
+		use_regex = true,
+		additional_args = { "--case-sensitive" },
+	})
+end
+
 function M.grep_current_file_directory()
 	local dir = vim.fn.expand("%:p:h")
 	require("telescope.builtin").live_grep({

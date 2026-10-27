@@ -54,7 +54,7 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Formatting**: Format-on-save via conform.nvim. Each language has its own formatter configured. Lua style is set by `.stylua.toml`.
 
-**Search**: Telescope for finding files, grepping, searching buffers/diagnostics/help/keymaps/symbols. In the file finder and grep, two spaces start a glob filter: `config  *.lua` or `TODO  src/** !*.test.ts`. Search and replace is grug-far: `<leader>rw` for the current file and `<leader>rp` for the project, both prefilled from the word under the cursor or the visual selection. Matches are listed with the replacement rendered in place, and nothing is written until you sync it back.
+**Search**: Telescope for finding files, grepping, searching buffers/diagnostics/help/keymaps/symbols. In the file finder and grep, two spaces start a glob filter: `config  *.lua` or `TODO  src/** !*.test.ts`. `<leader>st` lists every `TODO:`, `WIP:`, `HACK:`, `WARN:`, `WARNING:`, `FIX:`, `FIXME:` and `BUG:` in the project, and typing narrows the list. Search and replace is grug-far: `<leader>rw` for the current file and `<leader>rp` for the project, both prefilled from the word under the cursor or the visual selection. Matches are listed with the replacement rendered in place, and nothing is written until you sync it back.
 
 **File Explorer**: Oil.nvim lets you edit your filesystem like a regular buffer.
 

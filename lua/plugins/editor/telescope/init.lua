@@ -85,6 +85,7 @@ end, { desc = "Search fuzzy text in current buffer" })
 map("n", "<leader>sf", files.find_files_with_glob_filter, { desc = "Search find files by name (query  *.glob)" })
 map("n", "<leader>sg", grep.grep_with_glob_filter, { desc = "Search grep text (pattern  *.glob)" })
 map("n", "<leader>s.", grep.grep_current_file_directory, { desc = "Search grep in current file directory" })
+map("n", "<leader>st", grep.grep_comment_tags, { desc = "Search TODO, WARN and FIXME comments" })
 
 map("n", "<leader>gc", grep.grep_changed_files, { desc = "Git grep only in changed files" })
 map("n", "<leader>gl", builtin.git_commits, { desc = "Git log commits with diff preview" })
