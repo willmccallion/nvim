@@ -2,11 +2,12 @@
 --- a split on the left, grouped by folder, and <leader>gD everything changed since
 --- a commit picked from the log, up to the files as they are now or to a later
 --- commit picked next. The file under the cursor previews on the right at its
---- first change, folded down to the changes and the lines around them, with the
---- changed lines and words tinted; <CR> moves into it. Files as they are now are
---- the real ones, tinted by gitsigns; a later commit's are read-only copies tinted
---- here the same way. The panel stays open, and <leader>gd closes it, returns to the
---- file it was opened from and puts the folds, tint and gitsigns' base back.
+--- first change, folded down to the changes and the lines around them. Each change
+--- shows as a before and after: the old lines in red above the new ones in green,
+--- the part that differs marked in both; <CR> moves into it. Files as they are now
+--- are the real ones, kept up to date as you edit; a later commit's are read-only
+--- copies. The panel stays open, and <leader>gd closes it, returns to the file it
+--- was opened from and puts the folds, colours and gitsigns' base back.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does).
 
 local gitsigns = require("gitsigns")
@@ -25,6 +26,7 @@ local STATUS_HIGHLIGHTS = {
 
 local ns = vim.api.nvim_create_namespace("git-changes")
 local tint_ns = vim.api.nvim_create_namespace("git-changes-tint")
+local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = true })
 
 ---@class ChangedFile
 ---@field path string relative to the repository root
@@ -59,6 +61,11 @@ local tint_ns = vim.api.nvim_create_namespace("git-changes-tint")
 ---@field origin_view vim.fn.winsaveview.ret its view at the time
 ---@field since Since? nil for the uncommitted changes
 ---@field ready boolean false until gitsigns diffs against the panel's base, so no preview attaches early
+---@field bases table<integer, BaseText> by buffer, each real file the preview tinted, to tint again on edits
+
+---@class BaseText
+---@field text string the file as the panel's base commit has it
+---@field lines string[] the same, split into lines
 
 ---@class BaseChange
 ---@field base string? nil for gitsigns' usual base, the index
@@ -208,12 +215,6 @@ local function panel_width(content)
 		widest = math.max(widest, vim.fn.strdisplaywidth(line))
 	end
 	return math.min(math.max(widest + 2, MIN_WIDTH), MAX_WIDTH)
-end
-
----@param enabled boolean
-local function set_change_tint(enabled)
-	gitsigns.toggle_linehl(enabled)
-	gitsigns.toggle_word_diff(enabled)
 end
 
 --- change_base is asynchronous and sets the global base only once every attached
@@ -464,74 +465,131 @@ local function target_window()
 	return win
 end
 
---- The buffer's changes since rev, staged or not, as gitsigns tints and ]h
---- visits both. Diffed here because gitsigns reports no hunks while it refreshes,
---- which turning the tint on sets off. A file rev does not have, untracked or
---- added since, is all one added hunk.
+--- The file as rev has it, as one string; "" when rev does not have it, so
+--- a file that is untracked or added since is all one added hunk.
 ---@param root string
 ---@param rev string
 ---@param file ChangedFile
----@param buf integer
----@return GitHunk[]
----@return string[] the file's lines at rev
-local function hunks_since(root, rev, file, buf)
+---@return string
+local function text_at(root, rev, file)
 	local spec = rev .. ":" .. (file.old_path or file.path)
 	local committed = vim.system({ "git", "show", spec }, { cwd = root, text = true }):wait()
-	local old_text = committed.code == 0 and committed.stdout or ""
+	return committed.code == 0 and committed.stdout or ""
+end
+
+--- The buffer's changes against old_text, staged or not, as the tint and ]h
+--- visit both. Diffed here because gitsigns reports no hunks while it refreshes.
+---@param old_text string
+---@param buf integer
+---@return GitHunk[]
+local function hunks_against(old_text, buf)
 	local current = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n") .. "\n"
 	local indices = vim.text.diff(old_text, current, { result_type = "indices" })
 	---@cast indices integer[][]
-	local hunks = vim.tbl_map(function(hunk)
+	return vim.tbl_map(function(hunk)
 		return { removed = { start = hunk[1], count = hunk[2] }, added = { start = hunk[3], count = hunk[4] } }
 	end, indices)
-	return hunks, vim.split(old_text, "\n", { plain = true })
 end
 
---- The span of line that differs from old_line: what is left between the longest
---- common start and the longest common end, as 0-based byte columns.
+--- Where two versions of a line differ: what is left between their longest
+--- common start and longest common end, as 0-based byte columns in each.
 ---@param old_line string
 ---@param line string
 ---@return integer? start, nil when the lines are the same
----@return integer finish
+---@return integer finish in line
+---@return integer old_finish in old_line
 local function changed_span(old_line, line)
 	local start = 0
 	while start < #line and start < #old_line and line:byte(start + 1) == old_line:byte(start + 1) do
 		start = start + 1
 	end
 	if start == #line and start == #old_line then
-		return nil, 0
+		return nil, 0, 0
 	end
 	local line_end, old_end = #line, #old_line
 	while line_end > start and old_end > start and line:byte(line_end) == old_line:byte(old_end) do
 		line_end, old_end = line_end - 1, old_end - 1
 	end
-	return start, line_end
+	return start, line_end, old_end
 end
 
---- Tints a read-only copy the way gitsigns tints a real file: the sign, the
---- changed lines, and within each changed line the part that differs.
+--- A removed line as virtual-line chunks, its changed part marked. Virtual lines
+--- show a tab as a single cell, so tabs become the spaces the buffer would show.
+---@param parts {text: string, group: string}[] the line in order
+---@param tabstop integer
+---@return [string, string][]
+local function virtual_line(parts, tabstop)
+	local chunks, column = {}, 0
+	for _, part in ipairs(parts) do
+		local pieces = vim.split(part.text, "\t", { plain = true })
+		local text = {}
+		for i, piece in ipairs(pieces) do
+			table.insert(text, piece)
+			column = column + vim.fn.strdisplaywidth(piece)
+			if i < #pieces then
+				local spaces = tabstop - column % tabstop
+				table.insert(text, string.rep(" ", spaces))
+				column = column + spaces
+			end
+		end
+		table.insert(chunks, { table.concat(text), part.group })
+	end
+	-- Pads past the window's edge so the whole row is tinted, like a real line.
+	table.insert(chunks, { string.rep(" ", vim.o.columns), "GitSignsDeleteVirtLn" })
+	return chunks
+end
+
+--- Shows each change as a before and after: the removed lines in red as virtual
+--- lines above the lines that replaced them, which are green, with the part of
+--- each line that differs marked in both. Signs go in the gutter too unless
+--- gitsigns already puts them there (with_signs false).
 ---@param buf integer
 ---@param hunks GitHunk[]
 ---@param old_lines string[]
-local function tint_changes(buf, hunks, old_lines)
+---@param with_signs boolean
+local function tint_changes(buf, hunks, old_lines, with_signs)
 	vim.api.nvim_buf_clear_namespace(buf, tint_ns, 0, -1)
 	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+	local tabstop = vim.bo[buf].tabstop
 	for _, hunk in ipairs(hunks) do
-		local added = hunk.removed.count == 0
+		local removed = {}
+		for offset = 0, hunk.removed.count - 1 do
+			local old_line = old_lines[hunk.removed.start + offset] or ""
+			local new_line = offset < hunk.added.count and lines[hunk.added.start + offset] or nil
+			local start, _, old_finish = changed_span(old_line, new_line or "")
+			if new_line and start then
+				table.insert(
+					removed,
+					virtual_line({
+						{ text = old_line:sub(1, start), group = "GitSignsDeleteVirtLn" },
+						{ text = old_line:sub(start + 1, old_finish), group = "GitSignsDeleteVirtLnInLine" },
+						{ text = old_line:sub(old_finish + 1), group = "GitSignsDeleteVirtLn" },
+					}, tabstop)
+				)
+			else
+				table.insert(removed, virtual_line({ { text = old_line, group = "GitSignsDeleteVirtLn" } }, tabstop))
+			end
+		end
+		if #removed > 0 then
+			-- A pure deletion's added.start is the line before it, 0 at the top.
+			local above = hunk.added.count > 0 or hunk.added.start == 0
+			local row = hunk.added.count > 0 and hunk.added.start - 1 or math.max(hunk.added.start - 1, 0)
+			vim.api.nvim_buf_set_extmark(buf, tint_ns, row, 0, { virt_lines = removed, virt_lines_above = above })
+		end
 		for offset = 0, hunk.added.count - 1 do
 			local row = hunk.added.start + offset - 1
 			vim.api.nvim_buf_set_extmark(buf, tint_ns, row, 0, {
-				sign_text = "│",
-				sign_hl_group = added and "GitSignsAdd" or "GitSignsChange",
-				line_hl_group = added and "GitSignsAddLn" or "GitSignsChangeLn",
+				line_hl_group = "GitSignsAddPreview",
+				sign_text = with_signs and "│" or nil,
+				sign_hl_group = with_signs and "GitSignsAdd" or nil,
 			})
-			local old_line = not added and offset < hunk.removed.count and old_lines[hunk.removed.start + offset]
+			local old_line = offset < hunk.removed.count and old_lines[hunk.removed.start + offset]
 			if old_line then
 				local start, finish = changed_span(old_line, lines[row + 1])
 				if start and finish > start then
 					vim.api.nvim_buf_set_extmark(buf, tint_ns, row, start, {
 						end_col = finish,
-						hl_group = "GitSignsChangeInline",
+						hl_group = "GitSignsAddInline",
 					})
 				end
 			end
@@ -614,6 +672,25 @@ local function close_unused_preview(buf)
 	vim.api.nvim_buf_delete(buf, {})
 end
 
+--- Keeps a real file's before and after up to date while it is edited in the review.
+---@param buf integer
+local function retint_on_edits(buf)
+	if #vim.api.nvim_get_autocmds({ group = edits_group, buffer = buf }) > 0 then
+		return
+	end
+	vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+		desc = "Show the edited file's changes against the panel's base",
+		group = edits_group,
+		buffer = buf,
+		callback = function()
+			local base = panel and panel.bases[buf]
+			if base then
+				tint_changes(buf, hunks_against(base.text, buf), base.lines, false)
+			end
+		end,
+	})
+end
+
 --- Shows the file in the target window, at its first change, without moving there.
 ---@param file ChangedFile
 ---@return integer win
@@ -633,8 +710,9 @@ local function show_file(file)
 		local buf = git_file_buffer(panel.root, { to .. ":" }, file.path, commit_buffer_name(to, file))
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
-			local hunks, old_lines = hunks_since(panel.root, panel.since.commit, file, buf)
-			tint_changes(buf, hunks, old_lines)
+			local old_text = text_at(panel.root, panel.since.commit, file)
+			local hunks = hunks_against(old_text, buf)
+			tint_changes(buf, hunks, vim.split(old_text, "\n", { plain = true }), true)
 			map_hunk_motions(buf, hunks)
 			focus_changes(win, buf, hunks)
 		end
@@ -646,7 +724,12 @@ local function show_file(file)
 			vim.cmd.edit(vim.fn.fnameescape(path))
 		end)
 		local buf = vim.api.nvim_win_get_buf(win)
-		focus_changes(win, buf, hunks_since(panel.root, base_rev(panel.since), file, buf))
+		local text = text_at(panel.root, base_rev(panel.since), file)
+		panel.bases[buf] = { text = text, lines = vim.split(text, "\n", { plain = true }) }
+		local hunks = hunks_against(text, buf)
+		tint_changes(buf, hunks, panel.bases[buf].lines, false)
+		retint_on_edits(buf)
+		focus_changes(win, buf, hunks)
 		panel.preview_buf = not loaded_before and buf or nil
 	end
 	if previous_preview ~= panel.preview_buf then
@@ -666,11 +749,14 @@ local function show_file_under_cursor()
 		return nil
 	end
 	local target = panel.target_win
-	if
-		vim.api.nvim_win_is_valid(target)
-		and vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(target)) == buffer_name_of(file)
-	then
-		return target
+	if vim.api.nvim_win_is_valid(target) then
+		local shown = vim.api.nvim_win_get_buf(target)
+		-- A real file already on show, like the one the panel was opened from, still
+		-- needs its before and after drawn; copies and deleted files are drawn as made.
+		local drawn = panel.bases[shown] or file.status == "D" or (panel.since and panel.since.to)
+		if drawn and vim.api.nvim_buf_get_name(shown) == buffer_name_of(file) then
+			return target
+		end
 	end
 	return show_file(file)
 end
@@ -710,12 +796,14 @@ local function leave_review(closed)
 	end
 	close_unused_preview(closed.preview_buf)
 	folds.release_all()
-	-- Commits' read-only copies are tinted here, so gitsigns was left as it was.
-	if closed.since and closed.since.to then
-		return
+	vim.api.nvim_clear_autocmds({ group = edits_group })
+	for buf in pairs(closed.bases) do
+		if vim.api.nvim_buf_is_valid(buf) then
+			vim.api.nvim_buf_clear_namespace(buf, tint_ns, 0, -1)
+		end
 	end
-	set_change_tint(false)
-	if closed.since then
+	-- Only the files as they are now were compared through gitsigns' base.
+	if closed.since and not closed.since.to then
 		set_gitsigns_base(nil, function() end)
 	end
 end
@@ -790,6 +878,7 @@ local function open_panel(root, since)
 		origin_view = origin_view,
 		since = since,
 		ready = false,
+		bases = {},
 	}
 	draw(files)
 	local opened = panel
@@ -798,7 +887,6 @@ local function open_panel(root, since)
 		show_file_under_cursor()
 		return
 	end
-	set_change_tint(true)
 	set_gitsigns_base(since and since.commit, function()
 		if panel == opened then
 			opened.ready = true
