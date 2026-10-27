@@ -1,6 +1,6 @@
 --- Global keybindings (non-plugin).
 --- Grouped by domain: editing and navigation, clipboard, buffer, window,
---- code rename, quickfix, option toggles, and Lua.
+--- code rename, quickfix, option toggles, and Lua; then :Update and :Q.
 
 --- A count moves by real lines, so 5j lands where 'relativenumber' says it will.
 vim.keymap.set({ "n", "x" }, "j", function()
@@ -222,3 +222,10 @@ end, {
 	end,
 	desc = "Update Neovim packages (:packupdate)",
 })
+
+-- An Ex command rather than a Lua function, so a refusal reads as :qa's own E37.
+vim.api.nvim_create_user_command(
+	"Q",
+	"qall<bang>",
+	{ bang = true, desc = "Quit every window (:qa), or with ! without saving (:qa!)" }
+)
