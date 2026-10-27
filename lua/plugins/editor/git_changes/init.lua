@@ -967,83 +967,147 @@ local function open_range(root, older, newer)
 	open_panel(root, since)
 end
 
---- Picks where the changes run up to: the files as they are now, first, then
---- each commit after older, each one's diff previewed.
+---@class CommitRow
+---@field commit string? its short hash; nil for the files as they are now
+---@field author string
+---@field when string how long ago, as git puts it
+---@field subject string
+
+--- The commits git log lists for range (HEAD's whole history when nil), newest
+--- first; with mine, only those by the user's git email, whatever name they carry.
 ---@param root string
----@param older Since
-local function pick_newer(root, older)
+---@param range string?
+---@param mine boolean
+---@return CommitRow[]
+local function commit_rows(root, range, mine)
+	local rows = {}
+	local args = { "log", "--format=%h%x09%an%x09%ar%x09%s", range or "HEAD" }
+	if mine then
+		local email = vim.trim(git_output(root, { "config", "user.email" }) or "")
+		table.insert(args, "--author=" .. email)
+	end
+	local log = git_output(root, args) or ""
+	for line in vim.gsplit(log, "\n", { trimempty = true }) do
+		local fields = vim.split(line, "\t", { plain = true })
+		table.insert(rows, { commit = fields[1], author = fields[2], when = fields[3], subject = fields[4] or "" })
+	end
+	return rows
+end
+
+--- A Telescope picker over commits: hash, author, how long ago and subject in
+--- columns, typing matching the author as well as the subject. <C-o> switches
+--- between everyone's commits and only yours. Each one's diff against diff_base
+--- (or its own diff) previews on the right.
+---@param title string
+---@param root string
+---@param rows_for fun(mine: boolean): CommitRow[]
+---@param diff_base string? previews show the diff from it to each commit
+---@param on_pick fun(row: CommitRow)
+local function pick_commit(title, root, rows_for, diff_base, on_pick)
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
 	local previewers = require("telescope.previewers")
 	local conf = require("telescope.config").values
 	local actions = require("telescope.actions")
 	local action_state = require("telescope.actions.state")
+	local entry_display = require("telescope.pickers.entry_display")
 
-	local rows = { { commit = nil, text = "Your files as they are now" } }
-	local later = git_output(root, { "log", "--format=%h %s", older.commit .. "..HEAD" }) or ""
-	for line in vim.gsplit(later, "\n", { trimempty = true }) do
-		table.insert(rows, { commit = vim.split(line, " ", { plain = true })[1], text = line })
+	local mine = false
+	local rows = rows_for(mine)
+	local author_width = 6
+	for _, row in ipairs(rows) do
+		author_width = math.max(author_width, vim.fn.strdisplaywidth(row.author))
+	end
+	local displayer = entry_display.create({
+		separator = " ",
+		items = { { width = 8 }, { width = math.min(author_width, 20) }, { width = 14 }, { remaining = true } },
+	})
+
+	---@param results CommitRow[]
+	local function finder(results)
+		return finders.new_table({
+			results = results,
+			---@param row CommitRow
+			entry_maker = function(row)
+				return {
+					value = row,
+					ordinal = table.concat({ row.commit or "", row.author, row.subject }, " "),
+					display = function()
+						return displayer({
+							{ row.commit or "", "TelescopeResultsIdentifier" },
+							{ row.author, "TelescopeResultsConstant" },
+							{ row.when, "TelescopeResultsComment" },
+							row.subject,
+						})
+					end,
+				}
+			end,
+		})
+	end
+
+	---@param showing_mine boolean
+	local function results_title(showing_mine)
+		return showing_mine and "Your commits (<C-o> everyone's)" or "Everyone's commits (<C-o> yours)"
 	end
 
 	pickers
 		.new({}, {
-			prompt_title = "Diff " .. older.commit .. " Up To",
-			finder = finders.new_table({
-				results = rows,
-				entry_maker = function(row)
-					return { value = row, ordinal = row.text, display = row.text }
-				end,
-			}),
+			prompt_title = title,
+			results_title = results_title(mine),
+			finder = finder(rows),
 			sorter = conf.generic_sorter({}),
 			previewer = previewers.new_termopen_previewer({
 				get_command = function(entry)
-					local newer = entry.value.commit
-					return newer and { "git", "-C", root, "diff", older.commit, newer }
-						or { "git", "-C", root, "diff", older.commit }
+					local commit = entry.value.commit
+					if diff_base then
+						return { "git", "-C", root, "diff", diff_base, commit }
+					end
+					return { "git", "-C", root, "show", commit }
 				end,
 			}),
-			attach_mappings = function(prompt_bufnr)
+			attach_mappings = function(prompt_bufnr, map)
 				actions.select_default:replace(function()
 					local entry = action_state.get_selected_entry()
 					actions.close(prompt_bufnr)
 					if entry then
-						open_range(root, older.commit, entry.value.commit)
+						-- A picker opened next has to wait for this one to finish closing.
+						vim.schedule(function()
+							on_pick(entry.value)
+						end)
 					end
 				end)
+				map({ "i", "n" }, "<C-o>", function()
+					mine = not mine
+					local picker = action_state.get_current_picker(prompt_bufnr)
+					picker:refresh(finder(rows_for(mine)), { reset_prompt = false })
+					picker.results_border:change_title(results_title(mine))
+				end, { desc = "Git show only your commits, or everyone's" })
 				return true
 			end,
 		})
 		:find()
 end
 
---- Picks a commit from the log, with each one's diff previewed, then where the
---- changes since it run up to, and opens the panel on them.
+--- Picks a commit from the log, then where the changes since it run up to: the
+--- files as they are now, first, or a later commit. Opens the panel on them.
 local function pick_commit_then_open_panel()
 	local root = current_repo_root()
 	if not root then
 		return
 	end
-	local actions = require("telescope.actions")
-	local action_state = require("telescope.actions.state")
-	require("telescope.builtin").git_commits({
-		cwd = root,
-		prompt_title = "Diff Changes Since Commit",
-		-- Replaces the picker's own <CR>, which would check the commit out.
-		attach_mappings = function(prompt_bufnr)
-			actions.select_default:replace(function()
-				local entry = action_state.get_selected_entry()
-				actions.close(prompt_bufnr)
-				local older = entry and since_of(root, entry.value)
-				if older then
-					-- The second picker has to wait for the first to finish closing.
-					vim.schedule(function()
-						pick_newer(root, older)
-					end)
-				end
-			end)
-			return true
-		end,
-	})
+	local function history(mine)
+		return commit_rows(root, nil, mine)
+	end
+	pick_commit("Diff Changes Since Commit", root, history, nil, function(older)
+		local function later(mine)
+			local rows = commit_rows(root, older.commit .. "..HEAD", mine)
+			table.insert(rows, 1, { author = "", when = "", subject = "Your files as they are now" })
+			return rows
+		end
+		pick_commit("Diff " .. older.commit .. " Up To", root, later, older.commit, function(newer)
+			open_range(root, older.commit, newer.commit)
+		end)
+	end)
 end
 
 local group = vim.api.nvim_create_augroup("git-changes-panel", { clear = true })
