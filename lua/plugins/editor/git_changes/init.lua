@@ -8,7 +8,8 @@
 --- are the real ones, kept up to date as you edit; a later commit's are read-only
 --- copies. The panel stays open, and <leader>gd closes it, returns to the file it
 --- was opened from and puts the folds, colours and gitsigns' base back.
---- :GitChanges [older [newer]] opens the same from the command line (g diff does).
+--- :GitChanges [older [newer]] opens the same from the command line (g diff does),
+--- and :GitChanges --cached [commit] what is staged against commit, HEAD by default.
 
 local gitsigns = require("gitsigns")
 local devicons = require("nvim-web-devicons")
@@ -37,6 +38,7 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 ---@field commit string the commit the changes are listed since
 ---@field summary string its short hash and subject, shown above the list
 ---@field to Since? a later commit to list the changes up to; nil for the files as they are now
+---@field index boolean? in a to, it stands for the staged files instead of a commit
 
 ---@class PanelMark
 ---@field row integer 0-based
@@ -303,7 +305,8 @@ local function changed_files(root, since)
 		return status and parse_porcelain(status)
 	end
 	if since.to then
-		local diff = git_output(root, { "diff", "--name-status", "-z", "-M", since.commit, since.to.commit })
+		local range = since.to.index and { "--cached", since.commit } or { since.commit, since.to.commit }
+		local diff = git_output(root, vim.list_extend({ "diff", "--name-status", "-z", "-M" }, range))
 		local files = diff and parse_name_status(diff)
 		if files then
 			table.sort(files, by_folder_then_name)
@@ -706,8 +709,9 @@ local function show_file(file)
 		end
 		panel.preview_buf = nil
 	elseif panel.since and panel.since.to then
-		local to = panel.since.to.commit
-		local buf = git_file_buffer(panel.root, { to .. ":" }, file.path, commit_buffer_name(to, file))
+		local to = panel.since.to
+		local source = to.index and ":" or to.commit .. ":"
+		local buf = git_file_buffer(panel.root, { source }, file.path, commit_buffer_name(to.commit, file))
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
 			local old_text = text_at(panel.root, panel.since.commit, file)
@@ -993,6 +997,29 @@ local function open_range(root, older, newer)
 	open_panel(root, since)
 end
 
+--- Opens the panel on what is staged, against commit, replacing a panel already open.
+---@param root string
+---@param commit string
+local function open_staged(root, commit)
+	local since = since_of(root, commit)
+	if not since then
+		return
+	end
+	since.to = { commit = "staged", summary = "the staged files", index = true }
+	local files = changed_files(root, since)
+	if not files then
+		return
+	end
+	if #files == 0 then
+		vim.notify("Nothing staged")
+		return
+	end
+	if panel and vim.api.nvim_win_is_valid(panel.win) then
+		close_panel()
+	end
+	open_panel(root, since)
+end
+
 ---@class CommitRow
 ---@field commit string? its short hash; nil for the files as they are now
 ---@field author string
@@ -1173,12 +1200,14 @@ vim.api.nvim_create_user_command("GitChanges", function(opts)
 	if not root then
 		return
 	end
-	if #opts.fargs == 0 then
+	if opts.fargs[1] == "--cached" then
+		open_staged(root, opts.fargs[2] or "HEAD")
+	elseif #opts.fargs == 0 then
 		pick_commit_then_open_panel()
 	else
 		open_range(root, opts.fargs[1], opts.fargs[2])
 	end
 end, {
 	nargs = "*",
-	desc = "Changed files panel: pick commits, or the changes since older, up to now or to newer",
+	desc = "Changed files panel: pick commits, the changes since older up to now or newer, or --cached [commit]",
 })
