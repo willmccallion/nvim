@@ -9,7 +9,9 @@
 --- copies. The panel stays open, and <leader>gd closes it, returns to the file it
 --- was opened from and puts the folds, colours and gitsigns' base back.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does),
---- and :GitChanges --cached [commit] what is staged against commit, HEAD by default.
+--- :GitChanges --commit [commit] what one commit changed, picked from the log when
+--- not given, and :GitChanges --cached [commit] what is staged against commit, HEAD
+--- by default.
 
 local gitsigns = require("gitsigns")
 local devicons = require("nvim-web-devicons")
@@ -37,6 +39,7 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 ---@class Since
 ---@field commit string the commit the changes are listed since
 ---@field summary string its short hash and subject, shown above the list
+---@field label string? shown in the title in place of commit
 ---@field to Since? a later commit to list the changes up to; nil for the files as they are now
 ---@field index boolean? in a to, it stands for the staged files instead of a commit
 
@@ -266,7 +269,7 @@ local function title_of(since)
 		return nil
 	end
 	if since.to then
-		return ("%s → %s"):format(since.commit, since.to.commit)
+		return ("%s → %s"):format(since.label or since.commit, since.to.commit)
 	end
 	return "since " .. since.summary
 end
@@ -961,9 +964,39 @@ local function parent_of(root, commit)
 	return result.code == 0 and vim.trim(result.stdout) or nil
 end
 
+--- The range holding only what commit changed: from the commit before it, or for
+--- a repository's first commit, from the empty tree.
+---@param root string
+---@param commit Since
+---@return Since?
+local function own_changes(root, commit)
+	local since
+	local parent = parent_of(root, commit.commit)
+	if parent then
+		since = since_of(root, parent)
+	else
+		local empty_tree = git_output(root, { "hash-object", "-t", "tree", "/dev/null" })
+		since = empty_tree and { commit = vim.trim(empty_tree), summary = "the empty tree", label = "empty" }
+	end
+	if since then
+		since.to = commit
+	end
+	return since
+end
+
+--- Opens the panel on since, replacing a panel already open.
+---@param root string
+---@param since Since
+local function replace_panel(root, since)
+	if panel and vim.api.nvim_win_is_valid(panel.win) then
+		close_panel()
+	end
+	open_panel(root, since)
+end
+
 --- Opens the panel on the changes since older, up to newer or to the files as
---- they are now, replacing a panel already open. When the files as they are now
---- have nothing new since older, it shows what older itself changed instead.
+--- they are now. When the files as they are now have nothing new since older, it
+--- shows what older itself changed instead.
 ---@param root string
 ---@param older string
 ---@param newer string?
@@ -978,23 +1011,24 @@ local function open_range(root, older, newer)
 			return
 		end
 	elseif #(changed_files(root, since) or { true }) == 0 then
-		local parent = parent_of(root, since.commit)
-		if not parent then
-			vim.notify(("No changes since %s, the first commit"):format(since.summary))
-			return
-		end
 		vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
-		local commit = since
-		since = since_of(root, parent)
+		since = own_changes(root, since)
 		if not since then
 			return
 		end
-		since.to = commit
 	end
-	if panel and vim.api.nvim_win_is_valid(panel.win) then
-		close_panel()
+	replace_panel(root, since)
+end
+
+--- Opens the panel on what commit itself changed.
+---@param root string
+---@param commit string
+local function open_commit(root, commit)
+	local picked = since_of(root, commit)
+	local since = picked and own_changes(root, picked)
+	if since then
+		replace_panel(root, since)
 	end
-	open_panel(root, since)
 end
 
 --- Opens the panel on what is staged, against commit, replacing a panel already open.
@@ -1014,10 +1048,7 @@ local function open_staged(root, commit)
 		vim.notify("Nothing staged")
 		return
 	end
-	if panel and vim.api.nvim_win_is_valid(panel.win) then
-		close_panel()
-	end
-	open_panel(root, since)
+	replace_panel(root, since)
 end
 
 ---@class CommitRow
@@ -1169,6 +1200,20 @@ local function pick_commit_then_open_panel()
 	end)
 end
 
+--- Picks a commit from the log and opens the panel on what it changed.
+local function pick_commit_to_show()
+	local root = current_repo_root()
+	if not root then
+		return
+	end
+	local function history(mine)
+		return commit_rows(root, nil, mine)
+	end
+	pick_commit("Diff Commit", root, history, nil, function(picked)
+		open_commit(root, picked.commit)
+	end)
+end
+
 local group = vim.api.nvim_create_augroup("git-changes-panel", { clear = true })
 
 vim.api.nvim_create_autocmd("BufWritePost", {
@@ -1202,6 +1247,10 @@ vim.api.nvim_create_user_command("GitChanges", function(opts)
 	end
 	if opts.fargs[1] == "--cached" then
 		open_staged(root, opts.fargs[2] or "HEAD")
+	elseif opts.fargs[1] == "--commit" and opts.fargs[2] then
+		open_commit(root, opts.fargs[2])
+	elseif opts.fargs[1] == "--commit" then
+		pick_commit_to_show()
 	elseif #opts.fargs == 0 then
 		pick_commit_then_open_panel()
 	else
@@ -1209,5 +1258,5 @@ vim.api.nvim_create_user_command("GitChanges", function(opts)
 	end
 end, {
 	nargs = "*",
-	desc = "Changed files panel: pick commits, the changes since older up to now or newer, or --cached [commit]",
+	desc = "Changed files panel: pick commits, the changes since older up to now or newer, --commit [commit] or --cached [commit]",
 })
