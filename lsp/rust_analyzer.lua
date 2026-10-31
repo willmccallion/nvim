@@ -31,6 +31,7 @@ return {
 			checkOnSave = true,
 			check = { command = "clippy" },
 			cargo = { allFeatures = true },
+			files = { exclude = { "datasets" } },
 		},
 	},
 }
