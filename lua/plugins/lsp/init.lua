@@ -2,6 +2,8 @@
 --- Enables the server configs in the top-level lsp/ directory via vim.lsp.enable
 --- and sets up LSP keybindings (go-to-definition, references, rename, etc.) on attach.
 
+local peek = require("plugins.lsp.peek")
+
 vim.lsp.config("*", {
 	capabilities = require("cmp_nvim_lsp").default_capabilities(),
 })
@@ -46,6 +48,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		map("gd", builtin.lsp_definitions, "LSP go to definition")
 		map("gD", vim.lsp.buf.declaration, "LSP go to declaration (header file)")
+		map("gp", peek.definition, "LSP peek at the definition in a float, staying here")
+		map("gP", peek.definition_in_split, "LSP peek at the definition in a split, staying here")
 		map("<leader>ci", builtin.lsp_implementations, "Code go to implementation")
 		map("<leader>ct", builtin.lsp_type_definitions, "Code go to type definition")
 		map("<leader>cc", builtin.lsp_incoming_calls, "Code find callers of this function")
