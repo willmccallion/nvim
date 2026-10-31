@@ -8,6 +8,8 @@
 --- are the real ones, kept up to date as you edit; a later commit's are read-only
 --- copies. The panel stays open, and <leader>gd closes it, returns to the file it
 --- was opened from and puts the folds, colours and gitsigns' base back.
+--- <leader>gh lists the commits that changed the function under the cursor, or the
+--- selected lines, and opens the panel on the one picked.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does),
 --- :GitChanges --commit [commit] what one commit changed, picked from the log when
 --- not given, and :GitChanges --cached [commit] what is staged against commit, HEAD
@@ -857,7 +859,8 @@ end
 
 ---@param root string
 ---@param since Since?
-local function open_panel(root, since)
+---@param focus_path string? the file to start on, when it is in the list
+local function open_panel(root, since, focus_path)
 	local files = changed_files(root, since)
 	if not files then
 		return
@@ -888,6 +891,9 @@ local function open_panel(root, since)
 		bases = {},
 	}
 	draw(files)
+	if focus_path then
+		vim.api.nvim_win_set_cursor(win, { line_of(panel.files_by_line, focus_path) or 1, 0 })
+	end
 	local opened = panel
 	if since and since.to then
 		opened.ready = true
@@ -987,11 +993,12 @@ end
 --- Opens the panel on since, replacing a panel already open.
 ---@param root string
 ---@param since Since
-local function replace_panel(root, since)
+---@param focus_path string?
+local function replace_panel(root, since, focus_path)
 	if panel and vim.api.nvim_win_is_valid(panel.win) then
 		close_panel()
 	end
-	open_panel(root, since)
+	open_panel(root, since, focus_path)
 end
 
 --- Opens the panel on the changes since older, up to newer or to the files as
@@ -1023,11 +1030,12 @@ end
 --- Opens the panel on what commit itself changed.
 ---@param root string
 ---@param commit string
-local function open_commit(root, commit)
+---@param focus_path string?
+local function open_commit(root, commit, focus_path)
 	local picked = since_of(root, commit)
 	local since = picked and own_changes(root, picked)
 	if since then
-		replace_panel(root, since)
+		replace_panel(root, since, focus_path)
 	end
 end
 
@@ -1062,10 +1070,14 @@ end
 ---@param root string
 ---@param range string?
 ---@param mine boolean
+---@param lines string? only commits changing these lines, as git log -L names them
 ---@return CommitRow[]
-local function commit_rows(root, range, mine)
+local function commit_rows(root, range, mine, lines)
 	local rows = {}
 	local args = { "log", "--format=%h%x09%an%x09%ar%x09%s", range or "HEAD" }
+	if lines then
+		vim.list_extend(args, { "-L", lines, "--no-patch" })
+	end
 	if mine then
 		local email = vim.trim(git_output(root, { "config", "user.email" }) or "")
 		table.insert(args, "--author=" .. email)
@@ -1080,14 +1092,13 @@ end
 
 --- A Telescope picker over commits: hash, author, how long ago and subject in
 --- columns, typing matching the author as well as the subject. <C-o> switches
---- between everyone's commits and only yours. Each one's diff against diff_base
---- (or its own diff) previews on the right.
+--- between everyone's commits and only yours. preview_command's output previews
+--- on the right.
 ---@param title string
----@param root string
 ---@param rows_for fun(mine: boolean): CommitRow[]
----@param diff_base string? previews show the diff from it to each commit
+---@param preview_command fun(commit: string?): string[]
 ---@param on_pick fun(row: CommitRow)
-local function pick_commit(title, root, rows_for, diff_base, on_pick)
+local function pick_commit(title, rows_for, preview_command, on_pick)
 	local pickers = require("telescope.pickers")
 	local finders = require("telescope.finders")
 	local previewers = require("telescope.previewers")
@@ -1142,11 +1153,7 @@ local function pick_commit(title, root, rows_for, diff_base, on_pick)
 			sorter = conf.generic_sorter({}),
 			previewer = previewers.new_termopen_previewer({
 				get_command = function(entry)
-					local commit = entry.value.commit
-					if diff_base then
-						return { "git", "-C", root, "diff", diff_base, commit }
-					end
-					return { "git", "-C", root, "show", commit }
+					return preview_command(entry.value.commit)
 				end,
 			}),
 			attach_mappings = function(prompt_bufnr, map)
@@ -1172,6 +1179,14 @@ local function pick_commit(title, root, rows_for, diff_base, on_pick)
 		:find()
 end
 
+---@param root string
+---@return fun(commit: string?): string[]
+local function preview_own_diff(root)
+	return function(commit)
+		return { "git", "-C", root, "show", commit }
+	end
+end
+
 --- Picks a commit from the log, then where the changes since it run up to: the
 --- files as they are now, first, or a later commit (asked only when there is
 --- one). Opens the panel on them.
@@ -1183,7 +1198,7 @@ local function pick_commit_then_open_panel()
 	local function history(mine)
 		return commit_rows(root, nil, mine)
 	end
-	pick_commit("Diff Changes Since Commit", root, history, nil, function(older)
+	pick_commit("Diff Changes Since Commit", history, preview_own_diff(root), function(older)
 		-- With nothing after it, the second picker would only offer the files as they are now.
 		if #commit_rows(root, older.commit .. "..HEAD", false) == 0 then
 			open_range(root, older.commit, nil)
@@ -1194,7 +1209,10 @@ local function pick_commit_then_open_panel()
 			table.insert(rows, 1, { author = "", when = "", subject = "Your files as they are now" })
 			return rows
 		end
-		pick_commit("Diff " .. older.commit .. " Up To", root, later, older.commit, function(newer)
+		local function preview_from_older(commit)
+			return { "git", "-C", root, "diff", older.commit, commit }
+		end
+		pick_commit("Diff " .. older.commit .. " Up To", later, preview_from_older, function(newer)
 			open_range(root, older.commit, newer.commit)
 		end)
 	end)
@@ -1209,9 +1227,151 @@ local function pick_commit_to_show()
 	local function history(mine)
 		return commit_rows(root, nil, mine)
 	end
-	pick_commit("Diff Commit", root, history, nil, function(picked)
+	pick_commit("Diff Commit", history, preview_own_diff(root), function(picked)
 		open_commit(root, picked.commit)
 	end)
+end
+
+--- The line of the committed file that a buffer line sits at, given the buffer's
+--- changes from it. A changed line gives its old counterpart; a new line gives nil.
+---@param hunks GitHunk[]
+---@param line integer
+---@return integer?
+local function committed_line(hunks, line)
+	local shift = 0
+	for _, hunk in ipairs(hunks) do
+		local added, removed = hunk.added, hunk.removed
+		if added.count > 0 and line >= added.start and line < added.start + added.count then
+			if removed.count == 0 then
+				return nil
+			end
+			return removed.start + math.min(line - added.start, removed.count - 1)
+		end
+		-- A count of 0 puts start on the line before the gap.
+		local next_added = added.start + math.max(added.count, 1)
+		if line < next_added then
+			break
+		end
+		shift = removed.start + math.max(removed.count, 1) - next_added
+	end
+	return line + shift
+end
+
+--- Where the buffer's lines first to last sit in the committed file, or nil when
+--- all of them are new.
+---@param hunks GitHunk[]
+---@param first integer
+---@param last integer
+---@return integer? committed_first
+---@return integer? committed_last
+local function committed_range(hunks, first, last)
+	local committed_first, committed_last
+	for line = first, last do
+		local committed = committed_line(hunks, line)
+		if committed then
+			committed_first = committed_first or committed
+			committed_last = committed
+		end
+	end
+	return committed_first, committed_last
+end
+
+--- The current file's path from root, or nil for a buffer that is no file in it.
+---@param root string
+---@return string?
+local function path_in_repo(root)
+	if vim.bo.buftype ~= "" then
+		return nil
+	end
+	local real_path = vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0))
+	return real_path and vim.fs.relpath(root, real_path)
+end
+
+--- Lists the commits that changed lines first to last of the current file, each
+--- previewed as its change to them. Picking one opens the panel on that commit,
+--- at this file. git follows the lines from the last commit, so uncommitted edits
+--- above them do not move the range onto other code.
+---@param title string
+---@param first integer
+---@param last integer
+local function pick_line_history(title, first, last)
+	local root = current_repo_root()
+	if not root then
+		return
+	end
+	local path = path_in_repo(root)
+	if not path then
+		vim.notify("Git history needs a file in this repository", vim.log.levels.WARN)
+		return
+	end
+	local committed_text = text_at(root, "HEAD", { path = path, status = "M" })
+	local committed_first, committed_last = committed_range(hunks_against(committed_text, 0), first, last)
+	if committed_text == "" or not committed_first then
+		vim.notify("These lines have not been committed yet")
+		return
+	end
+
+	local lines = ("%d,%d:%s"):format(committed_first, committed_last, path)
+	-- The preview finds a commit by its place in the whole history, whoever's are listed.
+	local place_in_history = {}
+	for index, row in ipairs(commit_rows(root, nil, false, lines)) do
+		place_in_history[row.commit] = index - 1
+	end
+	local function history(mine)
+		return commit_rows(root, nil, mine, lines)
+	end
+	local function preview_change_to_lines(commit)
+		return { "git", "-C", root, "log", "-L", lines, "--skip=" .. place_in_history[commit], "-n1" }
+	end
+	pick_commit("History of " .. title, history, preview_change_to_lines, function(picked)
+		open_commit(root, picked.commit, path)
+	end)
+end
+
+--- Lines first to last of the smallest function around the cursor, by the queries
+--- ]f moves with, or nil outside any.
+---@return integer? first
+---@return integer? last
+local function function_at_cursor()
+	local parser = vim.treesitter.get_parser(0, nil, { error = false })
+	local query = parser and vim.treesitter.query.get(parser:lang(), "textobjects")
+	if not parser or not query then
+		return nil
+	end
+	local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+	local first, last
+	for id, node in query:iter_captures(parser:parse()[1]:root(), 0, row, row + 1) do
+		local start_row, _, end_row, end_col = node:range()
+		local final_row = end_col == 0 and end_row - 1 or end_row
+		local around_cursor = start_row <= row and row <= final_row
+		local smaller = not first or final_row - start_row < last - first
+		if query.captures[id] == "function.outer" and around_cursor and smaller then
+			first, last = start_row, final_row
+		end
+	end
+	if not first then
+		return nil
+	end
+	return first + 1, last + 1
+end
+
+local function pick_function_history()
+	local first, last = function_at_cursor()
+	if not first or not last then
+		vim.notify("No function under the cursor; select lines to see their history", vim.log.levels.WARN)
+		return
+	end
+	local signature = vim.trim(vim.api.nvim_buf_get_lines(0, first - 1, first, false)[1])
+	pick_line_history(vim.fn.strcharpart(signature, 0, 40), first, last)
+end
+
+local function pick_selection_history()
+	local first, last = vim.fn.line("v"), vim.fn.line(".")
+	if first > last then
+		first, last = last, first
+	end
+	vim.cmd.normal({ args = { vim.keycode("<Esc>") }, bang = true })
+	pick_line_history(("lines %d-%d"):format(first, last), first, last)
 end
 
 local group = vim.api.nvim_create_augroup("git-changes-panel", { clear = true })
@@ -1239,6 +1399,8 @@ vim.keymap.set(
 	pick_commit_then_open_panel,
 	{ desc = "Git diff files changed since a commit picked from the log, up to now or a later commit" }
 )
+vim.keymap.set("n", "<leader>gh", pick_function_history, { desc = "Git history of the function under the cursor" })
+vim.keymap.set("x", "<leader>gh", pick_selection_history, { desc = "Git history of the selected lines" })
 
 vim.api.nvim_create_user_command("GitChanges", function(opts)
 	local root = current_repo_root()
