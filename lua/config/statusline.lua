@@ -4,12 +4,12 @@
 local M = {}
 
 --- Names of the language servers attached to the buffer, e.g. "clangd" or
---- "pyright ruff"; empty when there are none.
+--- "pyright ruff"; a server still loading has "…" after its name; empty when there are none.
 ---@return string
 function M.lsp_names()
 	local names = {}
 	for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
-		table.insert(names, client.name)
+		table.insert(names, client.name .. (require("plugins.lsp.readiness").is_loading(client) and "…" or ""))
 	end
 	table.sort(names)
 	return table.concat(names, " ")

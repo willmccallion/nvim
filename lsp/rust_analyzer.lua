@@ -26,6 +26,12 @@ return {
 	cmd = { "rust-analyzer" },
 	filetypes = { "rust" },
 	root_dir = cargo_workspace_root,
+	capabilities = { experimental = { serverStatusNotification = true } },
+	handlers = {
+		["experimental/serverStatus"] = function(...)
+			require("plugins.lsp.readiness").on_server_status(...)
+		end,
+	},
 	settings = {
 		["rust-analyzer"] = {
 			checkOnSave = true,
