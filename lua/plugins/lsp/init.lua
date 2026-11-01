@@ -3,6 +3,7 @@
 --- and sets up LSP keybindings (go-to-definition, references, rename, etc.) on attach.
 
 local peek = require("plugins.lsp.peek")
+local picker = require("plugins.editor.telescope").picker
 local readiness = require("plugins.lsp.readiness")
 
 vim.lsp.config("*", {
@@ -45,16 +46,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			vim.keymap.set(modes or "n", keys, func, { buffer = ev.buf, desc = desc })
 		end
 
-		local builtin = require("telescope.builtin")
-
-		map("gd", readiness.when_loaded(builtin.lsp_definitions), "LSP go to definition")
+		map("gd", readiness.when_loaded(picker("lsp_definitions")), "LSP go to definition")
 		map("gD", readiness.when_loaded(vim.lsp.buf.declaration), "LSP go to declaration (header file)")
 		map("gp", readiness.when_loaded(peek.definition), "LSP peek at the definition in a float, staying here")
 		map("gP", readiness.when_loaded(peek.definition_in_split), "LSP peek at the definition in a split, staying here")
-		map("<leader>ci", readiness.when_loaded(builtin.lsp_implementations), "Code go to implementation")
-		map("<leader>ct", readiness.when_loaded(builtin.lsp_type_definitions), "Code go to type definition")
-		map("<leader>cc", readiness.when_loaded(builtin.lsp_incoming_calls), "Code find callers of this function")
-		map("<leader>cC", readiness.when_loaded(builtin.lsp_outgoing_calls), "Code find functions this one calls")
+		map("<leader>ci", readiness.when_loaded(picker("lsp_implementations")), "Code go to implementation")
+		map("<leader>ct", readiness.when_loaded(picker("lsp_type_definitions")), "Code go to type definition")
+		map("<leader>cc", readiness.when_loaded(picker("lsp_incoming_calls")), "Code find callers of this function")
+		map("<leader>cC", readiness.when_loaded(picker("lsp_outgoing_calls")), "Code find functions this one calls")
 
 		-- Telescope has no type hierarchy picker, so these land in the quickfix list.
 		map("<leader>ch", function()
@@ -63,11 +62,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("<leader>cH", function()
 			vim.lsp.buf.typehierarchy("supertypes")
 		end, "Code find supertypes (what this implements or derives from)")
-		map("gr", readiness.when_loaded(builtin.lsp_references), "LSP find references to symbol")
+		map("gr", readiness.when_loaded(picker("lsp_references")), "LSP find references to symbol")
 		map("K", readiness.when_loaded(vim.lsp.buf.hover), "LSP show hover documentation")
 		map("gK", readiness.when_loaded(vim.lsp.buf.signature_help), "LSP show function signature and parameters")
-		map("<leader>ss", builtin.lsp_document_symbols, "Search symbols in current file")
-		map("<leader>sS", builtin.lsp_dynamic_workspace_symbols, "Search symbols across entire project")
+		map("<leader>ss", picker("lsp_document_symbols"), "Search symbols in current file")
+		map("<leader>sS", picker("lsp_dynamic_workspace_symbols"), "Search symbols across entire project")
 		map("<leader>cr", vim.lsp.buf.rename, "Code rename symbol across all files")
 
 		local client = vim.lsp.get_client_by_id(ev.data.client_id)

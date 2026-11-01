@@ -3,7 +3,8 @@
 --- directory-scoped grep, marks, and more under <leader>s; git log and
 --- changed-file grep under <leader>g. The pickers themselves live beside this
 --- file: glob filter parsing in glob.lua, the finders in files.lua and grep.lua,
---- and the grouped keymap picker in keymaps.lua.
+--- and the grouped keymap picker in keymaps.lua. Telescope is only set up once
+--- something requires it.
 
 vim.pack.add({
 	"https://github.com/nvim-lua/plenary.nvim",
@@ -13,58 +14,80 @@ vim.pack.add({
 	"https://github.com/nvim-tree/nvim-web-devicons",
 })
 
-local telescope = require("telescope")
-local actions = require("telescope.actions")
+local on_first_require = require("lib.on_first_require")
 
---- Telescope indents the selected row with selection_caret and every other row
---- with entry_prefix, so the row under the cursor slides sideways unless the two
---- are the same width. Derived rather than written out, to stay that way.
-local selection_caret = vim.g.have_nerd_font and " " or "-> "
-local entry_prefix = (" "):rep(vim.fn.strdisplaywidth(selection_caret))
+local function setup_telescope()
+	local telescope = require("telescope")
+	local actions = require("telescope.actions")
 
-telescope.setup({
-	defaults = {
-		path_display = { "truncate" },
-		mappings = {
-			i = { ["<C-j>"] = actions.move_selection_next, ["<C-k>"] = actions.move_selection_previous },
+	--- Telescope indents the selected row with selection_caret and every other row
+	--- with entry_prefix, so the row under the cursor slides sideways unless the two
+	--- are the same width. Derived rather than written out, to stay that way.
+	local selection_caret = vim.g.have_nerd_font and " " or "-> "
+	local entry_prefix = (" "):rep(vim.fn.strdisplaywidth(selection_caret))
+
+	telescope.setup({
+		defaults = {
+			path_display = { "truncate" },
+			mappings = {
+				i = { ["<C-j>"] = actions.move_selection_next, ["<C-k>"] = actions.move_selection_previous },
+			},
+			layout_strategy = "horizontal",
+			layout_config = { horizontal = { preview_width = 0.55 } },
+			borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
+			prompt_prefix = vim.g.have_nerd_font and "  " or "> ",
+			selection_caret = selection_caret,
+			entry_prefix = entry_prefix,
 		},
-		layout_strategy = "horizontal",
-		layout_config = { horizontal = { preview_width = 0.55 } },
-		borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
-		prompt_prefix = vim.g.have_nerd_font and "  " or "> ",
-		selection_caret = selection_caret,
-		entry_prefix = entry_prefix,
-	},
-	extensions = {
-		["fzf"] = { override_generic_sorter = true, override_file_sorter = true, case_mode = "smart_case" },
-		["ui-select"] = { require("telescope.themes").get_dropdown({}) },
-	},
-})
+		extensions = {
+			["fzf"] = { override_generic_sorter = true, override_file_sorter = true, case_mode = "smart_case" },
+			["ui-select"] = { require("telescope.themes").get_dropdown({}) },
+		},
+	})
 
--- fzf-native is a compiled sorter. Without its library telescope still works on the
--- built-in one, so this must not raise: failing here would abort the rest of init.lua.
-if not pcall(telescope.load_extension, "fzf") then
-	vim.notify(
-		"telescope-fzf-native is not built (needs make and a C compiler); using the slower built-in sorter",
-		vim.log.levels.WARN
-	)
+	-- fzf-native is a compiled sorter. Without its library telescope still works on the
+	-- built-in one, so this must not raise: failing here would stop the picker opening.
+	if not pcall(telescope.load_extension, "fzf") then
+		vim.notify(
+			"telescope-fzf-native is not built (needs make and a C compiler); using the slower built-in sorter",
+			vim.log.levels.WARN
+		)
+	end
+	telescope.load_extension("ui-select")
 end
-telescope.load_extension("ui-select")
 
-local builtin = require("telescope.builtin")
+on_first_require({ "telescope" }, setup_telescope)
+
+--- Hands over to Telescope's ui-select, which replaces this as Telescope is set up.
+function vim.ui.select(...)
+	require("telescope")
+	vim.ui.select(...)
+end
+
+local M = {}
+
+--- A Telescope builtin picker to bind to a key, without loading Telescope until pressed.
+---@param name string
+---@return fun()
+function M.picker(name)
+	return function()
+		require("telescope.builtin")[name]()
+	end
+end
+
 local files = require("plugins.editor.telescope.files")
 local grep = require("plugins.editor.telescope.grep")
 local keymaps = require("plugins.editor.telescope.keymaps")
 local map = vim.keymap.set
 
-map("n", "<leader>sw", builtin.grep_string, { desc = "Search for word under cursor in all files" })
-map("n", "<leader>sb", builtin.buffers, { desc = "Search open buffers and switch" })
-map("n", "<leader>sr", builtin.resume, { desc = "Search resume last search" })
-map("n", "<leader>sh", builtin.help_tags, { desc = "Search help documentation" })
-map("n", "<leader>sd", builtin.diagnostics, { desc = "Search diagnostics errors and warnings" })
-map("n", "<leader>sm", builtin.marks, { desc = "Search marks and jump to them" })
-map("n", "<leader>so", builtin.oldfiles, { desc = "Search recently opened files" })
-map("n", "<leader>s/", builtin.search_history, { desc = "Search previous search queries" })
+map("n", "<leader>sw", M.picker("grep_string"), { desc = "Search for word under cursor in all files" })
+map("n", "<leader>sb", M.picker("buffers"), { desc = "Search open buffers and switch" })
+map("n", "<leader>sr", M.picker("resume"), { desc = "Search resume last search" })
+map("n", "<leader>sh", M.picker("help_tags"), { desc = "Search help documentation" })
+map("n", "<leader>sd", M.picker("diagnostics"), { desc = "Search diagnostics errors and warnings" })
+map("n", "<leader>sm", M.picker("marks"), { desc = "Search marks and jump to them" })
+map("n", "<leader>so", M.picker("oldfiles"), { desc = "Search recently opened files" })
+map("n", "<leader>s/", M.picker("search_history"), { desc = "Search previous search queries" })
 
 map("n", "<leader>sk", keymaps.pick, { desc = "Search keymaps by domain" })
 map("n", "<leader>sK", function()
@@ -72,11 +95,11 @@ map("n", "<leader>sK", function()
 end, { desc = "Search keymaps including unlabelled and plugin internals" })
 
 map("n", "<leader>sn", function()
-	builtin.find_files({ cwd = vim.fn.stdpath("config") })
+	require("telescope.builtin").find_files({ cwd = vim.fn.stdpath("config") })
 end, { desc = "Search neovim config files" })
 
 map("n", "<leader><leader>", function()
-	builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
+	require("telescope.builtin").current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
 		winblend = 10,
 		previewer = false,
 	}))
@@ -88,4 +111,6 @@ map("n", "<leader>s.", grep.grep_current_file_directory, { desc = "Search grep i
 map("n", "<leader>st", grep.grep_comment_tags, { desc = "Search TODO, WARN and FIXME comments" })
 
 map("n", "<leader>gc", grep.grep_changed_files, { desc = "Git grep only in changed files" })
-map("n", "<leader>gl", builtin.git_commits, { desc = "Git log commits with diff preview" })
+map("n", "<leader>gl", M.picker("git_commits"), { desc = "Git log commits with diff preview" })
+
+return M
