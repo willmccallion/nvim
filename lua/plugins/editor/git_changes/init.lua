@@ -20,6 +20,7 @@ local file_buffers = require("plugins.editor.git_changes.file_buffers")
 local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
 local gitsigns_base = require("plugins.editor.git_changes.gitsigns_base")
+local changes = require("plugins.editor.git_changes.changes")
 local commits = require("plugins.editor.git_changes.commits")
 local line_history = require("plugins.editor.git_changes.line_history")
 local tint = require("plugins.editor.git_changes.tint")
@@ -36,18 +37,6 @@ local STATUS_HIGHLIGHTS = {
 
 local ns = vim.api.nvim_create_namespace("git-changes")
 local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = true })
-
----@class ChangedFile
----@field path string relative to the repository root
----@field status string one git status letter, or "?" for untracked
----@field old_path string? where a renamed or copied file came from
-
----@class Since
----@field commit string the commit the changes are listed since
----@field summary string its short hash and subject, shown above the list
----@field label string? shown in the title in place of commit
----@field to Since? a later commit to list the changes up to; nil for the files as they are now
----@field index boolean? in a to, it stands for the staged files instead of a commit
 
 ---@class PanelMark
 ---@field row integer 0-based
@@ -80,87 +69,6 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 
 ---@type Panel?
 local panel = nil
-
---- The worktree letter wins over the index one, since it is what the buffer shows.
----@param index string
----@param worktree string
----@return string
-local function status_letter(index, worktree)
-	if index == "?" then
-		return "?"
-	end
-	if worktree ~= " " then
-		return worktree
-	end
-	return index
-end
-
---- Root files come first, then each folder's files together, in path order.
----@param a ChangedFile
----@param b ChangedFile
----@return boolean
-local function by_folder_then_name(a, b)
-	local a_dir, b_dir = vim.fs.dirname(a.path), vim.fs.dirname(b.path)
-	if a_dir ~= b_dir then
-		if a_dir == "." or b_dir == "." then
-			return a_dir == "."
-		end
-		return a_dir < b_dir
-	end
-	return a.path < b.path
-end
-
---- Parses `git status --porcelain=v1 -z`, where a rename or copy record is
---- followed by an extra field holding the old path.
----@param output string
----@return ChangedFile[]
-local function parse_porcelain(output)
-	local files = {}
-	local fields = vim.split(output, "\0", { plain = true, trimempty = true })
-	local i = 1
-	while i <= #fields do
-		local record = fields[i]
-		local index, worktree = record:sub(1, 1), record:sub(2, 2)
-		local file = { path = record:sub(4), status = status_letter(index, worktree) }
-		if index == "R" or index == "C" then
-			file.old_path = fields[i + 1]
-			i = i + 1
-		end
-		table.insert(files, file)
-		i = i + 1
-	end
-	table.sort(files, by_folder_then_name)
-	return files
-end
-
---- Parses `git diff --name-status -z`, where each letter is its own field and a
---- rename or copy carries a similarity score and both its old and new paths.
----@param output string
----@return ChangedFile[]
-local function parse_name_status(output)
-	local files = {}
-	local fields = vim.split(output, "\0", { plain = true, trimempty = true })
-	local i = 1
-	while i <= #fields do
-		local letter = fields[i]:sub(1, 1)
-		if letter == "R" or letter == "C" then
-			table.insert(files, { status = letter, old_path = fields[i + 1], path = fields[i + 2] })
-			i = i + 3
-		else
-			table.insert(files, { status = letter, path = fields[i + 1] })
-			i = i + 2
-		end
-	end
-	return files
-end
-
----@param output string `git ls-files -z` paths
----@return ChangedFile[]
-local function parse_untracked(output)
-	return vim.tbl_map(function(path)
-		return { status = "?", path = path }
-	end, vim.split(output, "\0", { plain = true, trimempty = true }))
-end
 
 ---@param files ChangedFile[]
 ---@param title string? a line above the list
@@ -221,53 +129,6 @@ local function panel_width(content)
 	return math.min(math.max(widest + 2, MIN_WIDTH), MAX_WIDTH)
 end
 
----@param since Since?
----@return string
-local function base_rev(since)
-	return since and since.commit or "HEAD"
-end
-
----@param since Since?
----@return string?
-local function title_of(since)
-	if not since then
-		return nil
-	end
-	if since.to then
-		return ("%s → %s"):format(since.label or since.commit, since.to.commit)
-	end
-	return "since " .. since.summary
-end
-
---- Uncommitted changes from `git status`, or with since, everything that differs
---- from its commit: committed after it, staged, unstaged and untracked.
----@param root string
----@param since Since?
----@return ChangedFile[]?
-local function changed_files(root, since)
-	if not since then
-		local status = git.output(root, { "status", "--porcelain=v1", "-z", "--untracked-files=all" })
-		return status and parse_porcelain(status)
-	end
-	if since.to then
-		local range = since.to.index and { "--cached", since.commit } or { since.commit, since.to.commit }
-		local diff = git.output(root, vim.list_extend({ "diff", "--name-status", "-z", "-M" }, range))
-		local files = diff and parse_name_status(diff)
-		if files then
-			table.sort(files, by_folder_then_name)
-		end
-		return files
-	end
-	local diff = git.output(root, { "diff", "--name-status", "-z", "-M", since.commit })
-	local untracked = git.output(root, { "ls-files", "--others", "--exclude-standard", "-z" })
-	if not diff or not untracked then
-		return nil
-	end
-	local files = vim.list_extend(parse_name_status(diff), parse_untracked(untracked))
-	table.sort(files, by_folder_then_name)
-	return files
-end
-
 ---@param files_by_line table<integer, ChangedFile>
 ---@param path string?
 ---@return integer?
@@ -288,7 +149,7 @@ local function draw(files)
 	local cursor_line = vim.api.nvim_win_get_cursor(panel.win)[1]
 	local file_under_cursor = panel.files_by_line[cursor_line]
 
-	local content = render(files, title_of(panel.since))
+	local content = render(files, changes.title_of(panel.since))
 	vim.bo[panel.buf].modifiable = true
 	vim.api.nvim_buf_set_lines(panel.buf, 0, -1, false, content.lines)
 	vim.bo[panel.buf].modifiable = false
@@ -309,7 +170,7 @@ local function refresh()
 	if not panel then
 		return
 	end
-	local files = changed_files(panel.root, panel.since)
+	local files = changes.list(panel.root, panel.since)
 	if files then
 		draw(files)
 	end
@@ -468,7 +329,7 @@ local function show_file(file)
 			vim.cmd.edit(vim.fn.fnameescape(path))
 		end)
 		local buf = vim.api.nvim_win_get_buf(win)
-		local text = git.text_at(panel.root, base_rev(panel.since), file)
+		local text = git.text_at(panel.root, changes.base_rev(panel.since), file)
 		panel.bases[buf] = { text = text, lines = vim.split(text, "\n", { plain = true }) }
 		local hunks = git.hunks_against(text, buf)
 		tint.show(buf, hunks, panel.bases[buf].lines, false)
@@ -596,7 +457,7 @@ end
 ---@param since Since?
 ---@param focus_path string? the file to start on, when it is in the list
 local function open_panel(root, since, focus_path)
-	local files = changed_files(root, since)
+	local files = changes.list(root, since)
 	if not files then
 		return
 	end
@@ -609,7 +470,7 @@ local function open_panel(root, since, focus_path)
 	local origin_buf = vim.api.nvim_get_current_buf()
 	local origin_view = vim.fn.winsaveview()
 	local buf = create_panel_buffer()
-	local width = panel_width(render(files, title_of(since)))
+	local width = panel_width(render(files, changes.title_of(since)))
 	local win = vim.api.nvim_open_win(buf, true, { split = "left", win = -1, width = width })
 	set_panel_window_options(win)
 	panel = {
@@ -672,50 +533,6 @@ local function toggle_panel()
 	end
 end
 
----@param root string
----@param commit string
----@return Since?
-local function since_of(root, commit)
-	local summary = git.output(root, { "log", "-1", "--format=%h %s", commit })
-	if not summary then
-		return nil
-	end
-	local short = vim.split(summary, " ", { plain = true })[1]
-	return { commit = short, summary = vim.trim(summary) }
-end
-
---- The commit before commit, or nil for a repository's first commit.
----@param root string
----@param commit string
----@return string?
-local function parent_of(root, commit)
-	local result = vim.system(
-		{ "git", "rev-parse", "--verify", "--quiet", "--short", commit .. "^" },
-		{ cwd = root, text = true }
-	):wait()
-	return result.code == 0 and vim.trim(result.stdout) or nil
-end
-
---- The range holding only what commit changed: from the commit before it, or for
---- a repository's first commit, from the empty tree.
----@param root string
----@param commit Since
----@return Since?
-local function own_changes(root, commit)
-	local since
-	local parent = parent_of(root, commit.commit)
-	if parent then
-		since = since_of(root, parent)
-	else
-		local empty_tree = git.output(root, { "hash-object", "-t", "tree", "/dev/null" })
-		since = empty_tree and { commit = vim.trim(empty_tree), summary = "the empty tree", label = "empty" }
-	end
-	if since then
-		since.to = commit
-	end
-	return since
-end
-
 --- Opens the panel on since, replacing a panel already open.
 ---@param root string
 ---@param since Since
@@ -734,18 +551,18 @@ end
 ---@param older string
 ---@param newer string?
 local function open_range(root, older, newer)
-	local since = since_of(root, older)
+	local since = changes.since_of(root, older)
 	if not since then
 		return
 	end
 	if newer then
-		since.to = since_of(root, newer)
+		since.to = changes.since_of(root, newer)
 		if not since.to then
 			return
 		end
-	elseif #(changed_files(root, since) or { true }) == 0 then
+	elseif #(changes.list(root, since) or { true }) == 0 then
 		vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
-		since = own_changes(root, since)
+		since = changes.own_changes(root, since)
 		if not since then
 			return
 		end
@@ -758,8 +575,8 @@ end
 ---@param commit string
 ---@param focus_path string?
 local function open_commit(root, commit, focus_path)
-	local picked = since_of(root, commit)
-	local since = picked and own_changes(root, picked)
+	local picked = changes.since_of(root, commit)
+	local since = picked and changes.own_changes(root, picked)
 	if since then
 		replace_panel(root, since, focus_path)
 	end
@@ -769,12 +586,12 @@ end
 ---@param root string
 ---@param commit string
 local function open_staged(root, commit)
-	local since = since_of(root, commit)
+	local since = changes.since_of(root, commit)
 	if not since then
 		return
 	end
 	since.to = { commit = "staged", summary = "the staged files", index = true }
-	local files = changed_files(root, since)
+	local files = changes.list(root, since)
 	if not files then
 		return
 	end
@@ -831,7 +648,7 @@ local function pick_commit_to_show()
 	if not root then
 		return
 	end
-	local has_uncommitted = #(changed_files(root, nil) or {}) > 0
+	local has_uncommitted = #(changes.list(root, nil) or {}) > 0
 	local function history(mine)
 		local rows = commits.rows(root, nil, mine)
 		if has_uncommitted then
