@@ -2,26 +2,7 @@
 
 local h = require("helpers")
 
-local ROOT = vim.fs.dirname(vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)))
-
----@param probe string[] lines of Lua run after startup; what they print comes back
----@param file? string opened at startup
----@return {code: integer, stdout: string, stderr: string}
-local function start(probe, file)
-	local dir = h.temp_dir()
-	vim.fn.writefile(probe, dir .. "/probe.lua")
-	local command = { vim.v.progpath, "--headless", "-i", "NONE", "-u", ROOT .. "/init.lua" }
-	vim.list_extend(command, { "--cmd", "set rtp^=" .. ROOT })
-	if file then
-		table.insert(command, file)
-	end
-	vim.list_extend(command, { "-c", "luafile " .. dir .. "/probe.lua", "-c", "qa!" })
-	local config = vim.fn.stdpath("config")
-	vim.fn.mkdir(config, "p")
-	vim.uv.fs_copyfile(ROOT .. "/nvim-pack-lock.json", config .. "/nvim-pack-lock.json")
-	local env = { XDG_DATA_HOME = vim.env.TEST_REAL_DATA_HOME }
-	return vim.system(command, { env = env, text = true, cwd = dir }):wait(30000)
-end
+local start = h.start_config
 
 local tests = {}
 
@@ -44,14 +25,14 @@ end
 
 function tests.heavy_plugins_wait_until_they_are_used()
 	local result = start({
-		"for _, name in ipairs({ 'cmp', 'luasnip', 'nvim-autopairs', 'telescope', 'dap', 'dap-view' }) do",
+		"for _, name in ipairs({ 'cmp', 'luasnip', 'nvim-autopairs', 'telescope', 'dap', 'dap-view', 'obsidian' }) do",
 		"  io.write(name, '=', tostring(package.loaded[name] ~= nil), ' ')",
 		"end",
 	})
 
 	h.assert_equal(
 		vim.trim(result.stderr .. result.stdout),
-		"cmp=false luasnip=false nvim-autopairs=false telescope=false dap=false dap-view=false",
+		"cmp=false luasnip=false nvim-autopairs=false telescope=false dap=false dap-view=false obsidian=false",
 		"loaded plugins"
 	)
 end

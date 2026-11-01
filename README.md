@@ -7,6 +7,8 @@ Everything is in Lua and uses the built-in `vim.pack` plugin system. Plugin vers
 
 Requires **Neovim 0.13+**, a **Nerd Font**, **ripgrep** (for grep/search), and a **C compiler** (for treesitter parsers).
 
+For drawn math, install **ImageMagick** and **pdflatex**.
+
 For LSP support, install the language servers you need: `clangd`, `rust-analyzer`, `lua-language-server`, `pyright`, `ruff`, `nixd`, `slang-server`, `zls`.
 Same for formatters: `clang-format`, `rustfmt`, `stylua`, `ruff`, `nixfmt`, `verible-verilog-format`, `zig`.
 Debugging prefers `lldb-dap` (ships with LLDB, and is called `lldb-vscode` before LLVM 18), looked up on `PATH` and under `/usr/lib/llvm-*/bin`; set `vim.g.lldb_dap_command` to its path on a machine that keeps it elsewhere. Failing that it falls back to `gdb`, which has spoken DAP natively since version 14.
@@ -78,6 +80,8 @@ You can pick another detected command or type your own; the choice is remembered
 
 **Prompts and messages**: `vim.ui.input` opens a small float at the cursor instead of asking on the command line, so the code you are working on stays in view. `<CR>` confirms, `<Esc>` cancels, and `<Tab>` completes when the prompt takes a path. Messages go to fidget in the bottom right rather than the command line, where a long one would stop for a "Press ENTER" prompt; `:Fidget history` brings back ones that have faded.
 
+**Notes**: Markdown is drawn in place by render-markdown.nvim, and snacks.image draws math and images through the terminal, using `magick` and `pdflatex` when both are installed; the line under the cursor shows its source. Inside `~/notes`, obsidian.nvim adds `[[link]]` following with `<CR>`, and `<leader>nb` and `<leader>nl` list a note's backlinks and links. `<leader>no` saves the note and opens it in Obsidian, on the Mac when that's where this nvim is being used from. `<leader>nr` turns the drawing off for a buffer.
+
 **Theme**: Vague with transparent background.
 
 ## Keymap Grammar
@@ -93,6 +97,7 @@ says *what to do* with it, usually by its first letter: "**g**it **s**tage", "**
 | `s` | Search: find things with Telescope |
 | `c` | Code: LSP actions, formatting, renaming, navigation to implementations |
 | `g` | Git: hunks, blame, log |
+| `n` | Notes: Obsidian, links and drawn markdown |
 | `o` | Option toggles: switch a display option on or off |
 | `r` | Replace: search and replace across a file or the project |
 | `w` | Window |

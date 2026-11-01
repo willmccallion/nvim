@@ -22,6 +22,7 @@ local LEADER_DOMAINS = {
 	g = "Git",
 	L = "Lua",
 	m = "Build",
+	n = "Notes",
 	o = "Option",
 	p = "Clipboard",
 	P = "Clipboard",
