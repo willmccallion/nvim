@@ -148,7 +148,7 @@ local function buffer_name_of(file)
 	if file.status == "D" then
 		return file_buffers.deleted_buffer_name(file)
 	end
-	if panel.since and panel.since.to then
+	if changes.shows_copies(panel.since) then
 		return file_buffers.commit_buffer_name(panel.since.to.commit, file)
 	end
 	return vim.fs.joinpath(panel.root, file.path)
@@ -200,7 +200,7 @@ local function show_file(file)
 			vim.api.nvim_win_set_buf(win, buf)
 		end
 		panel.preview_buf = nil
-	elseif panel.since and panel.since.to then
+	elseif changes.shows_copies(panel.since) then
 		local to = panel.since.to
 		local source = to.index and ":" or to.commit .. ":"
 		local buf = file_buffers.git_file_buffer(panel.root, { source }, file.path, file_buffers.commit_buffer_name(to.commit, file))
@@ -249,7 +249,7 @@ local function show_file_under_cursor()
 		local shown = vim.api.nvim_win_get_buf(target)
 		-- A real file already on show, like the one the panel was opened from, still
 		-- needs its before and after drawn; copies and deleted files are drawn as made.
-		local drawn = panel.bases[shown] or file.status == "D" or (panel.since and panel.since.to)
+		local drawn = panel.bases[shown] or file.status == "D" or changes.shows_copies(panel.since)
 		if drawn and vim.api.nvim_buf_get_name(shown) == buffer_name_of(file) then
 			return target
 		end
@@ -299,7 +299,7 @@ local function leave_review(closed)
 		end
 	end
 	-- Only the files as they are now were compared through gitsigns' base.
-	if closed.since and not closed.since.to then
+	if closed.since and not changes.shows_copies(closed.since) then
 		gitsigns_base.set(nil, function() end)
 	end
 end
@@ -382,7 +382,7 @@ local function open_panel(root, since, focus_path)
 		vim.api.nvim_win_set_cursor(win, { render.line_of(panel.files_by_line, focus_path) or 1, 0 })
 	end
 	local opened = panel
-	if since and since.to then
+	if changes.shows_copies(since) then
 		opened.ready = true
 		show_file_under_cursor()
 		return

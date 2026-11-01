@@ -98,6 +98,13 @@ local function parse_untracked(output)
 	end, vim.split(output, "\0", { plain = true, trimempty = true }))
 end
 
+--- Whether the newer side is read-only copies from git, not the files as they are now.
+---@param since Since?
+---@return boolean
+function M.shows_copies(since)
+	return since ~= nil and since.to ~= nil
+end
+
 ---@param since Since?
 ---@return string
 function M.base_rev(since)
