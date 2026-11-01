@@ -24,7 +24,10 @@ local split_win = nil
 local function first_definition(results)
 	for _, response in pairs(results) do
 		local result = response.result
-		local location = vim.islist(result) and result[1] or result
+		local location = result
+		if vim.islist(result) then
+			location = result[1]
+		end
 		if location then
 			local range = location.targetRange or location.range
 			return { path = vim.uri_to_fname(location.targetUri or location.uri), line = range.start.line + 1 }
