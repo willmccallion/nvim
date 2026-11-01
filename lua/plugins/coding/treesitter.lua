@@ -131,13 +131,17 @@ end
 local repeatable = require("nvim-treesitter-textobjects.repeatable_move")
 
 --- The motions above, and the pairs motion_repeat.lua wraps, record themselves
---- as they run, so these carry on with whichever was used last. Forward is
---- always ";" and back always ",", matching "]" and "[" rather than Vim's f/t
---- repeat, which keeps the original direction.
+--- as they run, so these carry on with whichever was used last. As with Vim's
+--- f/t, ";" keeps the direction of that move and "," goes the other way.
 ---
 --- f/F/t/T stay flash's, for the multi-line search it adds; its builtin_*_expr
 --- wrappers would replace that with plain single-line f. Flash leaves these two
 --- alone in turn: it skips a key that is the local leader, and skips ";" when
 --- something already holds it, which loading before flash.lua is what ensures.
-vim.keymap.set({ "n", "x", "o" }, ";", repeatable.repeat_last_move_next, { desc = "Motion repeat forward" })
-vim.keymap.set({ "n", "x", "o" }, ",", repeatable.repeat_last_move_previous, { desc = "Motion repeat backward" })
+vim.keymap.set({ "n", "x", "o" }, ";", repeatable.repeat_last_move, { desc = "Motion repeat in the same direction" })
+vim.keymap.set(
+	{ "n", "x", "o" },
+	",",
+	repeatable.repeat_last_move_opposite,
+	{ desc = "Motion repeat in the opposite direction" }
+)
