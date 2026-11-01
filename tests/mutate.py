@@ -33,7 +33,10 @@ GROUPS = [
     ("lua/plugins/coding/build/tests", "units_test"),
     ("lua/plugins/debug/dap", "dap_test"),
     ("lua/plugins/debug/elf", "debug_test"),
-    ("lua/plugins/debug/types", "debug_test"),
+    ("lua/plugins/debug/types", "debug_"),
+    ("lua/plugins/debug/variables", "debug_views"),
+    ("lua/plugins/debug/init", "debug_views"),
+    ("lua/plugins/lsp/init", "debug_views"),
     ("lua/plugins/lsp/peek", "config_test"),
     ("lua/plugins/lsp/readiness", "units_test"),
     ("lua/plugins/editor/telescope/glob", "units_test"),
@@ -87,6 +90,15 @@ def tests_for(path):
     return matched
 
 
+def replace_outside_strings(pattern, replacement, line):
+    """Words in messages and descriptions aren't logic, so they stay as they are."""
+    for match in re.finditer(pattern, line):
+        before = line[: match.start()]
+        if before.count('"') % 2 == 0 and before.count("'") % 2 == 0:
+            return before + match.expand(replacement) + line[match.end() :]
+    return line
+
+
 def mutants_of(path, source, tests):
     lines = source.split("\n")
     for index, line in enumerate(lines):
@@ -97,7 +109,7 @@ def mutants_of(path, source, tests):
         if not STRUCTURE.match(line) and "= function" not in line and not line.rstrip().endswith(("(", "{", ",")):
             edits.append(("delete the line", ""))
         for pattern, replacement in REPLACEMENTS:
-            changed = re.sub(pattern, replacement, line, count=1)
+            changed = replace_outside_strings(pattern, replacement, line)
             if changed != line:
                 edits.append((f"change to: {changed.strip()}", changed))
         for description, new_line in edits:
