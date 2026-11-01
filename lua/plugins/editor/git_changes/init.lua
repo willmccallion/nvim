@@ -15,7 +15,6 @@
 --- not given, and :GitChanges --cached [commit] what is staged against commit, HEAD
 --- by default.
 
-local devicons = require("nvim-web-devicons")
 local file_buffers = require("plugins.editor.git_changes.file_buffers")
 local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
@@ -23,31 +22,11 @@ local gitsigns_base = require("plugins.editor.git_changes.gitsigns_base")
 local changes = require("plugins.editor.git_changes.changes")
 local commits = require("plugins.editor.git_changes.commits")
 local line_history = require("plugins.editor.git_changes.line_history")
+local render = require("plugins.editor.git_changes.render")
 local tint = require("plugins.editor.git_changes.tint")
-
-local MIN_WIDTH = 25
-local MAX_WIDTH = 50
-
-local STATUS_HIGHLIGHTS = {
-	["?"] = "GitSignsAdd",
-	A = "GitSignsAdd",
-	D = "GitSignsDelete",
-	U = "DiagnosticError",
-}
 
 local ns = vim.api.nvim_create_namespace("git-changes")
 local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = true })
-
----@class PanelMark
----@field row integer 0-based
----@field col_start integer byte offset
----@field col_end integer byte offset
----@field group string
-
----@class PanelContent
----@field lines string[]
----@field marks PanelMark[]
----@field files_by_line table<integer, ChangedFile> keyed by 1-based line number
 
 ---@class Panel
 ---@field buf integer
@@ -71,85 +50,12 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 local panel = nil
 
 ---@param files ChangedFile[]
----@param title string? a line above the list
----@return PanelContent
-local function render(files, title)
-	local content = { lines = {}, marks = {}, files_by_line = {} }
-	local notes = {}
-	if title then
-		table.insert(notes, title)
-	end
-	if #files == 0 then
-		table.insert(notes, "No changes")
-	end
-	for _, note in ipairs(notes) do
-		table.insert(content.lines, note)
-		table.insert(content.marks, { row = #content.lines - 1, col_start = 0, col_end = #note, group = "Comment" })
-	end
-	if #files == 0 then
-		return content
-	end
-
-	local current_dir = "."
-	for _, file in ipairs(files) do
-		local dir = vim.fs.dirname(file.path)
-		if dir ~= current_dir and dir ~= "." then
-			local header = dir .. "/"
-			table.insert(content.lines, header)
-			table.insert(
-				content.marks,
-				{ row = #content.lines - 1, col_start = 0, col_end = #header, group = "Directory" }
-			)
-		end
-		current_dir = dir
-
-		local name = vim.fs.basename(file.path)
-		local icon, icon_group = devicons.get_icon(name, nil, { default = true })
-		local indent = dir == "." and "" or "  "
-		local status_col = #indent
-		local icon_col = status_col + #file.status + 1
-		table.insert(content.lines, ("%s%s %s %s"):format(indent, file.status, icon, name))
-
-		local row = #content.lines - 1
-		local status_group = STATUS_HIGHLIGHTS[file.status] or "GitSignsChange"
-		table.insert(content.marks, { row = row, col_start = status_col, col_end = icon_col - 1, group = status_group })
-		table.insert(content.marks, { row = row, col_start = icon_col, col_end = icon_col + #icon, group = icon_group })
-		content.files_by_line[#content.lines] = file
-	end
-	return content
-end
-
----@param content PanelContent
----@return integer
-local function panel_width(content)
-	local widest = 0
-	for _, line in ipairs(content.lines) do
-		widest = math.max(widest, vim.fn.strdisplaywidth(line))
-	end
-	return math.min(math.max(widest + 2, MIN_WIDTH), MAX_WIDTH)
-end
-
----@param files_by_line table<integer, ChangedFile>
----@param path string?
----@return integer?
-local function line_of(files_by_line, path)
-	local first_file_line = nil
-	for line, file in pairs(files_by_line) do
-		if file.path == path then
-			return line
-		end
-		first_file_line = math.min(first_file_line or line, line)
-	end
-	return first_file_line
-end
-
----@param files ChangedFile[]
 local function draw(files)
 	assert(panel, "draw needs an open panel")
 	local cursor_line = vim.api.nvim_win_get_cursor(panel.win)[1]
 	local file_under_cursor = panel.files_by_line[cursor_line]
 
-	local content = render(files, changes.title_of(panel.since))
+	local content = render.content(files, changes.title_of(panel.since))
 	vim.bo[panel.buf].modifiable = true
 	vim.api.nvim_buf_set_lines(panel.buf, 0, -1, false, content.lines)
 	vim.bo[panel.buf].modifiable = false
@@ -162,7 +68,7 @@ local function draw(files)
 	end
 	panel.files_by_line = content.files_by_line
 
-	local line = line_of(content.files_by_line, file_under_cursor and file_under_cursor.path) or 1
+	local line = render.line_of(content.files_by_line, file_under_cursor and file_under_cursor.path) or 1
 	vim.api.nvim_win_set_cursor(panel.win, { line, 0 })
 end
 
@@ -470,7 +376,7 @@ local function open_panel(root, since, focus_path)
 	local origin_buf = vim.api.nvim_get_current_buf()
 	local origin_view = vim.fn.winsaveview()
 	local buf = create_panel_buffer()
-	local width = panel_width(render(files, changes.title_of(since)))
+	local width = render.width(render.content(files, changes.title_of(since)))
 	local win = vim.api.nvim_open_win(buf, true, { split = "left", win = -1, width = width })
 	set_panel_window_options(win)
 	panel = {
@@ -488,7 +394,7 @@ local function open_panel(root, since, focus_path)
 	}
 	draw(files)
 	if focus_path then
-		vim.api.nvim_win_set_cursor(win, { line_of(panel.files_by_line, focus_path) or 1, 0 })
+		vim.api.nvim_win_set_cursor(win, { render.line_of(panel.files_by_line, focus_path) or 1, 0 })
 	end
 	local opened = panel
 	if since and since.to then
