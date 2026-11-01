@@ -1043,17 +1043,33 @@ local function pick_commit_then_open_panel()
 	end)
 end
 
---- Picks a commit from the log and opens the panel on what it changed.
+--- Picks a commit from the log and opens the panel on what it changed, with an
+--- <Uncommitted> row below the newest commit when the files differ from it.
 local function pick_commit_to_show()
 	local root = git.current_root()
 	if not root then
 		return
 	end
+	local has_uncommitted = #(changed_files(root, nil) or {}) > 0
 	local function history(mine)
-		return commits.rows(root, nil, mine)
+		local rows = commits.rows(root, nil, mine)
+		if has_uncommitted then
+			table.insert(rows, 1, { author = "", when = "", subject = "<Uncommitted>" })
+		end
+		return rows
 	end
-	commits.pick("Diff Commit", history, preview_own_diff(root), function(picked)
-		open_commit(root, picked.commit)
+	local function preview(commit)
+		if commit then
+			return { "git", "-C", root, "show", commit }
+		end
+		return { "sh", "-c", 'git -C "$1" status --short && git -C "$1" diff HEAD', "sh", root }
+	end
+	commits.pick("Diff Commit", history, preview, function(picked)
+		if picked.commit then
+			open_commit(root, picked.commit)
+		else
+			replace_panel(root, nil)
+		end
 	end)
 end
 
