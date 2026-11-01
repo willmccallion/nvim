@@ -172,6 +172,37 @@ function tests.copying_a_location_gives_the_path_from_the_git_root()
 	h.assert_contains(notified, "Copied src/a.lua:2", "message")
 end
 
+function tests.copying_a_selection_gives_its_line_range_whichever_way_it_was_made()
+	load_keymaps()
+	h.capture_notifications()
+	local path = file({ "1", "2", "3", "4" })
+	vim.cmd.edit(path)
+	vim.g.clipboard = {
+		name = "test",
+		copy = {
+			["+"] = function(lines)
+				vim.g.copied = lines[1]
+			end,
+			["*"] = function() end,
+		},
+		paste = {
+			["+"] = function()
+				return {}
+			end,
+			["*"] = function()
+				return {}
+			end,
+		},
+	}
+	vim.api.nvim_win_set_cursor(0, { 3, 0 })
+	vim.cmd.normal({ "Vk", bang = true })
+
+	h.press("<leader>cy", "x")
+
+	h.assert_contains({ vim.g.copied }, ":2-3", "upward selection")
+	h.assert_equal(vim.fn.mode(), "n", "left visual mode")
+end
+
 function tests.copying_a_location_needs_a_file()
 	load_keymaps()
 	local notified = h.capture_notifications()

@@ -220,6 +220,17 @@ function tests.json_file_reports_a_folder_it_cannot_write_to()
 	h.assert_contains(notified, "Could not write", "report")
 end
 
+function tests.json_file_reports_a_replace_that_failed()
+	local dir = h.temp_dir()
+	local notified = h.capture_notifications()
+	vim.fn.mkdir(dir .. "/taken", "p")
+	vim.fn.writefile({ "x" }, dir .. "/taken/inside")
+
+	json_file().write(dir .. "/taken", {})
+
+	h.assert_contains(notified, "Could not replace", "report")
+end
+
 function tests.a_glob_filter_starts_after_the_first_double_space()
 	h.assert_equal({ glob().split("config  *.lua  !x") }, { "config", { "*.lua", "!x" } }, "split")
 	h.assert_equal({ glob().split("plain query") }, { "plain query", {} }, "no filter")

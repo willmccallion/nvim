@@ -177,6 +177,88 @@ function tests.enter_on_a_line_of_the_list_opens_it()
 	h.assert_equal(current(root), "b.txt", "opened pin")
 end
 
+function tests.escape_saves_the_list_like_q()
+	local root = project()
+	edit(root, "a.txt")
+	h.press("<leader>a")
+	h.press("<leader>A")
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+
+	h.press("<Esc>")
+
+	local notified = h.capture_notifications()
+	h.press("<leader>1")
+	h.assert_contains(notified, "No pin 1", "saved list")
+end
+
+function tests.enter_on_a_blank_line_of_the_list_opens_nothing()
+	local root = project()
+	edit(root, "a.txt")
+	h.press("<leader>a")
+	h.press("<leader>A")
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, { "" })
+
+	h.press("<CR>")
+
+	h.assert_equal(current(root), "a.txt", "stayed put")
+end
+
+function tests.a_file_outside_the_project_stays_pinned_by_its_full_path()
+	local root = project()
+	local outside = h.temp_dir() .. "/outside.txt"
+	vim.fn.writefile({ "x" }, outside)
+	vim.cmd.edit(outside)
+	vim.api.nvim_buf_set_name(0, outside)
+	h.press("<leader>A")
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, { outside })
+	h.press("q")
+	vim.cmd.cd(root)
+	edit(root, "a.txt")
+	h.press("<leader>A")
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, { outside })
+	h.press("q")
+
+	h.press("<leader>1")
+
+	h.assert_equal(vim.api.nvim_buf_get_name(0), outside, "opened")
+end
+
+function tests.a_buffer_that_is_no_file_uses_the_working_folder_s_project()
+	local root = project()
+	edit(root, "a.txt")
+	h.press("<leader>a")
+	vim.cmd.enew()
+	vim.bo.buftype = "nofile"
+
+	h.press("<leader>1")
+
+	h.assert_equal(current(root), "a.txt", "opened")
+end
+
+function tests.a_file_outside_any_repo_pins_against_the_working_folder()
+	local dir = h.temp_dir()
+	vim.cmd.cd(dir)
+	require("plugins.editor.pins")
+	vim.fn.writefile({ "x" }, dir .. "/a.txt")
+	vim.cmd.edit(dir .. "/a.txt")
+	h.press("<leader>a")
+	vim.cmd.enew()
+
+	h.press("<leader>1")
+
+	h.assert_equal(vim.fs.basename(vim.api.nvim_buf_get_name(0)), "a.txt", "opened")
+end
+
+function tests.the_list_window_numbers_its_lines()
+	local root = project()
+	edit(root, "a.txt")
+	h.press("<leader>a")
+	h.press("<leader>A")
+
+	h.assert_equal({ vim.wo.number, vim.wo.relativenumber, vim.wo.cursorline }, { true, false, true }, "options")
+	h.assert_equal(vim.bo.bufhidden, "wipe", "buffer goes with the window")
+end
+
 function tests.an_empty_project_removes_its_key_from_the_store()
 	local root = project()
 	edit(root, "a.txt")

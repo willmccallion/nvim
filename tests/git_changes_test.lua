@@ -320,6 +320,92 @@ function tests.keeps_a_previewed_file_open_once_it_is_entered()
 	assert_equal(vim.api.nvim_buf_is_valid(new_buf), true, "entered file stays open")
 end
 
+function tests.hunk_keys_in_a_read_only_copy_visit_each_change_and_stop_at_the_ends()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local older = git(root, "rev-parse", "--short", "HEAD")
+	write(root, "a.txt", { "ONE", "two", "3", "four", "five", "six", "seven", "EIGHT" })
+	git(root, "commit", "-qam", "three changes")
+	vim.cmd.GitChanges({ args = { older, git(root, "rev-parse", "--short", "HEAD") } })
+	wait_for_preview()
+	vim.api.nvim_set_current_win(preview_win())
+	vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+	press("]h")
+	assert_equal(vim.fn.line("."), 3, "next change")
+	press("]h")
+	assert_equal(vim.fn.line("."), 8, "last change")
+	press("]h")
+	assert_equal(vim.fn.line("."), 8, "stays at the last")
+	press("[h")
+	assert_equal(vim.fn.line("."), 3, "previous change")
+	press("[h")
+	press("[h")
+	assert_equal(vim.fn.line("."), 1, "stays at the first")
+end
+
+function tests.a_preview_with_unsaved_edits_is_never_closed()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", { "changed" })
+	write(root, "new.txt", { "brand new" })
+	press("<leader>gd")
+	wait_for_preview()
+	select_file("new.txt")
+	local edited = preview_buf()
+	vim.api.nvim_buf_set_lines(edited, 0, -1, false, { "unsaved work" })
+
+	select_file("a.txt")
+
+	assert_equal(vim.api.nvim_buf_is_valid(edited), true, "edited buffer")
+	assert_equal(vim.api.nvim_buf_get_lines(edited, 0, -1, false), { "unsaved work" }, "edits")
+end
+
+function tests.a_closed_preview_window_gets_a_new_split_beside_the_panel()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", { "changed" })
+	write(root, "new.txt", { "brand new" })
+	press("<leader>gd")
+	wait_for_preview()
+	local width = vim.api.nvim_win_get_width(panel_win())
+	vim.api.nvim_win_close(preview_win(), true)
+	assert_equal(#vim.api.nvim_tabpage_list_wins(0), 1, "only the panel left")
+
+	select_file("new.txt")
+
+	assert_equal(#vim.api.nvim_tabpage_list_wins(0), 2, "windows")
+	assert_equal(vim.api.nvim_buf_get_name(preview_buf()), vim.fs.joinpath(root, "new.txt"), "preview")
+	assert_equal(vim.api.nvim_win_get_width(panel_win()), width, "panel width")
+end
+
+function tests.the_panel_window_is_a_plain_list_of_fixed_width()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", { "changed" })
+	press("<leader>gd")
+	wait_for_preview()
+
+	local opts = vim.wo[panel_win()]
+	assert_equal({ opts.number, opts.signcolumn, opts.wrap }, { false, "no", false }, "chrome")
+	assert_equal({ opts.cursorline, opts.winfixwidth }, { true, true }, "list behaviour")
+	assert_equal(vim.bo[panel_buf()].modifiable, false, "read-only")
+end
+
+function tests.the_panel_as_the_last_window_gives_way_to_an_empty_buffer()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", { "changed" })
+	press("<leader>gd")
+	wait_for_preview()
+	vim.api.nvim_win_close(preview_win(), true)
+
+	press("<leader>gd")
+
+	assert_equal(panel_buf(), nil, "panel")
+	assert_equal(#vim.api.nvim_tabpage_list_wins(0), 1, "windows")
+end
+
 function tests.closing_returns_to_the_file_and_clears_the_review()
 	local root = repo()
 	require("plugins.editor.git_changes")
