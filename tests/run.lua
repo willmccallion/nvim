@@ -1,4 +1,5 @@
 --- Runs tests/*_test.lua against the installed plugins: nvim -l tests/run.lua [filter]
+--- The filter matches a test's name or its file.
 --- With $TEST_COVERAGE_DIR set to an empty folder, it reports the lines they ran.
 --- Each file returns a table of tests named after their behaviour. Every test gets
 --- its own nvim and an empty $HOME, since a panel and its autocmds last a session.
@@ -68,7 +69,7 @@ local function run_all(filter)
 		local names = vim.tbl_keys(dofile(file))
 		table.sort(names)
 		for _, name in ipairs(names) do
-			if not filter or name:find(filter, 1, true) then
+			if not filter or name:find(filter, 1, true) or file:find(filter, 1, true) then
 				total = total + 1
 				if not passes(file, name) then
 					failed = failed + 1
