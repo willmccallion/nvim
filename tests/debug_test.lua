@@ -77,9 +77,9 @@ end
 function tests.a_type_lookup_gives_its_definition_size_and_location()
 	local output = table.concat({
 		"Best match found in /a.out:",
-		"id = {0x1}, name = \"Point\", byte-size = 8, decl = point.h:3:8, compiler_type = \"struct Point {",
+		'id = {0x1}, name = "Point", byte-size = 8, decl = point.h:3:8, compiler_type = "struct Point {',
 		"    int x;",
-		"}\"",
+		'}"',
 	}, "\n")
 	h.assert_equal(types().parse_type_lookup(output), {
 		definition = { "struct Point {", "    int x;", "}" },
@@ -93,7 +93,11 @@ function tests.a_type_lookup_with_no_definition_finds_nothing()
 end
 
 function tests.the_raw_type_name_comes_from_the_line_for_that_variable()
-	h.assert_equal(types().raw_type_name("(std::vector<int, alloc>) v = size=1", "v"), "std::vector<int, alloc>", "type")
+	h.assert_equal(
+		types().raw_type_name("(std::vector<int, alloc>) v = size=1", "v"),
+		"std::vector<int, alloc>",
+		"type"
+	)
 	h.assert_equal(types().raw_type_name("(int) a.b = 1", "a.b"), "int", "path with a dot")
 	h.assert_equal(types().raw_type_name("(int) other = 1", "v"), nil, "another variable")
 end

@@ -23,7 +23,10 @@ local function repo()
 		git(root, "commit", "-qm", message)
 	end
 	commit({ "local function alpha()", "  return 1", "end", "", "local function beta()", "  return 1", "end" }, "first")
-	commit({ "local function alpha()", "  return 2", "end", "", "local function beta()", "  return 1", "end" }, "second")
+	commit(
+		{ "local function alpha()", "  return 2", "end", "", "local function beta()", "  return 1", "end" },
+		"second"
+	)
 	commit({ "local function alpha()", "  return 2", "end", "", "local function beta()", "  return 3", "end" }, "third")
 	vim.cmd.cd(root)
 	vim.cmd.edit(root .. "/a.lua")
@@ -303,11 +306,7 @@ function tests.grepping_changed_files_covers_modified_and_untracked_only()
 
 	require("plugins.editor.telescope.grep").grep_changed_files()
 
-	h.assert_equal(
-		opened[1].finder("x"),
-		{ "rg", "--vimgrep", "--smart-case", "--", "x", "a.lua", "b.lua" },
-		"command"
-	)
+	h.assert_equal(opened[1].finder("x"), { "rg", "--vimgrep", "--smart-case", "--", "x", "a.lua", "b.lua" }, "command")
 end
 
 function tests.grepping_changed_files_says_when_there_are_none_or_git_fails()

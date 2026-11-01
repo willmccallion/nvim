@@ -24,6 +24,7 @@ end
 ---@param file string
 ---@param name string
 local function run_one(file, name)
+	vim.env.TEST_REAL_DATA_HOME = vim.fs.dirname(vim.fn.stdpath("data"))
 	local plugin_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "pack", "core", "opt")
 	for _, plugin in ipairs(PLUGINS) do
 		vim.opt.rtp:prepend(vim.fs.joinpath(plugin_dir, plugin))

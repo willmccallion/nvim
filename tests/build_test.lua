@@ -176,7 +176,8 @@ function tests.warnings_in_a_passing_build_are_counted()
 end
 
 function tests.colour_codes_do_not_hide_an_error_from_quickfix()
-	local _, statuses = make_project({ "all:", "\t@printf '\\033[1msrc/a.c:1:1: error: coloured\\033[0m\\n'", "\t@false" })
+	local _, statuses =
+		make_project({ "all:", "\t@printf '\\033[1msrc/a.c:1:1: error: coloured\\033[0m\\n'", "\t@false" })
 
 	h.press("<leader>mb")
 	wait_for_status(statuses, "Failed")
@@ -237,7 +238,10 @@ end
 
 function tests.the_picker_marks_the_current_command_and_saved_ones()
 	local root = make_project(ok_makefile)
-	require("plugins.coding.build.store").save(root, { selected = "make", custom = { "make clean", "typed" }, run_custom = {} })
+	require("plugins.coding.build.store").save(
+		root,
+		{ selected = "make", custom = { "make clean", "typed" }, run_custom = {} }
+	)
 	local seen = stub_select(function() end)
 
 	h.press("<leader>mp")
@@ -347,7 +351,10 @@ end
 
 function tests.the_run_picker_lists_saved_commands_and_can_take_a_new_one()
 	local root, statuses = make_project(ok_makefile)
-	require("plugins.coding.build.store").save(root, { custom = {}, run = "echo one", run_custom = { "echo one", "echo two" } })
+	require("plugins.coding.build.store").save(
+		root,
+		{ custom = {}, run = "echo one", run_custom = { "echo one", "echo two" } }
+	)
 	local seen = stub_select(pick_command("echo two"))
 
 	h.press("<leader>mP")
@@ -428,9 +435,13 @@ function tests.a_debug_build_reports_back_with_its_project()
 	h.assert_equal(build.has_debug_build(), true, "cargo has one")
 
 	local outcome
-	h.assert_equal(build.debug_build(function(succeeded, project)
-		outcome = { succeeded, project.root }
-	end), true, "started")
+	h.assert_equal(
+		build.debug_build(function(succeeded, project)
+			outcome = { succeeded, project.root }
+		end),
+		true,
+		"started"
+	)
 	wait_for_status(statuses, "Failed")
 
 	h.assert_equal(outcome, { false, root }, "outcome")
@@ -519,7 +530,10 @@ local function cargo_project(ran)
 	vim.fn.mkdir(root .. "/.git", "p")
 	vim.fn.writefile({ "[package]" }, root .. "/Cargo.toml")
 	local bin = h.temp_dir()
-	vim.fn.writefile({ "#!/bin/sh", 'echo "$@" >"$CARGO_ARGS"', ("echo 'running %d tests'"):format(ran) }, bin .. "/cargo")
+	vim.fn.writefile(
+		{ "#!/bin/sh", 'echo "$@" >"$CARGO_ARGS"', ("echo 'running %d tests'"):format(ran) },
+		bin .. "/cargo"
+	)
 	vim.fn.setfperm(bin .. "/cargo", "rwxr-xr-x")
 	vim.env.PATH = bin .. ":" .. vim.env.PATH
 	vim.env.CARGO_ARGS = h.temp_dir() .. "/args"
@@ -648,7 +662,11 @@ function tests.the_pytest_test_under_the_cursor_runs_by_its_node_id()
 	h.press("<leader>mt")
 	wait_for_status(statuses, "Passed")
 
-	h.assert_equal(vim.fn.readfile(vim.env.PYTEST_ARGS), { "-m pytest tests/test_a.py::TestThing::test_one" }, "arguments")
+	h.assert_equal(
+		vim.fn.readfile(vim.env.PYTEST_ARGS),
+		{ "-m pytest tests/test_a.py::TestThing::test_one" },
+		"arguments"
+	)
 end
 
 function tests.a_helper_in_a_test_class_runs_the_class()

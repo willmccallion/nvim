@@ -95,7 +95,8 @@ end
 local function compiled(flags)
 	local dir = h.temp_dir()
 	vim.fn.writefile({ "int main(void) { return 0; }" }, dir .. "/a.c")
-	local result = vim.system(vim.list_extend({ "cc", dir .. "/a.c", "-o", dir .. "/a" }, flags), { text = true }):wait()
+	local result = vim.system(vim.list_extend({ "cc", dir .. "/a.c", "-o", dir .. "/a" }, flags), { text = true })
+		:wait()
 	assert(result.code == 0, result.stderr)
 	return dir .. "/a"
 end

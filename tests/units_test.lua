@@ -122,7 +122,8 @@ function tests.a_rust_file_outside_any_target_has_none()
 end
 
 function tests.a_named_rust_test_filters_exactly()
-	local test = { target = { flags = { "--bin", "tool" }, modules = { "util" } }, modules = { "tests" }, name = "works" }
+	local test =
+		{ target = { flags = { "--bin", "tool" }, modules = { "util" } }, modules = { "tests" }, name = "works" }
 	h.assert_equal({ build_tests().rust_filter(test) }, { "util::tests::works", true }, "filter")
 	local command = build_tests().rust_command(test)
 	h.assert_equal(command.cmd, "cargo test --bin tool -- --exact util::tests::works", "command")
@@ -332,11 +333,7 @@ function tests.unchanged_ranges_treat_a_deletion_as_one_line_and_merge_close_cha
 	h.assert_equal(folds.unchanged_ranges({ deletion }, 10), { { first = 5, last = 10 } }, "deletion at the top")
 	local near = { added = { start = 7, count = 1 }, removed = { start = 7, count = 1 } }
 	local nearer = { added = { start = 12, count = 1 }, removed = { start = 12, count = 1 } }
-	h.assert_equal(
-		folds.unchanged_ranges({ near, nearer }, 15),
-		{ { first = 1, last = 3 } },
-		"overlapping context"
-	)
+	h.assert_equal(folds.unchanged_ranges({ near, nearer }, 15), { { first = 1, last = 3 } }, "overlapping context")
 end
 
 function tests.no_changes_fold_the_whole_file_and_a_change_at_the_end_leaves_no_tail()
