@@ -239,6 +239,43 @@ function tests.a_change_marks_only_the_part_of_the_line_that_differs()
 	assert_equal({ inline[1][3], inline[1][4].end_col }, { 2, 3 }, "marked columns")
 end
 
+function tests.filling_in_a_stub_marks_only_the_brace_that_went_away()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "stub.cpp", {
+		"#include <x>",
+		"// TODO: Due by part 1",
+		"void PassCodeGen::operator()(ast::FunctionCall &node) {}",
+		"int after;",
+	})
+	git(root, "add", "-A")
+	git(root, "commit", "-qm", "stub")
+	write(root, "stub.cpp", {
+		"#include <x>",
+		"void PassCodeGen::operator()(ast::FunctionCall &node) {",
+		"  emitCall(node.name, node.funcParams);",
+		"}",
+		"int after;",
+	})
+	press("<leader>gd")
+	wait_for_preview()
+	local marked_new, marked_old = {}, {}
+	for _, mark in ipairs(tint_marks(preview_buf())) do
+		if mark[4].hl_group == "GitSignsAddInline" then
+			table.insert(marked_new, mark[2])
+		end
+		for _, chunks in ipairs(mark[4].virt_lines or {}) do
+			for _, chunk in ipairs(chunks) do
+				if chunk[2] == "GitSignsDeleteVirtLnInLine" and chunk[1] ~= "" then
+					table.insert(marked_old, chunk[1])
+				end
+			end
+		end
+	end
+	assert_equal(marked_new, {}, "nothing was added to the signature")
+	assert_equal(marked_old, { "}" }, "only the brace is marked as removed")
+end
+
 function tests.a_preview_folds_away_lines_far_from_the_change_until_closed()
 	local root = repo()
 	require("plugins.editor.git_changes")

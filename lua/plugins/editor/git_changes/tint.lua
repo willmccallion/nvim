@@ -3,6 +3,12 @@
 
 local tint_ns = vim.api.nvim_create_namespace("git-changes-tint")
 
+--- Below this share of a line in common, two lines are different lines, not an edit.
+local MIN_SIMILARITY = 0.5
+
+--- Comparing every removed line with every added one runs on each keystroke in a review.
+local MAX_COMPARISONS = 40000
+
 local M = {}
 
 ---@param buf integer
@@ -58,21 +64,60 @@ local function virtual_line(parts, tabstop)
 	return chunks
 end
 
---- The old side of a change, as virtual lines with each line's changed part marked.
----@param hunk GitHunk
----@param old_lines string[]
----@param lines string[] the buffer's
+--- How much of two lines survives, from 0 for nothing to 1 when they are equal.
+---@param old_line string
+---@param line string
+---@return number
+local function similarity(old_line, line)
+	local start, finish = M.changed_span(old_line, line)
+	if not start then
+		return 1
+	end
+	return (start + #line - finish) / math.max(#old_line, #line)
+end
+
+--- Which added line each removed line became, by resemblance, since a hunk's lines
+--- need not line up: a removed comment would otherwise be compared with the code
+--- below it, and everything on both would count as changed. Lines keep their order.
+---@param removed string[]
+---@param added string[]
+---@return table<integer, integer> index in added, by index in removed
+function M.pair_lines(removed, added)
+	local paired = {}
+	if #removed * #added > MAX_COMPARISONS then
+		return paired
+	end
+	local first_free = 1
+	for old_index, old_line in ipairs(removed) do
+		local best, best_score = nil, MIN_SIMILARITY
+		for index = first_free, #added do
+			local score = similarity(old_line, added[index])
+			if score > best_score then
+				best, best_score = index, score
+			end
+		end
+		if best then
+			paired[old_index] = best
+			first_free = best + 1
+		end
+	end
+	return paired
+end
+
+--- The removed side of a hunk, as virtual lines with each line's changed part marked.
+---@param removed string[]
+---@param added string[]
+---@param paired table<integer, integer>
 ---@param tabstop integer
 ---@return [string, string][][]
-local function removed_virtual_lines(hunk, old_lines, lines, tabstop)
-	local removed = {}
-	for offset = 0, hunk.removed.count - 1 do
-		local old_line = old_lines[hunk.removed.start + offset] or ""
-		local new_line = offset < hunk.added.count and lines[hunk.added.start + offset] or nil
+local function removed_virtual_lines(removed, added, paired, tabstop)
+	local rows = {}
+	for old_index, old_line in ipairs(removed) do
+		local new_line = added[paired[old_index]]
 		local start, _, old_finish = M.changed_span(old_line, new_line or "")
 		if new_line and start then
 			table.insert(
-				removed,
+				rows,
 				virtual_line({
 					{ text = old_line:sub(1, start), group = "GitSignsDeleteVirtLn" },
 					{ text = old_line:sub(start + 1, old_finish), group = "GitSignsDeleteVirtLnInLine" },
@@ -80,49 +125,67 @@ local function removed_virtual_lines(hunk, old_lines, lines, tabstop)
 				}, tabstop)
 			)
 		else
-			table.insert(removed, virtual_line({ { text = old_line, group = "GitSignsDeleteVirtLn" } }, tabstop))
+			table.insert(rows, virtual_line({ { text = old_line, group = "GitSignsDeleteVirtLn" } }, tabstop))
 		end
 	end
-	return removed
+	return rows
 end
 
 ---@param buf integer
 ---@param hunk GitHunk
----@param removed [string, string][][]
-local function show_removed(buf, hunk, removed)
-	if #removed == 0 then
+---@param rows [string, string][][]
+local function show_removed(buf, hunk, rows)
+	if #rows == 0 then
 		return
 	end
 	-- A pure deletion's added.start is the line before it, 0 at the top.
 	local above = hunk.added.count > 0 or hunk.added.start == 0
 	local row = hunk.added.count > 0 and hunk.added.start - 1 or math.max(hunk.added.start - 1, 0)
-	vim.api.nvim_buf_set_extmark(buf, tint_ns, row, 0, { virt_lines = removed, virt_lines_above = above })
+	vim.api.nvim_buf_set_extmark(buf, tint_ns, row, 0, { virt_lines = rows, virt_lines_above = above })
 end
 
 ---@param buf integer
 ---@param hunk GitHunk
----@param old_lines string[]
----@param lines string[] the buffer's
 ---@param with_signs boolean
-local function show_added(buf, hunk, old_lines, lines, with_signs)
+local function show_added(buf, hunk, with_signs)
 	for offset = 0, hunk.added.count - 1 do
-		local row = hunk.added.start + offset - 1
-		vim.api.nvim_buf_set_extmark(buf, tint_ns, row, 0, {
+		vim.api.nvim_buf_set_extmark(buf, tint_ns, hunk.added.start + offset - 1, 0, {
 			line_hl_group = "GitSignsAddPreview",
 			sign_text = with_signs and "│" or nil,
 			sign_hl_group = with_signs and "GitSignsAdd" or nil,
 		})
-		local old_line = offset < hunk.removed.count and old_lines[hunk.removed.start + offset]
-		if old_line then
-			local start, finish = M.changed_span(old_line, lines[row + 1])
-			if start and finish > start then
-				vim.api.nvim_buf_set_extmark(buf, tint_ns, row, start, {
-					end_col = finish,
-					hl_group = "GitSignsAddInline",
-				})
-			end
+	end
+end
+
+---@param buf integer
+---@param hunk GitHunk
+---@param removed string[]
+---@param added string[]
+---@param paired table<integer, integer>
+local function mark_changed_parts(buf, hunk, removed, added, paired)
+	for old_index, new_index in pairs(paired) do
+		local start, finish = M.changed_span(removed[old_index], added[new_index])
+		if start and finish > start then
+			vim.api.nvim_buf_set_extmark(buf, tint_ns, hunk.added.start + new_index - 2, start, {
+				end_col = finish,
+				hl_group = "GitSignsAddInline",
+			})
 		end
 	end
+end
+
+--- A hunk's removed and added lines.
+---@param hunk GitHunk
+---@param old_lines string[]
+---@param lines string[] the buffer's
+---@return string[] removed
+---@return string[] added
+local function lines_of(hunk, old_lines, lines)
+	local removed = {}
+	for offset = 0, hunk.removed.count - 1 do
+		removed[offset + 1] = old_lines[hunk.removed.start + offset] or ""
+	end
+	return removed, vim.list_slice(lines, hunk.added.start, hunk.added.start + hunk.added.count - 1)
 end
 
 --- Shows each change as a before and after: the removed lines in red as virtual
@@ -138,8 +201,11 @@ function M.show(buf, hunks, old_lines, with_signs)
 	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 	local tabstop = vim.bo[buf].tabstop
 	for _, hunk in ipairs(hunks) do
-		show_removed(buf, hunk, removed_virtual_lines(hunk, old_lines, lines, tabstop))
-		show_added(buf, hunk, old_lines, lines, with_signs)
+		local removed, added = lines_of(hunk, old_lines, lines)
+		local paired = M.pair_lines(removed, added)
+		show_removed(buf, hunk, removed_virtual_lines(removed, added, paired, tabstop))
+		show_added(buf, hunk, with_signs)
+		mark_changed_parts(buf, hunk, removed, added, paired)
 	end
 end
 

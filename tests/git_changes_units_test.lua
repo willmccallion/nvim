@@ -10,6 +10,10 @@ local function span(old_line, line)
 	return { require("plugins.editor.git_changes.tint").changed_span(old_line, line) }
 end
 
+local function tint()
+	return require("plugins.editor.git_changes.tint")
+end
+
 local function changes()
 	return require("plugins.editor.git_changes.changes")
 end
@@ -34,6 +38,36 @@ end
 
 function tests.changed_span_keeps_the_common_start_and_end_from_overlapping()
 	assert_equal(span("aa", "aaa"), { 2, 3, 2 }, "span")
+end
+
+function tests.a_removed_line_pairs_with_the_added_line_it_resembles_not_the_one_at_its_position()
+	local removed = { "// TODO: Due by part 1", "void run(int node) {}" }
+	local added = { "void run(int node) {", "  emit(node);", "}" }
+	assert_equal(tint().pair_lines(removed, added), { [2] = 1 }, "pairs")
+end
+
+function tests.pairing_prefers_the_closest_line_over_the_first_similar_one()
+	local removed = { "pub fn parse_body(input: &str) -> u32 {}" }
+	local added = { "pub fn parse_line(input: &str) -> u32 {", "    1", "}", "", "pub fn parse_body(input: &str) -> u32 {" }
+	assert_equal(tint().pair_lines(removed, added), { 5 }, "pairs")
+end
+
+function tests.paired_lines_keep_their_order()
+	local removed = { "let alpha = 1;", "let beta = 2;" }
+	local added = { "let beta = 3;", "let alpha = 4;" }
+	assert_equal(tint().pair_lines(removed, added), { [1] = 2 }, "pairs")
+end
+
+function tests.lines_with_nothing_in_common_are_left_unpaired()
+	assert_equal(tint().pair_lines({ "abcdef" }, { "uvwxyz" }), {}, "pairs")
+end
+
+function tests.a_huge_hunk_is_not_paired_because_it_is_redrawn_on_every_keystroke()
+	local lines = {}
+	for line = 1, 1000 do
+		lines[line] = "same"
+	end
+	assert_equal(tint().pair_lines(lines, lines), {}, "pairs")
 end
 
 function tests.panel_width_has_a_floor_and_a_ceiling()
