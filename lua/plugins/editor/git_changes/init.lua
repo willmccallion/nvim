@@ -161,9 +161,10 @@ local function pick_commit_to_show()
 		end
 		return rows
 	end
+	local own_diff = preview_own_diff(root)
 	local function preview(commit)
 		if commit then
-			return { "git", "-C", root, "show", commit }
+			return own_diff(commit)
 		end
 		return { "sh", "-c", 'git -C "$1" status --short && git -C "$1" diff HEAD', "sh", root }
 	end
