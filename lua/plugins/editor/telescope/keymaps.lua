@@ -190,9 +190,11 @@ local function description_of(map, show_unlabelled)
 end
 
 --- Global and current-buffer mappings, one row per mapping rather than per mode.
+local M = {}
+
 ---@param show_unlabelled boolean
 ---@return KeymapRow[] sorted by domain, then by key sequence
-local function collect(show_unlabelled)
+function M.collect(show_unlabelled)
 	local seen = {}
 	local rows = {}
 
@@ -252,8 +254,6 @@ local function column_width(rows, field, limit)
 	return math.min(width, limit)
 end
 
-local M = {}
-
 ---@param opts? {show_unlabelled?: boolean}
 function M.pick(opts)
 	opts = opts or {}
@@ -264,7 +264,7 @@ function M.pick(opts)
 	local action_state = require("telescope.actions.state")
 	local entry_display = require("telescope.pickers.entry_display")
 
-	local rows = collect(opts.show_unlabelled or false)
+	local rows = M.collect(opts.show_unlabelled or false)
 
 	local displayer = entry_display.create({
 		separator = " ▏",
