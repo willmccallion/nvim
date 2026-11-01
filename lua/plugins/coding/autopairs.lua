@@ -1,10 +1,8 @@
 --- Automatic bracket/quote pairing via nvim-autopairs.
---- Integrates with nvim-cmp to insert pairs on completion confirm.
+--- Integrates with nvim-cmp to insert pairs on completion confirm, so
+--- plugins.coding.completion loads it right after setting cmp up.
 
-vim.pack.add({
-	"https://github.com/windwp/nvim-autopairs",
-	"https://github.com/hrsh7th/nvim-cmp",
-})
+vim.pack.add({ "https://github.com/windwp/nvim-autopairs" })
 
 require("nvim-autopairs").setup()
 

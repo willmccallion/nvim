@@ -24,7 +24,6 @@ require("plugins.ui.oil")
 require("plugins.ui.treesitter_context")
 
 require("plugins.coding.completion")
-require("plugins.coding.autopairs")
 require("plugins.coding.conform")
 require("plugins.coding.treesitter")
 require("plugins.coding.build")

@@ -1,7 +1,7 @@
 # Neovim Configuration
 
 My Neovim config for C, C++, Rust, Python, Lua, Nix, SystemVerilog, and Zig.
-Everything is in Lua and uses the built-in `vim.pack` plugin system. Plugin versions are pinned in `nvim-pack-lock.json`.
+Everything is in Lua and uses the built-in `vim.pack` plugin system. Plugin versions are pinned in `nvim-pack-lock.json`. Completion loads on the first insert, and Telescope and the debugger the first time something uses them.
 
 ## Getting Started
 
