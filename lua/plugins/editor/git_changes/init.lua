@@ -15,11 +15,11 @@
 --- not given, and :GitChanges --cached [commit] what is staged against commit, HEAD
 --- by default.
 
-local gitsigns = require("gitsigns")
 local devicons = require("nvim-web-devicons")
 local file_buffers = require("plugins.editor.git_changes.file_buffers")
 local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
+local gitsigns_base = require("plugins.editor.git_changes.gitsigns_base")
 local commits = require("plugins.editor.git_changes.commits")
 local line_history = require("plugins.editor.git_changes.line_history")
 local tint = require("plugins.editor.git_changes.tint")
@@ -78,15 +78,8 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 ---@field text string the file as the panel's base commit has it
 ---@field lines string[] the same, split into lines
 
----@class BaseChange
----@field base string? nil for gitsigns' usual base, the index
----@field on_done fun()
-
 ---@type Panel?
 local panel = nil
-
----@type BaseChange[]
-local base_changes = {}
 
 --- The worktree letter wins over the index one, since it is what the buffer shows.
 ---@param index string
@@ -226,40 +219,6 @@ local function panel_width(content)
 		widest = math.max(widest, vim.fn.strdisplaywidth(line))
 	end
 	return math.min(math.max(widest + 2, MIN_WIDTH), MAX_WIDTH)
-end
-
---- change_base is asynchronous and sets the global base only once every attached
---- buffer is re-diffed, so a buffer attaching meanwhile gets the old base, and a
---- change started before another ends can be overtaken by it. Changes run one at
---- a time here, each calling its on_done once the base is in place.
-local function run_next_base_change()
-	local change = base_changes[1]
-	if not change then
-		return
-	end
-	gitsigns.change_base(change.base, true, function(err)
-		vim.schedule(function()
-			if err then
-				vim.notify("gitsigns could not change its base: " .. tostring(err), vim.log.levels.ERROR)
-			end
-			table.remove(base_changes, 1)
-			change.on_done()
-			run_next_base_change()
-		end)
-	end)
-end
-
----@param base string? nil for gitsigns' usual base
----@param on_done fun()
-local function set_gitsigns_base(base, on_done)
-	if #base_changes == 0 and require("gitsigns.config").config.base == base then
-		on_done()
-		return
-	end
-	table.insert(base_changes, { base = base, on_done = on_done })
-	if #base_changes == 1 then
-		run_next_base_change()
-	end
 end
 
 ---@param since Since?
@@ -589,7 +548,7 @@ local function leave_review(closed)
 	end
 	-- Only the files as they are now were compared through gitsigns' base.
 	if closed.since and not closed.since.to then
-		set_gitsigns_base(nil, function() end)
+		gitsigns_base.set(nil, function() end)
 	end
 end
 
@@ -676,7 +635,7 @@ local function open_panel(root, since, focus_path)
 		show_file_under_cursor()
 		return
 	end
-	set_gitsigns_base(since and since.commit, function()
+	gitsigns_base.set(since and since.commit, function()
 		if panel == opened then
 			opened.ready = true
 			show_file_under_cursor()
