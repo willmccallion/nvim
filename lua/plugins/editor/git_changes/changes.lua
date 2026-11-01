@@ -14,8 +14,9 @@ local M = {}
 ---@field commit string the commit the changes are listed since
 ---@field summary string its short hash and subject, shown above the list
 ---@field label string? shown in the title in place of commit
----@field to Since? a later commit to list the changes up to; nil for the files as they are now
----@field index boolean? in a to, it stands for the staged files instead of a commit
+---@field to ChangesEnd? what to list the changes up to; nil for the files as they are now
+
+---@alias ChangesEnd {kind: "commit", commit: string}|{kind: "staged"}
 
 --- The worktree letter wins over the index one, since it is what the buffer shows.
 ---@param index string
@@ -98,6 +99,28 @@ local function parse_untracked(output)
 	end, vim.split(output, "\0", { plain = true, trimempty = true }))
 end
 
+---@type ChangesEnd
+M.STAGED = { kind = "staged" }
+
+---@param commit string
+---@return ChangesEnd
+function M.commit_end(commit)
+	return { kind = "commit", commit = commit }
+end
+
+---@param to ChangesEnd
+---@return string
+function M.end_name(to)
+	return to.kind == "staged" and "staged" or to.commit
+end
+
+--- What `git show` takes before a path to read the file from there.
+---@param to ChangesEnd
+---@return string
+function M.end_source(to)
+	return to.kind == "staged" and ":" or to.commit .. ":"
+end
+
 --- Whether the newer side is read-only copies from git, not the files as they are now.
 ---@param since Since?
 ---@return boolean
@@ -118,7 +141,7 @@ function M.title_of(since)
 		return nil
 	end
 	if since.to then
-		return ("%s → %s"):format(since.label or since.commit, since.to.commit)
+		return ("%s → %s"):format(since.label or since.commit, M.end_name(since.to))
 	end
 	return "since " .. since.summary
 end
@@ -134,7 +157,8 @@ function M.list(root, since)
 		return status and parse_porcelain(status)
 	end
 	if since.to then
-		local range = since.to.index and { "--cached", since.commit } or { since.commit, since.to.commit }
+		local staged = since.to.kind == "staged"
+		local range = staged and { "--cached", since.commit } or { since.commit, since.to.commit }
 		local diff = git.output(root, vim.list_extend({ "diff", "--name-status", "-z", "-M" }, range))
 		local files = diff and parse_name_status(diff)
 		if files then
@@ -191,7 +215,7 @@ function M.own_changes(root, commit)
 		since = empty_tree and { commit = vim.trim(empty_tree), summary = "the empty tree", label = "empty" }
 	end
 	if since then
-		since.to = commit
+		since.to = M.commit_end(commit.commit)
 	end
 	return since
 end

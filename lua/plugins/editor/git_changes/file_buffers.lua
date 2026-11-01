@@ -20,11 +20,11 @@ function M.deleted_buffer_name(file)
 	return "git-deleted://" .. file.path
 end
 
----@param commit string
+---@param end_name string
 ---@param file ChangedFile
 ---@return string
-function M.commit_buffer_name(commit, file)
-	return ("git-%s://%s"):format(commit, file.path)
+function M.copy_buffer_name(end_name, file)
+	return ("git-%s://%s"):format(end_name, file.path)
 end
 
 --- A read-only buffer holding path as git has it at the first of sources (a

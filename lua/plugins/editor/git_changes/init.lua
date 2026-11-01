@@ -33,10 +33,11 @@ local function open_range(root, older, newer)
 		return
 	end
 	if newer then
-		since.to = changes.since_of(root, newer)
-		if not since.to then
+		local to = changes.since_of(root, newer)
+		if not to then
 			return
 		end
+		since.to = changes.commit_end(to.commit)
 	elseif #(changes.list(root, since) or { true }) == 0 then
 		vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
 		since = changes.own_changes(root, since)
@@ -67,7 +68,7 @@ local function open_staged(root, commit)
 	if not since then
 		return
 	end
-	since.to = { commit = "staged", summary = "the staged files", index = true }
+	since.to = changes.STAGED
 	local files = changes.list(root, since)
 	if not files then
 		return

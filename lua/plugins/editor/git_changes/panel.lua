@@ -149,7 +149,7 @@ local function buffer_name_of(file)
 		return file_buffers.deleted_buffer_name(file)
 	end
 	if changes.shows_copies(panel.since) then
-		return file_buffers.commit_buffer_name(panel.since.to.commit, file)
+		return file_buffers.copy_buffer_name(changes.end_name(panel.since.to), file)
 	end
 	return vim.fs.joinpath(panel.root, file.path)
 end
@@ -202,8 +202,8 @@ local function show_file(file)
 		panel.preview_buf = nil
 	elseif changes.shows_copies(panel.since) then
 		local to = panel.since.to
-		local source = to.index and ":" or to.commit .. ":"
-		local buf = file_buffers.git_file_buffer(panel.root, { source }, file.path, file_buffers.commit_buffer_name(to.commit, file))
+		local name = file_buffers.copy_buffer_name(changes.end_name(to), file)
+		local buf = file_buffers.git_file_buffer(panel.root, { changes.end_source(to) }, file.path, name)
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
 			local old_text = git.text_at(panel.root, panel.since.commit, file)
