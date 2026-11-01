@@ -11,6 +11,7 @@ import pathlib
 import queue
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -124,6 +125,19 @@ def parses(copy, path):
     return subprocess.run(["nvim", "-l", str(script), str(copy / path)], capture_output=True).returncode == 0
 
 
+def passes(command):
+    """A mutant can loop forever in a test's child, which only dies with the whole group."""
+    process = subprocess.Popen(
+        command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
+    )
+    try:
+        return process.wait(timeout=TIMEOUT_SECONDS) == 0
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        return False
+
+
 def survives(mutant, copy):
     target = copy / mutant.file
     original = target.read_text()
@@ -131,10 +145,7 @@ def survives(mutant, copy):
     try:
         if not parses(copy, mutant.file):
             return None
-        command = ["nvim", "-l", str(copy / "tests/run.lua"), mutant.tests]
-        return subprocess.run(command, capture_output=True, timeout=TIMEOUT_SECONDS).returncode == 0
-    except subprocess.TimeoutExpired:
-        return False
+        return passes(["nvim", "-l", str(copy / "tests/run.lua"), mutant.tests])
     finally:
         target.write_text(original)
 
@@ -165,9 +176,11 @@ def main():
         finally:
             idle.put(copy)
 
-    with concurrent.futures.ThreadPoolExecutor(WORKERS) as pool:
-        results = list(pool.map(check, jobs))
-    shutil.rmtree(base)
+    try:
+        with concurrent.futures.ThreadPoolExecutor(WORKERS) as pool:
+            results = list(pool.map(check, jobs))
+    finally:
+        shutil.rmtree(base)
 
     valid = [(mutant, survived) for mutant, survived in results if survived is not None]
     survivors = [mutant for mutant, survived in valid if survived]
