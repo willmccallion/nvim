@@ -48,7 +48,8 @@ end
 
 function tests.pairing_prefers_the_closest_line_over_the_first_similar_one()
 	local removed = { "pub fn parse_body(input: &str) -> u32 {}" }
-	local added = { "pub fn parse_line(input: &str) -> u32 {", "    1", "}", "", "pub fn parse_body(input: &str) -> u32 {" }
+	local added =
+		{ "pub fn parse_line(input: &str) -> u32 {", "    1", "}", "", "pub fn parse_body(input: &str) -> u32 {" }
 	assert_equal(tint().pair_lines(removed, added), { 5 }, "pairs")
 end
 
