@@ -4,6 +4,8 @@
 --- fidget comes first among the plugins because it takes over vim.notify, and
 --- anything loaded before it would report problems to the command line instead.
 
+vim.loader.enable()
+
 require("config.globals")
 
 require("config.options")
