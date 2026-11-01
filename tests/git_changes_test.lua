@@ -202,9 +202,13 @@ function tests.lists_uncommitted_changes_with_folders_after_root_files()
 	write(root, "new.txt", { "brand new" })
 	write(root, "lib/b.txt", { "changed" })
 	press("<leader>gd")
-	assert_equal(vim.tbl_map(function(line)
-		return (line:gsub("^(%s*%S+) %S+ ", "%1 "))
-	end, panel_lines()), { "M a.txt", "? new.txt", "lib/", "  M b.txt" }, "panel lines")
+	assert_equal(
+		vim.tbl_map(function(line)
+			return (line:gsub("^(%s*%S+) %S+ ", "%1 "))
+		end, panel_lines()),
+		{ "M a.txt", "? new.txt", "lib/", "  M b.txt" },
+		"panel lines"
+	)
 end
 
 function tests.previews_a_change_with_the_removed_line_above_the_new_one()
@@ -416,6 +420,63 @@ function tests.nothing_staged_says_so_and_leaves_the_open_panel()
 	vim.cmd.GitChanges("--cached")
 	assert_contains(notified, "Nothing staged", "notification")
 	assert_equal(panel_buf(), open, "panel left open")
+end
+
+function tests.an_empty_range_says_so_and_leaves_the_open_panel()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local notified = capture_notifications()
+	write(root, "a.txt", { "changed" })
+	press("<leader>gd")
+	wait_for_preview()
+	local open = panel_buf()
+	vim.cmd.GitChanges({ args = { "HEAD", "HEAD" } })
+	assert_contains(notified, "No changes since", "notification")
+	assert_equal(panel_buf(), open, "panel left open")
+end
+
+function tests.a_file_name_with_spaces_is_listed_and_previewed_whole()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "with a space.txt", { "new" })
+	press("<leader>gd")
+	wait_for_preview()
+	assert_contains(panel_lines(), "with a space.txt", "row")
+	assert_equal(vim.api.nvim_buf_get_name(preview_buf()), vim.fs.joinpath(root, "with a space.txt"), "preview")
+end
+
+function tests.a_removed_tab_is_drawn_as_the_spaces_the_buffer_would_show()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "tabbed.txt", { "\tindented", "kept" })
+	git(root, "add", "-A")
+	git(root, "commit", "-qm", "tabs")
+	write(root, "tabbed.txt", { "kept" })
+	vim.o.tabstop = 4
+	press("<leader>gd")
+	wait_for_preview()
+	assert_equal(removed_lines_shown(preview_buf()), { "    indented" }, "removed line")
+end
+
+function tests.removing_the_first_line_draws_it_above_the_top_of_the_file()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", vim.list_slice(EDITED, 2))
+	press("<leader>gd")
+	wait_for_preview()
+	local mark = tint_marks(preview_buf())[1]
+	assert_equal({ mark[2], mark[4].virt_lines_above }, { 0, true }, "row and side")
+end
+
+function tests.removing_a_later_line_draws_it_below_the_line_before()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local without_three = { "one", "two", "four", "five", "six", "seven", "eight" }
+	write(root, "a.txt", without_three)
+	press("<leader>gd")
+	wait_for_preview()
+	local mark = tint_marks(preview_buf())[1]
+	assert_equal({ mark[2], mark[4].virt_lines_above or false }, { 1, false }, "row and side")
 end
 
 function tests.no_changes_says_so_without_opening_a_panel()

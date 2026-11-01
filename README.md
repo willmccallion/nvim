@@ -130,6 +130,10 @@ Descriptions still lead with their domain word, so a search matches whether you 
 `<leader>sK` adds every unlabelled mapping Neovim and the plugins install, for when something is bound and
 you cannot tell what to.
 
+## Tests
+
+`nvim -l tests/run.lua [filter]` runs `tests/*_test.lua` against the installed plugins, each test in its own nvim with an empty `$HOME`. The pre-push hook in the parent repo runs them too.
+
 ## Notes
 
 - Format-on-save can be disabled globally (`vim.g.autoformat = false`) or per-buffer (`vim.b.autoformat = false`).
