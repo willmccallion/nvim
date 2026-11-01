@@ -186,6 +186,54 @@ local function retint_on_edits(buf)
 	})
 end
 
+---@param win integer
+---@param file ChangedFile
+local function show_deleted_file(win, file)
+	assert(panel, "show_deleted_file needs an open panel")
+	local buf = file_buffers.deleted_file_buffer(panel.root, panel.since, file)
+	if buf then
+		vim.api.nvim_win_set_buf(win, buf)
+	end
+end
+
+---@param win integer
+---@param file ChangedFile
+local function show_read_only_copy(win, file)
+	assert(panel, "show_read_only_copy needs an open panel")
+	local to = panel.since.to
+	local name = file_buffers.copy_buffer_name(changes.end_name(to), file)
+	local buf = file_buffers.git_file_buffer(panel.root, { changes.end_source(to) }, file.path, name)
+	if not buf then
+		return
+	end
+	vim.api.nvim_win_set_buf(win, buf)
+	local old_text = git.text_at(panel.root, panel.since.commit, file)
+	local hunks = git.hunks_against(old_text, buf)
+	tint.show(buf, hunks, vim.split(old_text, "\n", { plain = true }), true)
+	map_hunk_motions(buf, hunks)
+	focus_changes(win, buf, hunks)
+end
+
+---@param win integer
+---@param file ChangedFile
+---@return integer? preview_buf the buffer, when showing it is what loaded it
+local function show_real_file(win, file)
+	assert(panel, "show_real_file needs an open panel")
+	local path = buffer_name_of(file)
+	local loaded_before = file_buffers.buffer_named(path) ~= nil
+	vim.api.nvim_win_call(win, function()
+		vim.cmd.edit(vim.fn.fnameescape(path))
+	end)
+	local buf = vim.api.nvim_win_get_buf(win)
+	local text = git.text_at(panel.root, changes.base_rev(panel.since), file)
+	panel.bases[buf] = { text = text, lines = vim.split(text, "\n", { plain = true }) }
+	local hunks = git.hunks_against(text, buf)
+	tint.show(buf, hunks, panel.bases[buf].lines, false)
+	retint_on_edits(buf)
+	focus_changes(win, buf, hunks)
+	return not loaded_before and buf or nil
+end
+
 --- Shows the file in the target window, at its first change, without moving there.
 ---@param file ChangedFile
 ---@return integer win
@@ -194,41 +242,16 @@ local function show_file(file)
 	local win = target_window()
 	panel.target_win = win
 	local previous_preview = panel.preview_buf
+	local preview_buf = nil
 	if file.status == "D" then
-		local buf = file_buffers.deleted_file_buffer(panel.root, panel.since, file)
-		if buf then
-			vim.api.nvim_win_set_buf(win, buf)
-		end
-		panel.preview_buf = nil
+		show_deleted_file(win, file)
 	elseif changes.shows_copies(panel.since) then
-		local to = panel.since.to
-		local name = file_buffers.copy_buffer_name(changes.end_name(to), file)
-		local buf = file_buffers.git_file_buffer(panel.root, { changes.end_source(to) }, file.path, name)
-		if buf then
-			vim.api.nvim_win_set_buf(win, buf)
-			local old_text = git.text_at(panel.root, panel.since.commit, file)
-			local hunks = git.hunks_against(old_text, buf)
-			tint.show(buf, hunks, vim.split(old_text, "\n", { plain = true }), true)
-			map_hunk_motions(buf, hunks)
-			focus_changes(win, buf, hunks)
-		end
-		panel.preview_buf = nil
+		show_read_only_copy(win, file)
 	else
-		local path = buffer_name_of(file)
-		local loaded_before = file_buffers.buffer_named(path) ~= nil
-		vim.api.nvim_win_call(win, function()
-			vim.cmd.edit(vim.fn.fnameescape(path))
-		end)
-		local buf = vim.api.nvim_win_get_buf(win)
-		local text = git.text_at(panel.root, changes.base_rev(panel.since), file)
-		panel.bases[buf] = { text = text, lines = vim.split(text, "\n", { plain = true }) }
-		local hunks = git.hunks_against(text, buf)
-		tint.show(buf, hunks, panel.bases[buf].lines, false)
-		retint_on_edits(buf)
-		focus_changes(win, buf, hunks)
-		panel.preview_buf = not loaded_before and buf or nil
+		preview_buf = show_real_file(win, file)
 	end
-	if previous_preview ~= panel.preview_buf then
+	panel.preview_buf = preview_buf
+	if previous_preview ~= preview_buf then
 		close_unused_preview(previous_preview)
 	end
 	return win
