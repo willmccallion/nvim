@@ -413,6 +413,33 @@ local function debug_remembered(target, program)
 	dap.run(config)
 end
 
+--- `p debug` starts here: :DebugProgram <program> [file:line...] [-- args...]. The
+--- program is already built, so nothing asks about it, and breakpoints are set before
+--- the launch so the first one can't be missed.
+vim.api.nvim_create_user_command("DebugProgram", function(opts)
+	local program = opts.fargs[1]
+	local args = {}
+	local past_separator = false
+	for _, word in ipairs(vim.list_slice(opts.fargs, 2)) do
+		if past_separator then
+			args[#args + 1] = word
+		elseif word == "--" then
+			past_separator = true
+		else
+			local file, line = word:match("^(.+):(%d+)$")
+			local bufnr = vim.fn.bufadd(file)
+			vim.fn.bufload(bufnr)
+			require("dap.breakpoints").set({}, bufnr, tonumber(line))
+		end
+	end
+	local extra_commands = vim.fs.root(0, "Cargo.toml") and rust_init_commands or nil
+	local config = debug_configurations(available_adapter(), extra_commands)[1]
+	config.name = "Launch " .. display_path(program)
+	config.program = program
+	config.args = args
+	dap.run(config)
+end, { nargs = "+", complete = "file", desc = "Debug a built program with breakpoints at file:line" })
+
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
 vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "DiagnosticHint" })
