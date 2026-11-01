@@ -121,6 +121,19 @@ function M.end_source(to)
 	return to.kind == "staged" and ":" or to.commit .. ":"
 end
 
+--- What to say when since has nothing to show.
+---@param since Since?
+---@return string
+function M.nothing_message(since)
+	if not since then
+		return "No changes"
+	end
+	if since.to and since.to.kind == "staged" then
+		return "Nothing staged"
+	end
+	return "No changes since " .. since.summary
+end
+
 --- Whether the newer side is read-only copies from git, not the files as they are now.
 ---@param since Since?
 ---@return boolean

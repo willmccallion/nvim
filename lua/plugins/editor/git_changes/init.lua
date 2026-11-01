@@ -21,6 +21,33 @@ local git = require("plugins.editor.git_changes.git")
 local line_history = require("plugins.editor.git_changes.line_history")
 local panel = require("plugins.editor.git_changes.panel")
 
+--- Opens the panel on since, or says there is nothing to show and leaves any open one.
+---@param root string
+---@param since Since?
+---@param focus_path string?
+local function open_listing(root, since, focus_path)
+	local files = changes.list(root, since)
+	if not files then
+		return
+	end
+	if #files == 0 then
+		vim.notify(changes.nothing_message(since))
+		return
+	end
+	panel.replace(root, since, files, focus_path)
+end
+
+local function toggle_panel()
+	if panel.is_open() then
+		panel.close()
+		return
+	end
+	local root = git.current_root()
+	if root then
+		open_listing(root, nil)
+	end
+end
+
 --- Opens the panel on the changes since older, up to newer or to the files as
 --- they are now. When the files as they are now have nothing new since older, it
 --- shows what older itself changed instead.
@@ -38,14 +65,22 @@ local function open_range(root, older, newer)
 			return
 		end
 		since.to = changes.commit_end(to.commit)
-	elseif #(changes.list(root, since) or { true }) == 0 then
-		vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
-		since = changes.own_changes(root, since)
-		if not since then
-			return
-		end
+		open_listing(root, since)
+		return
 	end
-	panel.replace(root, since)
+	local files = changes.list(root, since)
+	if not files then
+		return
+	end
+	if #files > 0 then
+		panel.replace(root, since, files)
+		return
+	end
+	vim.notify(("Nothing has changed since %s, so here is what it changed"):format(since.summary))
+	local own = changes.own_changes(root, since)
+	if own then
+		open_listing(root, own)
+	end
 end
 
 --- Opens the panel on what commit itself changed.
@@ -56,7 +91,7 @@ local function open_commit(root, commit, focus_path)
 	local picked = changes.since_of(root, commit)
 	local since = picked and changes.own_changes(root, picked)
 	if since then
-		panel.replace(root, since, focus_path)
+		open_listing(root, since, focus_path)
 	end
 end
 
@@ -69,15 +104,7 @@ local function open_staged(root, commit)
 		return
 	end
 	since.to = changes.STAGED
-	local files = changes.list(root, since)
-	if not files then
-		return
-	end
-	if #files == 0 then
-		vim.notify("Nothing staged")
-		return
-	end
-	panel.replace(root, since)
+	open_listing(root, since)
 end
 
 ---@param root string
@@ -144,12 +171,12 @@ local function pick_commit_to_show()
 		if picked.commit then
 			open_commit(root, picked.commit)
 		else
-			panel.replace(root, nil)
+			open_listing(root, nil)
 		end
 	end)
 end
 
-vim.keymap.set("n", "<leader>gd", panel.toggle, { desc = "Git diff toggle changed files panel" })
+vim.keymap.set("n", "<leader>gd", toggle_panel, { desc = "Git diff toggle changed files panel" })
 vim.keymap.set(
 	"n",
 	"<leader>gD",

@@ -34,13 +34,12 @@ local edits_group = vim.api.nvim_create_augroup("git-changes-edits", { clear = t
 ---@type Panel?
 local panel = nil
 
----@param files ChangedFile[]
-local function draw(files)
+---@param content PanelContent
+local function draw(content)
 	assert(panel, "draw needs an open panel")
 	local cursor_line = vim.api.nvim_win_get_cursor(panel.win)[1]
 	local file_under_cursor = panel.files_by_line[cursor_line]
 
-	local content = render.content(files, changes.title_of(panel.since))
 	vim.bo[panel.buf].modifiable = true
 	vim.api.nvim_buf_set_lines(panel.buf, 0, -1, false, content.lines)
 	vim.bo[panel.buf].modifiable = false
@@ -63,7 +62,7 @@ local function refresh()
 	end
 	local files = changes.list(panel.root, panel.since)
 	if files then
-		draw(files)
+		draw(render.content(files, changes.title_of(panel.since)))
 	end
 end
 
@@ -369,22 +368,15 @@ end
 
 ---@param root string
 ---@param since Since?
+---@param files ChangedFile[] not empty
 ---@param focus_path string? the file to start on, when it is in the list
-local function open_panel(root, since, focus_path)
-	local files = changes.list(root, since)
-	if not files then
-		return
-	end
-	if #files == 0 then
-		vim.notify(since and "No changes since " .. since.summary or "No changes")
-		return
-	end
-
+local function open_panel(root, since, files, focus_path)
 	local origin_win = vim.api.nvim_get_current_win()
 	local origin_buf = vim.api.nvim_get_current_buf()
 	local origin_view = vim.fn.winsaveview()
 	local buf = create_panel_buffer()
-	local width = render.width(render.content(files, changes.title_of(since)))
+	local content = render.content(files, changes.title_of(since))
+	local width = render.width(content)
 	local win = vim.api.nvim_open_win(buf, true, { split = "left", win = -1, width = width })
 	set_panel_window_options(win)
 	panel = {
@@ -400,7 +392,7 @@ local function open_panel(root, since, focus_path)
 		ready = false,
 		bases = {},
 	}
-	draw(files)
+	draw(content)
 	if focus_path then
 		vim.api.nvim_win_set_cursor(win, { render.line_of(panel.files_by_line, focus_path) or 1, 0 })
 	end
@@ -421,8 +413,8 @@ end
 --- Leaves the review straight away, where the wipe handler would only schedule
 --- it, so a panel opened next does not have its tint undone. As the last window
 --- the panel cannot close, so it gives way to an empty buffer instead.
-local function close_panel()
-	assert(panel, "close_panel needs an open panel")
+function M.close()
+	assert(panel, "close needs an open panel")
 	local closed = panel
 	panel = nil
 	local normal_wins = vim.tbl_filter(function(win)
@@ -436,26 +428,21 @@ local function close_panel()
 	leave_review(closed)
 end
 
-function M.toggle()
-	if panel and vim.api.nvim_win_is_valid(panel.win) then
-		close_panel()
-		return
-	end
-	local root = git.current_root()
-	if root then
-		open_panel(root, nil)
-	end
+---@return boolean
+function M.is_open()
+	return panel ~= nil and vim.api.nvim_win_is_valid(panel.win)
 end
 
 --- Opens the panel on since, replacing a panel already open.
 ---@param root string
----@param since Since
+---@param since Since?
+---@param files ChangedFile[] not empty
 ---@param focus_path string?
-function M.replace(root, since, focus_path)
-	if panel and vim.api.nvim_win_is_valid(panel.win) then
-		close_panel()
+function M.replace(root, since, files, focus_path)
+	if M.is_open() then
+		M.close()
 	end
-	open_panel(root, since, focus_path)
+	open_panel(root, since, files, focus_path)
 end
 
 local group = vim.api.nvim_create_augroup("git-changes-panel", { clear = true })
