@@ -17,6 +17,9 @@ require("vague").setup({
 		highlights["@comment.note"] = { fg = colors.constant, bold = true }
 		highlights["@comment.warning"] = comment_tag(colors.warning, colors.bg)
 		highlights["@comment.error"] = comment_tag(colors.error, colors.bg)
+		-- gitsigns' default is reverse, which paints each syntax colour as a background.
+		highlights.GitSignsAddInline = { bg = "#46583f" }
+		highlights.GitSignsDeleteVirtLnInLine = { bg = "#653842" }
 	end,
 })
 
