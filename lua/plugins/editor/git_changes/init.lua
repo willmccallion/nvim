@@ -17,6 +17,7 @@
 
 local gitsigns = require("gitsigns")
 local devicons = require("nvim-web-devicons")
+local file_buffers = require("plugins.editor.git_changes.file_buffers")
 local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
 local commits = require("plugins.editor.git_changes.commits")
@@ -355,79 +356,6 @@ local function refresh()
 	end
 end
 
----@param name string
----@return integer?
-local function buffer_named(name)
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_get_name(buf) == name then
-			return buf
-		end
-	end
-	return nil
-end
-
----@param file ChangedFile
----@return string
-local function deleted_buffer_name(file)
-	return "git-deleted://" .. file.path
-end
-
----@param commit string
----@param file ChangedFile
----@return string
-local function commit_buffer_name(commit, file)
-	return ("git-%s://%s"):format(commit, file.path)
-end
-
---- A read-only buffer holding path as git has it at the first of sources (a
---- revision followed by ":", or ":" alone for the index) that has it.
----@param root string
----@param sources string[]
----@param path string
----@param name string the buffer's name, which also finds it again
----@return integer?
-local function git_file_buffer(root, sources, path, name)
-	local existing = buffer_named(name)
-	if existing then
-		return existing
-	end
-
-	local result
-	for _, source in ipairs(sources) do
-		result = vim.system({ "git", "show", source .. path }, { cwd = root, text = true }):wait()
-		if result.code == 0 then
-			break
-		end
-	end
-	if result.code ~= 0 then
-		vim.notify("No earlier version of " .. path, vim.log.levels.WARN)
-		return nil
-	end
-
-	local buf = vim.api.nvim_create_buf(false, true)
-	local lines = vim.split(result.stdout, "\n", { plain = true })
-	if lines[#lines] == "" then
-		table.remove(lines)
-	end
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-	vim.api.nvim_buf_set_name(buf, name)
-	vim.bo[buf].filetype = vim.filetype.match({ filename = path, buf = buf }) or ""
-	vim.bo[buf].modifiable = false
-	vim.bo[buf].bufhidden = "wipe"
-	return buf
-end
-
---- A deleted file has nothing on disk, so it shows what was removed: with since,
---- its commit's copy; otherwise the staged copy if there is one, else the last commit's.
----@param root string
----@param since Since?
----@param file ChangedFile
----@return integer?
-local function deleted_file_buffer(root, since, file)
-	local sources = since and { since.commit .. ":" } or { ":", "HEAD:" }
-	return git_file_buffer(root, sources, file.path, deleted_buffer_name(file))
-end
-
 --- The window files open in: the one the panel was opened from while it lasts,
 --- then any other window in the tabpage, then a new split on the right.
 ---@return integer
@@ -507,10 +435,10 @@ end
 local function buffer_name_of(file)
 	assert(panel, "buffer_name_of needs an open panel")
 	if file.status == "D" then
-		return deleted_buffer_name(file)
+		return file_buffers.deleted_buffer_name(file)
 	end
 	if panel.since and panel.since.to then
-		return commit_buffer_name(panel.since.to.commit, file)
+		return file_buffers.commit_buffer_name(panel.since.to.commit, file)
 	end
 	return vim.fs.joinpath(panel.root, file.path)
 end
@@ -556,7 +484,7 @@ local function show_file(file)
 	panel.target_win = win
 	local previous_preview = panel.preview_buf
 	if file.status == "D" then
-		local buf = deleted_file_buffer(panel.root, panel.since, file)
+		local buf = file_buffers.deleted_file_buffer(panel.root, panel.since, file)
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
 		end
@@ -564,7 +492,7 @@ local function show_file(file)
 	elseif panel.since and panel.since.to then
 		local to = panel.since.to
 		local source = to.index and ":" or to.commit .. ":"
-		local buf = git_file_buffer(panel.root, { source }, file.path, commit_buffer_name(to.commit, file))
+		local buf = file_buffers.git_file_buffer(panel.root, { source }, file.path, file_buffers.commit_buffer_name(to.commit, file))
 		if buf then
 			vim.api.nvim_win_set_buf(win, buf)
 			local old_text = git.text_at(panel.root, panel.since.commit, file)
@@ -576,7 +504,7 @@ local function show_file(file)
 		panel.preview_buf = nil
 	else
 		local path = buffer_name_of(file)
-		local loaded_before = buffer_named(path) ~= nil
+		local loaded_before = file_buffers.buffer_named(path) ~= nil
 		vim.api.nvim_win_call(win, function()
 			vim.cmd.edit(vim.fn.fnameescape(path))
 		end)
