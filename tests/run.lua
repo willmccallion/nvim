@@ -1,11 +1,24 @@
 --- Runs tests/*_test.lua against the installed plugins: nvim -l tests/run.lua [filter]
+--- With $TEST_COVERAGE_DIR set to an empty folder, it reports the lines they ran.
 --- Each file returns a table of tests named after their behaviour. Every test gets
 --- its own nvim and an empty $HOME, since a panel and its autocmds last a session.
 
 local root = vim.fs.dirname(vim.fs.dirname(vim.fs.abspath(arg[0])))
+package.path = vim.fs.joinpath(root, "tests", "?.lua;") .. package.path
 
 --- Only what the tested modules require, so the tests start without the whole config.
 local PLUGINS = { "gitsigns.nvim", "nvim-web-devicons", "nvim-treesitter", "nvim-treesitter-textobjects" }
+
+--- Pins and build commands are kept under stdpath("data"), which must not be the real one.
+local function isolate_home()
+	local home = vim.fn.tempname()
+	vim.fn.mkdir(home, "p")
+	vim.env.HOME = home
+	for _, name in ipairs({ "DATA", "STATE", "CACHE", "CONFIG" }) do
+		vim.env["XDG_" .. name .. "_HOME"] = vim.fs.joinpath(home, name:lower())
+	end
+	vim.fn.mkdir(vim.fn.stdpath("data"), "p")
+end
 
 ---@param file string
 ---@param name string
@@ -16,12 +29,17 @@ local function run_one(file, name)
 	end
 	vim.opt.rtp:prepend(root)
 	vim.g.mapleader = " "
-	vim.env.HOME = vim.fn.tempname()
-	vim.fn.mkdir(vim.env.HOME, "p")
+	isolate_home()
 	vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
 	vim.env.GIT_CONFIG_SYSTEM = "/dev/null"
+	if vim.env.TEST_COVERAGE_DIR then
+		require("coverage").start(root)
+	end
 
 	local ok, err = xpcall(dofile(file)[name], debug.traceback)
+	if vim.env.TEST_COVERAGE_DIR then
+		require("coverage").save(vim.env.TEST_COVERAGE_DIR)
+	end
 	if not ok then
 		io.stderr:write(tostring(err), "\n")
 		vim.cmd.cquit()
@@ -59,6 +77,9 @@ local function run_all(filter)
 		end
 	end
 	print(("%d passed, %d failed"):format(total - failed, failed))
+	if vim.env.TEST_COVERAGE_DIR then
+		require("coverage").report(root, vim.env.TEST_COVERAGE_DIR)
+	end
 	if failed > 0 or total == 0 then
 		vim.cmd.cquit()
 	end

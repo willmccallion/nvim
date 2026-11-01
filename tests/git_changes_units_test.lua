@@ -1,10 +1,6 @@
 --- The panel's pure logic, without a repo or a window.
 
-local function assert_equal(actual, expected, what)
-	if not vim.deep_equal(actual, expected) then
-		error(("%s: expected %s, got %s"):format(what, vim.inspect(expected), vim.inspect(actual)), 2)
-	end
-end
+local assert_equal = require("helpers").assert_equal
 
 local function span(old_line, line)
 	return { require("plugins.editor.git_changes.tint").changed_span(old_line, line) }

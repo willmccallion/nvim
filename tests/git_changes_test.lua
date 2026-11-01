@@ -2,31 +2,12 @@
 
 local TIMEOUT_MS = 5000
 
+local h = require("helpers")
+local assert_equal, assert_contains, refute_contains = h.assert_equal, h.assert_contains, h.refute_contains
+local capture_notifications, press = h.capture_notifications, h.press
+
 local function fail(message)
 	error(message, 2)
-end
-
-local function assert_equal(actual, expected, what)
-	if not vim.deep_equal(actual, expected) then
-		fail(("%s: expected %s, got %s"):format(what, vim.inspect(expected), vim.inspect(actual)))
-	end
-end
-
-local function assert_contains(lines, wanted, what)
-	for _, line in ipairs(lines) do
-		if line:find(wanted, 1, true) then
-			return
-		end
-	end
-	fail(("%s: no line has %q in %s"):format(what, wanted, vim.inspect(lines)))
-end
-
-local function refute_contains(lines, unwanted, what)
-	for _, line in ipairs(lines) do
-		if line:find(unwanted, 1, true) then
-			fail(("%s: %q should be absent from %s"):format(what, unwanted, vim.inspect(lines)))
-		end
-	end
 end
 
 ---@param condition fun(): any
@@ -82,16 +63,6 @@ local function repo()
 	vim.cmd.edit(vim.fs.joinpath(root, "a.txt"))
 	require("gitsigns").setup({})
 	return root
-end
-
----@return string[]
-local function capture_notifications()
-	local seen = {}
-	---@diagnostic disable-next-line: duplicate-set-field
-	vim.notify = function(message)
-		table.insert(seen, message)
-	end
-	return seen
 end
 
 ---@return integer?
@@ -166,12 +137,6 @@ local function select_file(file)
 		end
 	end
 	fail(("no %s in %s"):format(file, vim.inspect(panel_lines())))
-end
-
----@param lhs string
----@param mode? string
-local function press(lhs, mode)
-	vim.fn.maparg(vim.keycode(lhs), mode or "n", false, true).callback()
 end
 
 local function wait_for_preview()
