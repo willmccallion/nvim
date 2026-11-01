@@ -1,12 +1,9 @@
 --- Debugging via nvim-dap with the lldb-dap adapter and nvim-dap-view UI.
---- Launches or attaches to C, C++ and Rust programs. All keys live under
---- <leader>d; function keys are avoided because tmux binds F1-F9.
+--- Launches or attaches to C, C++ and Rust programs. plugins.debug loads this the
+--- first time anything requires dap, and holds the keys.
 --- The debug view opens and closes automatically with the session.
 
-vim.pack.add({
-	"https://github.com/mfussenegger/nvim-dap",
-	"https://github.com/igorlfs/nvim-dap-view",
-})
+local M = {}
 
 local dap = require("dap")
 local dap_view = require("dap-view")
@@ -357,8 +354,7 @@ end
 --- Rebuilt whenever a session starts, for the same reason dap.adapters.lldb
 --- resolves its command per session: an adapter installed since Neovim started
 --- would otherwise never be picked up, and the configurations would still name
---- the one that was missing. Detection costs a process spawn when lldb-dap is
---- absent, so nothing runs until a debuggable filetype is opened.
+--- the one that was missing.
 local function refresh_configurations()
 	local adapter = available_adapter()
 	dap.configurations.c = debug_configurations(adapter)
@@ -366,13 +362,7 @@ local function refresh_configurations()
 	dap.configurations.rust = debug_configurations(adapter, rust_init_commands)
 end
 
-vim.api.nvim_create_autocmd("FileType", {
-	desc = "Register debug configurations for the languages dap is set up for",
-	group = vim.api.nvim_create_augroup("dap-configurations", { clear = true }),
-	pattern = { "c", "cpp", "rust" },
-	once = true,
-	callback = refresh_configurations,
-})
+refresh_configurations()
 
 --- Files dap has no configurations for, like a compiler's test inputs, still debug the
 --- project's program, with the C and C++ setup.
@@ -416,11 +406,12 @@ end
 --- `p debug` starts here: :DebugProgram <program> [file:line...] [-- args...]. The
 --- program is already built, so nothing asks about it, and breakpoints are set before
 --- the launch so the first one can't be missed.
-vim.api.nvim_create_user_command("DebugProgram", function(opts)
-	local program = opts.fargs[1]
+---@param fargs string[]
+function M.debug_program(fargs)
+	local program = fargs[1]
 	local args = {}
 	local past_separator = false
-	for _, word in ipairs(vim.list_slice(opts.fargs, 2)) do
+	for _, word in ipairs(vim.list_slice(fargs, 2)) do
 		if past_separator then
 			args[#args + 1] = word
 		elseif word == "--" then
@@ -438,7 +429,7 @@ vim.api.nvim_create_user_command("DebugProgram", function(opts)
 	config.program = program
 	config.args = args
 	dap.run(config)
-end, { nargs = "+", complete = "file", desc = "Debug a built program with breakpoints at file:line" })
+end
 
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
@@ -485,8 +476,7 @@ dap.listeners.after.event_initialized["one-session-only"] = function(new_session
 	dap.terminate()
 end
 
-local map = vim.keymap.set
-map("n", "<leader>dd", function()
+function M.continue_or_start()
 	if dap.session() then
 		dap.continue()
 		return
@@ -497,48 +487,14 @@ map("n", "<leader>dd", function()
 	else
 		pick_and_debug()
 	end
-end, { desc = "Debug continue, or start what this project debugged last" })
-map("n", "<leader>dD", function()
+end
+
+function M.start_by_picking()
 	if dap.session() then
 		vim.notify("A debug session is already running; <leader>dq stops it", vim.log.levels.WARN)
 		return
 	end
 	pick_and_debug()
-end, { desc = "Debug start, picking the program and arguments" })
-map("n", "<leader>dn", dap.step_over, { desc = "Debug step over (next line)" })
-map("n", "<leader>di", dap.step_into, { desc = "Debug step into function" })
-map("n", "<leader>do", dap.step_out, { desc = "Debug step out of function" })
-map("n", "<leader>db", dap.toggle_breakpoint, { desc = "Debug toggle breakpoint" })
-map("n", "<leader>dB", function()
-	vim.ui.input({ prompt = "Breakpoint condition: " }, function(condition)
-		if condition and condition ~= "" then
-			dap.set_breakpoint(condition)
-		end
-	end)
-end, { desc = "Debug set conditional breakpoint" })
---- Prints and carries on rather than stopping. {} interpolates an expression,
---- so "i = {i}, len = {vec.len}" reads like the printf you would have added.
-map("n", "<leader>dp", function()
-	vim.ui.input({ prompt = "Log point message: " }, function(message)
-		if message and message ~= "" then
-			dap.set_breakpoint(nil, nil, message)
-		end
-	end)
-end, { desc = "Debug set log point (prints without stopping)" })
-map("n", "<leader>dC", dap.run_to_cursor, { desc = "Debug continue to cursor" })
-map("n", "<leader>dl", dap.run_last, { desc = "Debug rerun last configuration" })
-map("n", "<leader>dr", dap.restart, { desc = "Debug restart session" })
-map("n", "<leader>dq", dap.terminate, { desc = "Debug stop session" })
-map("n", "<leader>du", dap_view.toggle, { desc = "Debug toggle view panel" })
-map({ "n", "x" }, "<leader>dw", dap_view.add_expr, { desc = "Debug watch expression under cursor" })
-map("n", "<leader>dh", dap_view.hover, { desc = "Debug inspect value under cursor" })
-map("n", "<leader>dv", function()
-	require("plugins.debug.variables").pick()
-end, { desc = "Debug search variables in the stopped frame" })
-map("n", "<leader>dt", function()
-	require("plugins.debug.types").show_frame()
-end, { desc = "Debug show every variable in the frame with its type" })
-map({ "n", "x" }, "<leader>dT", function()
-	require("plugins.debug.types").show_type_definition()
-end, { desc = "Debug show the definition of the type under cursor" })
-map("n", "<leader>dV", dap_view.virtual_text_toggle, { desc = "Debug toggle inline variable values" })
+end
+
+return M

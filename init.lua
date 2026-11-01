@@ -29,7 +29,7 @@ require("plugins.coding.conform")
 require("plugins.coding.treesitter")
 require("plugins.coding.build")
 
-require("plugins.debug.dap")
+require("plugins.debug")
 
 require("plugins.editor.flash")
 require("plugins.editor.gitsigns")
