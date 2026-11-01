@@ -10,7 +10,7 @@ local function stub_status_popup()
 	package.loaded["fidget"] = {
 		notification = { set_config = function() end },
 		notify = function(msg, level, opts)
-			table.insert(statuses, { msg = msg, annote = opts.annote, level = level })
+			table.insert(statuses, { msg = msg, annote = opts.annote, level = level, ttl = opts.ttl })
 		end,
 	}
 	return statuses
@@ -211,6 +211,90 @@ function tests.stopping_ends_a_running_build_and_lets_the_next_one_start()
 	h.assert_equal(statuses[#statuses].annote, "Building", "next build started")
 	h.press("<leader>mk")
 	wait_for_status(statuses, "Stopped")
+end
+
+function tests.a_status_stays_up_while_building_and_fades_once_finished()
+	local _, statuses = make_project(ok_makefile)
+
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+
+	h.assert_equal(statuses[1].ttl, math.huge, "while building")
+	h.assert_equal(statuses[#statuses].ttl, 0, "once finished")
+end
+
+function tests.a_long_command_is_shortened_in_the_status_so_its_state_stays_visible()
+	local root, statuses = make_project(ok_makefile)
+	local long = "echo " .. ("x"):rep(60)
+	require("plugins.coding.build.store").save(root, { selected = long, custom = {}, run_custom = {} })
+
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+
+	h.assert_contains({ statuses[1].msg }, "echo xxx", "start of the command")
+	h.assert_contains({ statuses[1].msg }, "…", "marked as shortened")
+	h.refute_contains({ statuses[1].msg }, long, "the whole command")
+	h.assert_equal(vim.fn.strchars(vim.split(statuses[1].msg, " in ", { plain = true })[1]), 40, "shortened length")
+end
+
+function tests.a_last_line_with_no_newline_still_reaches_the_output()
+	local _, statuses = make_project({ "all:", "\t@printf 'first\\nno newline'" })
+
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+
+	h.assert_equal(output_lines(), { "first", "no newline" }, "output")
+end
+
+function tests.a_second_build_replaces_the_first_one_s_output()
+	local _, statuses = make_project(ok_makefile)
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+	statuses[#statuses] = nil
+
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+
+	h.assert_equal(output_lines(), { "hello from make" }, "output")
+end
+
+function tests.a_buffer_that_is_no_file_builds_the_working_folder_s_project()
+	local root, statuses = make_project(ok_makefile)
+	vim.cmd.enew()
+	vim.bo.buftype = "nofile"
+	vim.api.nvim_buf_set_name(0, "/elsewhere/scratch")
+	vim.cmd.cd(root)
+
+	h.press("<leader>mb")
+	wait_for_status(statuses, "Passed")
+
+	h.assert_contains(output_lines(), "hello from make", "output")
+end
+
+function tests.with_no_build_system_the_git_root_is_the_project()
+	local statuses = stub_status_popup()
+	require("plugins.coding.build")
+	local root = h.temp_dir()
+	vim.fn.mkdir(root .. "/.git", "p")
+	vim.fn.mkdir(root .. "/deep/er", "p")
+	vim.cmd.cd(root .. "/deep")
+	vim.cmd.edit(root .. "/deep/er/notes.txt")
+	local seen = stub_select(function() end)
+
+	h.press("<leader>mb")
+
+	h.assert_contains({ seen[1].prompt }, vim.fn.fnamemodify(root, ":~"), "project root")
+	h.assert_equal(#statuses, 0, "statuses")
+end
+
+function tests.the_first_detected_command_is_current_until_one_is_chosen()
+	make_project(ok_makefile)
+	local seen = stub_select(function() end)
+
+	h.press("<leader>mp")
+
+	h.assert_equal(seen[1].shown[1], "* make", "marked current")
+	h.assert_equal(seen[1].shown[#seen[1].shown], "Custom...", "custom entry last and unsaved")
 end
 
 function tests.stopping_with_nothing_running_says_so()
@@ -581,6 +665,17 @@ function tests.a_test_filter_that_matches_nothing_counts_as_a_failure()
 	wait_for_status(statuses, "Failed")
 
 	h.assert_contains({ latest(statuses) }, "No test matched", "status")
+end
+
+function tests.the_status_message_for_a_test_with_no_match_names_it()
+	local root, statuses = cargo_project(0)
+	vim.fn.mkdir(root .. "/src", "p")
+	open_test_file(root .. "/src/lib.rs", { "#[test]", "fn lone() {", "    x();", "}" }, 3, "rust")
+
+	h.press("<leader>mt")
+	wait_for_status(statuses, "Failed")
+
+	h.assert_contains({ latest(statuses) }, "No test matched lone", "status")
 end
 
 function tests.a_cursor_outside_any_test_says_so()
