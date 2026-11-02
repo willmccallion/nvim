@@ -49,6 +49,19 @@ local function run_one(file, name)
 	vim.cmd.quitall({ bang = true })
 end
 
+--- Colours the result tags like the fish command tests do, when printing to a terminal.
+local COLOURED = vim.uv.guess_handle(1) == "tty"
+
+---@param word string
+---@param colour integer an ANSI foreground colour code
+---@return string
+local function result_tag(word, colour)
+	if not COLOURED then
+		return "[" .. word .. "]"
+	end
+	return ("\27[90m[\27[0m\27[%dm%s\27[0m\27[90m]\27[0m"):format(colour, word)
+end
+
 ---@param file string
 ---@param name string
 ---@return boolean
@@ -56,10 +69,10 @@ local function passes(file, name)
 	local command = { vim.v.progpath, "-l", arg[0], "--one", file, name }
 	local result = vim.system(command, { text = true }):wait(60000)
 	if result.code == 0 then
-		print("[ OK ] " .. name)
+		print(result_tag(" OK ", 32) .. " " .. name)
 		return true
 	end
-	print("[FAIL] " .. name)
+	print(result_tag("FAIL", 31) .. " " .. name)
 	print(result.stderr)
 	return false
 end
