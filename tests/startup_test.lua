@@ -37,6 +37,34 @@ function tests.heavy_plugins_wait_until_they_are_used()
 	)
 end
 
+function tests.conflict_keys_work_and_semicolon_repeats_the_motion()
+	local path = h.temp_dir() .. "/a.txt"
+	vim.fn.writefile({
+		"<<<<<<< a",
+		"ours one",
+		"=======",
+		"theirs one",
+		">>>>>>> b",
+		"<<<<<<< a",
+		"ours two",
+		"=======",
+		"theirs two",
+		">>>>>>> b",
+	}, path)
+
+	local result = start({
+		"vim.api.nvim_win_set_cursor(0, { 2, 0 })",
+		"vim.cmd.normal(']n')",
+		"io.write(vim.fn.line('.'), ' ')",
+		"vim.cmd.normal(';')",
+		"io.write(vim.fn.line('.'), ' ')",
+		"vim.cmd.normal(' gt')",
+		"io.write(vim.fn.line('$'), ' ', vim.fn.getline(1))",
+	}, path)
+
+	h.assert_equal(vim.trim(result.stderr .. result.stdout), "6 1 6 theirs one", "lines")
+end
+
 function tests.telescope_is_set_up_the_first_time_it_is_required()
 	local result = start({
 		"local conf = require('telescope.config').values",
