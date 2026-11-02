@@ -31,6 +31,10 @@ vim.api.nvim_create_user_command("DebugProgram", function(opts)
 	debugger().debug_program(opts.fargs)
 end, { nargs = "+", complete = "file", desc = "Debug a built program with breakpoints at file:line" })
 
+vim.api.nvim_create_user_command("DebugCore", function(opts)
+	debugger().debug_core(opts.fargs)
+end, { nargs = "+", complete = "file", desc = "Open a program's core file where it crashed" })
+
 local map = vim.keymap.set
 map("n", "<leader>dd", function()
 	debugger().continue_or_start()

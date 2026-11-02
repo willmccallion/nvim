@@ -104,7 +104,7 @@ end
 
 function tests.the_config_s_commands_exist()
 	local result = start({
-		"for _, name in ipairs({ 'GitChanges', 'DebugProgram', 'Update', 'Q', 'LspInfo' }) do",
+		"for _, name in ipairs({ 'GitChanges', 'DebugProgram', 'DebugCore', 'Update', 'Q', 'LspInfo' }) do",
 		"  if vim.fn.exists(':' .. name) ~= 2 then io.write('missing ', name, ' ') end",
 		"end",
 	})

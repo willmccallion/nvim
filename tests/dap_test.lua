@@ -13,7 +13,7 @@ local function stub_dap()
 		continued = 0,
 		terminated = 0,
 		active = nil,
-		listeners = { after = { event_exited = {}, event_terminated = {}, event_initialized = {} } },
+		listeners = { after = { event_exited = {}, event_terminated = {}, event_initialized = {}, scopes = {} } },
 	}
 	function dap.session()
 		return dap.active
@@ -147,6 +147,108 @@ function tests.gdb_14_is_used_only_when_lldb_is_missing()
 	h.assert_equal(dap.runs[1].type, "gdb", "adapter")
 	h.assert_equal(dap.runs[1].initCommands, nil, "lldb settings")
 	h.assert_equal(dap.adapters.gdb.args, { "-i", "dap" }, "gdb's adapter")
+end
+
+function tests.debug_core_attaches_lldb_to_the_core_file()
+	local dap = stub_dap()
+	path_with({ ["lldb-dap"] = "" })
+	local debugger = load_debugger()
+
+	debugger.debug_core({ "/bin/app", "/tmp/app.core" })
+
+	h.assert_equal(dap.runs[1].request, "attach", "request")
+	h.assert_equal(dap.runs[1].program, "/bin/app", "program")
+	h.assert_equal(dap.runs[1].coreFile, "/tmp/app.core", "core file")
+	h.assert_contains(dap.runs[1].initCommands(), "step-in-avoid-nodebug true", "shared settings")
+end
+
+---@param core_file string?
+---@param frames table[]
+---@return table session
+local function stopped_session(core_file, frames)
+	local session = {
+		config = { coreFile = core_file },
+		stopped_thread_id = 1,
+		threads = { { frames = frames } },
+		current_frame = frames[1],
+	}
+	function session:_frame_set(frame)
+		self.current_frame = frame
+	end
+	return session
+end
+
+function tests.a_core_file_opens_on_the_project_s_own_code()
+	local dap = stub_dap()
+	load_debugger()
+	local root = h.temp_dir()
+	local header = h.temp_dir() .. "/optional"
+	vim.fn.writefile({ "" }, header)
+	vim.fn.writefile({ "" }, root .. "/main.cpp")
+	vim.cmd.cd(root)
+	local frames = {
+		{ id = 1, source = { path = "/lib/libc.so.6`raise" } },
+		{ id = 2, source = { path = header } },
+		{ id = 3, source = { path = root .. "/main.cpp" } },
+	}
+	local session = stopped_session("/tmp/app.core", frames)
+
+	dap.listeners.after.scopes["core-opens-on-own-code"](session)
+
+	h.assert_equal(session.current_frame.id, 3, "frame")
+end
+
+function tests.a_core_file_without_project_code_opens_on_any_real_source()
+	local dap = stub_dap()
+	load_debugger()
+	local header = h.temp_dir() .. "/optional"
+	vim.fn.writefile({ "" }, header)
+	vim.cmd.cd(h.temp_dir())
+	local frames = {
+		{ id = 1, source = { path = "/lib/libc.so.6`raise" } },
+		{ id = 2, source = { path = header } },
+	}
+	local session = stopped_session("/tmp/app.core", frames)
+
+	dap.listeners.after.scopes["core-opens-on-own-code"](session)
+
+	h.assert_equal(session.current_frame.id, 2, "frame")
+end
+
+function tests.a_live_session_and_a_later_frame_change_are_left_alone()
+	local dap = stub_dap()
+	load_debugger()
+	local root = h.temp_dir()
+	vim.fn.writefile({ "" }, root .. "/main.c")
+	vim.cmd.cd(root)
+	local frames = {
+		{ id = 1, source = { path = "/lib/libc.so.6`raise" } },
+		{ id = 2, source = { path = root .. "/main.c" } },
+	}
+	local live = stopped_session(nil, frames)
+	local core = stopped_session("/tmp/app.core", frames)
+
+	dap.listeners.after.scopes["core-opens-on-own-code"](live)
+	dap.listeners.after.scopes["core-opens-on-own-code"](core)
+	core.current_frame = frames[1]
+	dap.listeners.after.scopes["core-opens-on-own-code"](core)
+
+	h.assert_equal(live.current_frame.id, 1, "live session")
+	h.assert_equal(core.current_frame.id, 1, "frame the user picked")
+end
+
+function tests.debug_core_refuses_gdb_and_a_missing_core()
+	local dap = stub_dap()
+	path_with({ gdb = "GNU gdb (GDB) 14.2" })
+	local notified = h.capture_notifications()
+	local debugger = load_debugger()
+
+	debugger.debug_core({ "/bin/app", "/tmp/app.core" })
+	debugger.debug_core({ "/bin/app" })
+
+	h.assert_equal(#dap.runs, 0, "sessions started")
+	h.assert_contains(notified, "needs lldb-dap", "with gdb")
+	h.assert_contains(notified, "Usage: DebugCore", "without a core")
 end
 
 function tests.an_old_gdb_falls_back_to_lldb_and_starting_explains_why()

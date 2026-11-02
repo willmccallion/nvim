@@ -431,6 +431,30 @@ function M.debug_program(fargs)
 	dap.run(config)
 end
 
+--- `p core` starts here: :DebugCore <program> <core>. lldb-dap's attach loads a core
+--- file stopped where the program died; this is set up for lldb-dap only.
+---@param fargs string[]
+function M.debug_core(fargs)
+	local program, core = fargs[1], fargs[2]
+	if #fargs ~= 2 then
+		vim.notify("Usage: DebugCore <program> <core file>", vim.log.levels.ERROR)
+		return
+	end
+	if available_adapter() ~= "lldb" then
+		vim.notify("Opening a core file needs lldb-dap", vim.log.levels.ERROR)
+		return
+	end
+	local extra_commands = vim.fs.root(0, "Cargo.toml") and rust_init_commands or nil
+	dap.run({
+		name = "Crash of " .. display_path(program),
+		type = "lldb",
+		request = "attach",
+		program = program,
+		coreFile = core,
+		initCommands = init_commands(extra_commands),
+	})
+end
+
 vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError" })
 vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn" })
 vim.fn.sign_define("DapBreakpointRejected", { text = "○", texthl = "DiagnosticHint" })
@@ -474,6 +498,44 @@ dap.listeners.after.event_initialized["one-session-only"] = function(new_session
 	vim.notify("A debug session is already running; stopped the new one", vim.log.levels.WARN)
 	dap.set_session(new_session)
 	dap.terminate()
+end
+
+--- The innermost frame in a source file under root, else in any source file on disk.
+--- lldb-dap gives code without one a made-up path to its disassembly.
+---@param frames dap.StackFrame[]
+---@param root string
+---@return dap.StackFrame?
+local function own_frame(frames, root)
+	local anywhere = nil
+	for _, frame in ipairs(frames) do
+		local path = frame.source and frame.source.path
+		local stat = path and vim.uv.fs_stat(path)
+		if stat and stat.type == "file" then
+			if vim.startswith(path, root .. "/") then
+				return frame
+			end
+			anywhere = anywhere or frame
+		end
+	end
+	return anywhere
+end
+
+--- A crash stops inside abort or the C library, which have only disassembly to show,
+--- so a core file opens on the project's own code instead. Scopes are requested once
+--- the stopped thread's frames are in, which makes them the first point to move from.
+---@type table<dap.Session, true>
+local core_frame_chosen = setmetatable({}, { __mode = "k" })
+
+dap.listeners.after.scopes["core-opens-on-own-code"] = function(session)
+	if not session.config.coreFile or core_frame_chosen[session] then
+		return
+	end
+	core_frame_chosen[session] = true
+	local thread = session.threads[session.stopped_thread_id]
+	local frame = thread and own_frame(thread.frames or {}, vim.fn.getcwd())
+	if frame and frame.id ~= session.current_frame.id then
+		session:_frame_set(frame)
+	end
 end
 
 function M.continue_or_start()
