@@ -213,6 +213,18 @@ function tests.stopping_ends_a_running_build_and_lets_the_next_one_start()
 	wait_for_status(statuses, "Stopped")
 end
 
+function tests.a_stopped_command_counts_as_stopped_even_when_it_exits_with_its_own_code()
+	local _, statuses = make_project(ok_makefile)
+	stub_select(pick_custom)
+	stub_input("trap 'exit 3' TERM; sleep 30 & wait")
+
+	h.press("<leader>mp")
+	vim.wait(100)
+	h.press("<leader>mk")
+
+	wait_for_status(statuses, "Stopped")
+end
+
 function tests.a_status_stays_up_while_building_and_fades_once_finished()
 	local _, statuses = make_project(ok_makefile)
 

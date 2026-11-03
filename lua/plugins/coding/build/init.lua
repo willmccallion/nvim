@@ -11,6 +11,7 @@ local tests = require("plugins.coding.build.tests")
 ---@class (private) build.Run
 ---@field job vim.SystemObj
 ---@field cmd string
+---@field stop_requested boolean set by <leader>mk, so however it then ends counts as stopped
 
 ---@type build.Run?
 local active_run = nil
@@ -265,9 +266,10 @@ end
 ---@param result vim.SystemCompleted
 ---@param issues integer quickfix entries loaded, zero for a plain run
 ---@param seconds number
-local function report(shown, result, issues, seconds)
+---@param stopped boolean
+local function report(shown, result, issues, seconds, stopped)
 	local elapsed = ("%.1fs"):format(seconds)
-	if result.signal ~= 0 then
+	if stopped then
 		notify_status("stopped", short_command(shown))
 	elseif result.code == 0 then
 		local suffix = issues > 0 and (", %d quickfix entries"):format(issues) or ""
@@ -314,7 +316,8 @@ local function start_command(project, cmd, status, collect_issues, on_done, labe
 	local started = vim.uv.hrtime()
 
 	notify_status(status, ("%s in %s"):format(short_command(shown), vim.fn.fnamemodify(project.root, ":t")))
-	local job = vim.system({ vim.o.shell, vim.o.shellcmdflag, cmd }, {
+	local run = { cmd = cmd, stop_requested = false }
+	run.job = vim.system({ vim.o.shell, vim.o.shellcmdflag, cmd }, {
 		cwd = project.root,
 		text = true,
 		detach = true,
@@ -323,13 +326,15 @@ local function start_command(project, cmd, status, collect_issues, on_done, labe
 	}, function(result)
 		vim.schedule(function()
 			active_run = nil
-			report(shown, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9)
+			-- make, for one, can exit with its own error code when stopped mid-job.
+			local stopped = run.stop_requested or result.signal ~= 0
+			report(shown, result, collect_issues(output), (vim.uv.hrtime() - started) / 1e9, stopped)
 			if on_done then
-				on_done(result.code == 0 and result.signal == 0)
+				on_done(not stopped and result.code == 0)
 			end
 		end)
 	end)
-	active_run = { job = job, cmd = cmd }
+	active_run = run
 end
 
 ---@param project build.Project
@@ -549,6 +554,7 @@ local function stop()
 		return
 	end
 	local stopping = active_run
+	stopping.stop_requested = true
 	signal_process_group(stopping, "sigterm")
 	-- active_run is only cleared when the process is reaped, so one that ignores
 	-- SIGTERM would leave every later build refusing to start for the whole session.
