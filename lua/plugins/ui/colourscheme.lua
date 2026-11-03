@@ -12,6 +12,8 @@ end
 
 require("vague").setup({
 	transparent = true,
+	-- The terminal's plain text on the vague theme (terminalText in the theme's render/lib.nix)
+	colors = { fg = "#c2bbb3" },
 	on_highlights = function(highlights, colors)
 		highlights["@comment.todo"] = comment_tag(colors.func, colors.bg)
 		highlights["@comment.note"] = { fg = colors.constant, bold = true }
