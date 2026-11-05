@@ -7,7 +7,11 @@ local function is_running(buf)
 end
 
 local function hide(win)
-	if #vim.api.nvim_tabpage_list_wins(0) == 1 then
+	-- Floating windows (ui2's command line, fidget's messages) can't stand in for it.
+	local normal_wins = vim.tbl_filter(function(w)
+		return vim.api.nvim_win_get_config(w).relative == ""
+	end, vim.api.nvim_tabpage_list_wins(0))
+	if #normal_wins == 1 then
 		vim.notify("Terminal is the only window; not hiding it", vim.log.levels.WARN)
 		return
 	end

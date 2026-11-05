@@ -390,6 +390,20 @@ function tests.the_last_window_is_not_hidden_by_its_terminal_key()
 	h.assert_equal(#vim.api.nvim_list_wins(), 1, "windows")
 end
 
+function tests.a_floating_window_does_not_let_the_last_window_be_hidden()
+	require("config.terminal")
+	local notified = h.capture_notifications()
+	vim.o.shell = "sh"
+	h.press("<leader>tt")
+	vim.cmd.only()
+	local float = { relative = "editor", row = 0, col = 0, width = 5, height = 1 }
+	vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), false, float)
+
+	h.press("<leader>tt")
+
+	h.assert_contains(notified, "only window", "message")
+end
+
 function tests.the_status_line_names_attached_servers_and_marks_a_loading_one()
 	local statusline = require("config.statusline")
 	h.assert_equal(statusline.lsp_names(), "", "no servers")
