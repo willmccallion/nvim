@@ -68,3 +68,9 @@ vim.opt.foldlevelstart = 99
 vim.opt.exrc = true
 
 vim.opt.winborder = "rounded"
+
+--- Messages and the command line through nvim's experimental ui2, which keeps the
+--- command line at the bottom but collapses output too long for it to a [+n] count
+--- instead of stopping at "Press ENTER"; g< shows it all in a pager. vim.notify goes
+--- to fidget instead (lua/plugins/ui/notifications.lua).
+require("vim._core.ui2").enable({})

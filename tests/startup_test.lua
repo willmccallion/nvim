@@ -13,6 +13,24 @@ function tests.the_whole_config_starts_without_a_single_error()
 	h.assert_equal(result.stderr, "", "startup errors")
 end
 
+function tests.long_command_output_collapses_instead_of_waiting_for_a_key()
+	local nvim = h.start_config_in_terminal()
+	local before = #nvim.drawn()
+
+	vim.rpcrequest(nvim.channel, "nvim_input", ':echo join(range(50), "\\n")<CR>')
+	local function drawn_since()
+		return nvim.drawn():sub(before + 1)
+	end
+	vim.wait(10000, function()
+		return drawn_since():find("%[%+%d+%]") or drawn_since():find("-- More --", 1, true)
+	end, 20)
+	local mode = vim.rpcrequest(nvim.channel, "nvim_get_mode")
+	vim.fn.jobstop(nvim.job)
+
+	h.assert_equal(mode.blocking, false, "waiting for a key")
+	h.assert_equal(drawn_since():find("%[%+%d+%]") ~= nil, true, "the [+n] count of the lines it hid")
+end
+
 function tests.a_real_file_opens_without_errors()
 	local path = h.temp_dir() .. "/a.lua"
 	vim.fn.writefile({ "local a = 1", "return a" }, path)
