@@ -473,6 +473,81 @@ function tests.one_commit_shows_only_what_it_changed()
 	assert_contains(lines, git(root, "rev-parse", "--short", "HEAD"), "title")
 end
 
+--- Copies to the + register land in vim.g.copied.
+local function stub_clipboard()
+	vim.g.clipboard = {
+		name = "test",
+		copy = {
+			["+"] = function(lines)
+				vim.g.copied = lines[1]
+			end,
+			["*"] = function() end,
+		},
+		paste = {
+			["+"] = function()
+				return {}
+			end,
+			["*"] = function()
+				return {}
+			end,
+		},
+	}
+end
+
+--- Copies the open panel's commit hash with its key, once the panel has its preview.
+---@return string[] notified
+local function copy_commit_hash_from_panel()
+	stub_clipboard()
+	local notified = capture_notifications()
+	wait_for_preview()
+	vim.api.nvim_set_current_win(panel_win())
+	press("<leader>yc")
+	return notified
+end
+
+function tests.the_panel_copies_the_hash_of_the_commit_it_shows()
+	local root = repo()
+	require("plugins.editor.git_changes")
+
+	vim.cmd.GitChanges({ args = { "--commit", "HEAD~1" } })
+	local notified = copy_commit_hash_from_panel()
+
+	assert_equal(vim.g.copied, git(root, "rev-parse", "HEAD~1"), "full hash")
+	assert_contains(notified, "Copied the hash of " .. git(root, "log", "-1", "--format=%h %s", "HEAD~1"), "message")
+end
+
+function tests.a_commit_range_copies_its_later_commit()
+	local root = repo()
+	require("plugins.editor.git_changes")
+
+	vim.cmd.GitChanges({ args = { "HEAD~1", "HEAD" } })
+	copy_commit_hash_from_panel()
+
+	assert_equal(vim.g.copied, git(root, "rev-parse", "HEAD"), "the later commit")
+end
+
+function tests.changes_since_a_commit_copy_that_commit()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "new.txt", { "brand new" })
+
+	vim.cmd.GitChanges("HEAD~1")
+	copy_commit_hash_from_panel()
+
+	assert_equal(vim.g.copied, git(root, "rev-parse", "HEAD~1"), "the commit they are since")
+end
+
+function tests.uncommitted_changes_copy_the_commit_they_sit_on()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", { "changed" })
+
+	press("<leader>gd")
+	copy_commit_hash_from_panel()
+
+	assert_equal(vim.g.copied, git(root, "rev-parse", "HEAD"), "HEAD")
+end
+
 function tests.the_first_commit_compares_against_the_empty_tree()
 	local root = repo()
 	require("plugins.editor.git_changes")

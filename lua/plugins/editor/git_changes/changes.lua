@@ -147,6 +147,17 @@ function M.base_rev(since)
 	return since and since.commit or "HEAD"
 end
 
+--- The commit a panel is about: the later end of a range of commits, else the commit
+--- the changes are listed since, else HEAD, which the uncommitted changes sit on.
+---@param since Since?
+---@return string
+function M.commit_shown(since)
+	if since and since.to and since.to.kind == "commit" then
+		return since.to.commit
+	end
+	return M.base_rev(since)
+end
+
 ---@param since Since?
 ---@return string?
 function M.title_of(since)

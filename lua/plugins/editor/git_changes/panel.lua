@@ -327,6 +327,18 @@ local function leave_review(closed)
 end
 
 ---@return integer
+--- Copies the full hash of the commit the panel is about, naming it in the message.
+local function copy_commit_hash()
+	assert(panel, "copy_commit_hash needs an open panel")
+	local commit = git.output(panel.root, { "log", "-1", "--format=%H%n%h %s", changes.commit_shown(panel.since) })
+	if not commit then
+		return
+	end
+	local hash, summary = unpack(vim.split(vim.trim(commit), "\n", { plain = true }))
+	vim.fn.setreg("+", hash)
+	vim.notify("Copied the hash of " .. summary)
+end
+
 local function create_panel_buffer()
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_name(buf, "Git changes")
@@ -335,6 +347,7 @@ local function create_panel_buffer()
 	vim.bo[buf].modifiable = false
 
 	vim.keymap.set("n", "<CR>", open_file_under_cursor, { buffer = buf, desc = "Git open the changed file" })
+	vim.keymap.set("n", "<leader>yc", copy_commit_hash, { buffer = buf, desc = "Git copy the commit's hash" })
 	vim.api.nvim_create_autocmd("BufEnter", {
 		desc = "Relist changes on returning to the panel, since staging or committing elsewhere changes them",
 		buffer = buf,
