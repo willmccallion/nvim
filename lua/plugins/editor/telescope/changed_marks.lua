@@ -9,6 +9,9 @@ local M = {}
 ---@type table<string, string>
 local GROUPS = { A = "Added", ["?"] = "Added", U = "DiagnosticError" }
 
+--- The letter or a blank, then a space.
+local MARK_WIDTH = 2
+
 --- The status letter of each changed file under folder, by its path from there.
 ---@param folder string
 ---@return table<string, string>
@@ -43,10 +46,25 @@ function M.marked(make_entry, letters)
 			local text, style = display(shown)
 			local letter = letters[shown.value]
 			local mark = letter and { { { 0, 1 }, GROUPS[letter] or "Changed" } } or {}
-			return (letter or " ") .. " " .. text, merge_styles(mark, style or {}, 2)
+			return (letter or " ") .. " " .. text, merge_styles(mark, style or {}, MARK_WIDTH)
 		end
 		return entry
 	end
+end
+
+--- Makes a sorter's match highlights skip the marks, so typing m lights up the m in a
+--- name rather than an M mark. Each highlight is a byte position in the row.
+---@param sorter table a Telescope sorter, changed in place
+---@return table sorter
+function M.highlight_past_marks(sorter)
+	local highlighter = sorter.highlighter
+	sorter.highlighter = function(self, prompt, display)
+		local positions = highlighter(self, prompt, display:sub(MARK_WIDTH + 1)) or {}
+		return vim.tbl_map(function(position)
+			return position + MARK_WIDTH
+		end, positions)
+	end
+	return sorter
 end
 
 return M

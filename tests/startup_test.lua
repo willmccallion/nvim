@@ -149,6 +149,32 @@ function tests.closing_the_file_picker_saves_its_filters_for_the_folder()
 	h.assert_equal(result.stdout, '{ "!*.lua" }', "saved")
 end
 
+function tests.typing_m_highlights_the_name_not_a_changed_file_s_mark()
+	local result = start(file_picker_probe({ "main.lua" }, {
+		"local function git(...) vim.system({ 'git', '-c', 'user.name=t', '-c', 'user.email=t', ... }):wait() end",
+		"git('init', '-q')",
+		"git('add', 'main.lua')",
+		"git('commit', '-qm', 'first')",
+		"vim.fn.writefile({ 'edited' }, 'main.lua')",
+	}, {
+		"vim.api.nvim_feedkeys('m', 'xt', false)",
+		"local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
+		"local ns = vim.api.nvim_get_namespaces()['telescope_matching']",
+		"vim.wait(5000, function()",
+		"  return #vim.api.nvim_buf_get_extmarks(picker.results_bufnr, ns, 0, -1, {}) > 0",
+		"end, 10)",
+		"local starts = {}",
+		"for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(picker.results_bufnr, ns, 0, -1, {})) do",
+		"  table.insert(starts, mark[3] - #picker.entry_prefix)",
+		"end",
+		"io.write(table.concat(starts, ' '), '\\n')",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	local starts = vim.split(vim.split(result.stdout, "\n")[1], " ")
+	h.assert_equal(vim.tbl_contains(starts, "0"), false, "a highlight on the mark, at " .. result.stdout)
+end
+
 function tests.a_real_file_opens_without_errors()
 	local path = h.temp_dir() .. "/a.lua"
 	vim.fn.writefile({ "local a = 1", "return a" }, path)

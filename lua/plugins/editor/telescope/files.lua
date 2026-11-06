@@ -91,7 +91,9 @@ function M.find_files_with_glob_filter()
 
 	builtin.find_files(vim.tbl_extend("force", opts, {
 		prompt_title = "Find Files (query  *.glob)",
-		sorter = visits.favour_visited(require("telescope.config").values.file_sorter(opts), folder),
+		sorter = changed_marks.highlight_past_marks(
+			visits.favour_visited(require("telescope.config").values.file_sorter(opts), folder)
+		),
 		find_command = lister.command(active_globs),
 		default_text = #active_globs > 0 and "  " .. table.concat(active_globs, " ") or nil,
 		on_input_filter_cb = function(prompt)
