@@ -34,14 +34,17 @@ end
 --- Lua run in the config's nvim that opens <leader>sf on the files given (paths in the
 --- working folder, each made first) and writes the rows it shows, one per line.
 ---@param paths string[]
----@param after_open? string[] Lua run once the rows are shown, before they are written
+---@param before_open? string[] Lua run once the files are made
 ---@return string[]
-local function file_picker_probe(paths, after_open)
+local function file_picker_probe(paths, before_open)
 	local lines = {
 		"for _, path in ipairs(vim.json.decode([=[" .. vim.json.encode(paths) .. "]=])) do",
 		"  vim.fn.mkdir(vim.fs.dirname(path), 'p')",
 		"  vim.fn.writefile({ 'x' }, path)",
 		"end",
+	}
+	vim.list_extend(lines, before_open or {})
+	vim.list_extend(lines, {
 		"local state = require('telescope.actions.state')",
 		"require('plugins.editor.telescope.files').find_files_with_glob_filter()",
 		"local function rows()",
@@ -50,8 +53,7 @@ local function file_picker_probe(paths, after_open)
 		"    vim.api.nvim_buf_get_lines(picker.results_bufnr, 0, -1, false))",
 		"end",
 		"vim.wait(5000, function() return #rows() >= " .. #paths .. " end, 20)",
-	}
-	vim.list_extend(lines, after_open or {})
+	})
 	table.insert(lines, "io.write(table.concat(rows(), '\\n'))")
 	return lines
 end
@@ -61,6 +63,30 @@ function tests.the_file_picker_shows_each_name_before_its_folder()
 
 	h.assert_equal(result.stderr, "", "errors")
 	h.assert_contains({ result.stdout }, "parser.lua src/deep", "row")
+end
+
+function tests.the_file_picker_marks_files_with_uncommitted_changes()
+	local result = start(file_picker_probe({ "kept.lua", "edited.lua", "new.lua" }, {
+		"local function git(...) vim.system({ 'git', '-c', 'user.name=t', '-c', 'user.email=t', ... }):wait() end",
+		"git('init', '-q')",
+		"git('add', 'kept.lua', 'edited.lua')",
+		"git('commit', '-qm', 'first')",
+		"vim.fn.writefile({ 'edited' }, 'edited.lua')",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	local rows = vim.split(result.stdout, "\n")
+	--- A row starts with the picker's one-space indent, then the mark and a space.
+	local function mark_of(name)
+		for _, row in ipairs(rows) do
+			if row:find(name, 1, true) then
+				return row:sub(2, 3)
+			end
+		end
+	end
+	h.assert_equal(mark_of("edited.lua"), "M ", "changed file")
+	h.assert_equal(mark_of("new.lua"), "? ", "untracked file")
+	h.assert_equal(mark_of("kept.lua"), "  ", "unchanged file")
 end
 
 function tests.a_real_file_opens_without_errors()

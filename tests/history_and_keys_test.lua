@@ -298,6 +298,21 @@ function tests.live_grep_splits_globs_off_the_pattern()
 	h.assert_equal(command_for("  *.lua"), nil, "globs but no pattern yet")
 end
 
+function tests.changed_marks_name_files_from_the_folder_searched()
+	local root = repo()
+	vim.fn.mkdir(root .. "/src")
+	vim.fn.writefile({ "new" }, root .. "/src/b.lua")
+	vim.fn.writefile({ "changed" }, root .. "/a.lua")
+	local marks = require("plugins.editor.telescope.changed_marks")
+
+	h.assert_equal(marks.letters(root), { ["a.lua"] = "M", ["src/b.lua"] = "?" }, "from the root")
+	h.assert_equal(marks.letters(root .. "/src"), { ["b.lua"] = "?" }, "from a folder inside")
+end
+
+function tests.changed_marks_are_empty_outside_git()
+	h.assert_equal(require("plugins.editor.telescope.changed_marks").letters(h.temp_dir()), {}, "letters")
+end
+
 function tests.grepping_changed_files_covers_modified_and_untracked_only()
 	local root = repo()
 	vim.fn.writefile({ "changed" }, root .. "/a.lua")

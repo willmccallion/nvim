@@ -2,6 +2,7 @@
 --- ripgrep applies those globs itself; fd and find, the listers used when it is
 --- missing, list every file and the globs are matched here instead.
 
+local changed_marks = require("plugins.editor.telescope.changed_marks")
 local glob = require("plugins.editor.telescope.glob")
 
 local M = {}
@@ -75,7 +76,12 @@ function M.find_files_with_glob_filter()
 
 	-- Set here, not under pickers in setup: the entry maker below reads it from opts.
 	local opts = { path_display = { "filename_first" } }
-	opts.entry_maker = lister.entry_maker(opts, {})
+	local letters = changed_marks.letters(vim.fn.getcwd())
+	---@param globs string[]
+	local function entry_maker_for(globs)
+		return changed_marks.marked(lister.entry_maker(opts, globs), letters)
+	end
+	opts.entry_maker = entry_maker_for({})
 	local active_globs = {}
 
 	builtin.find_files(vim.tbl_extend("force", opts, {
@@ -87,7 +93,7 @@ function M.find_files_with_glob_filter()
 				return { prompt = query }
 			end
 			active_globs = globs
-			local finder_opts = vim.tbl_extend("force", opts, { entry_maker = lister.entry_maker(opts, globs) })
+			local finder_opts = vim.tbl_extend("force", opts, { entry_maker = entry_maker_for(globs) })
 			return { prompt = query, updated_finder = finders.new_oneshot_job(lister.command(globs), finder_opts) }
 		end,
 	}))
