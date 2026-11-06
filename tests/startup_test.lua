@@ -89,6 +89,31 @@ function tests.the_file_picker_marks_files_with_uncommitted_changes()
 	h.assert_equal(mark_of("kept.lua"), "  ", "unchanged file")
 end
 
+function tests.entering_a_file_remembers_the_visit()
+	local result = start({
+		"vim.fn.writefile({ 'x' }, 'seen.lua')",
+		"vim.cmd.edit('seen.lua')",
+		"local store = vim.fs.joinpath(vim.fn.stdpath('state'), 'file_visits.json')",
+		"io.write(vim.tbl_keys(require('lib.json_file').read(store))[1] or 'nothing')",
+	})
+
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_equal(vim.fs.basename(result.stdout), "seen.lua", "remembered file")
+end
+
+function tests.the_file_picker_puts_a_visited_file_nearest_the_prompt()
+	local names = { "a.lua", "b.lua", "c.lua", "d.lua", "e.lua", "f.lua" }
+	local result = start(file_picker_probe(names, {
+		"local store = vim.fs.joinpath(vim.fn.stdpath('state'), 'file_visits.json')",
+		"vim.fn.mkdir(vim.fs.dirname(store), 'p')",
+		"require('lib.json_file').write(store, { [vim.fs.joinpath(vim.fn.getcwd(), 'd.lua')] = { os.time() } })",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	local rows = vim.split(result.stdout, "\n")
+	h.assert_contains({ rows[#rows] }, "d.lua", "the row by the prompt")
+end
+
 function tests.a_real_file_opens_without_errors()
 	local path = h.temp_dir() .. "/a.lua"
 	vim.fn.writefile({ "local a = 1", "return a" }, path)

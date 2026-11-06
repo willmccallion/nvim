@@ -26,6 +26,13 @@ local function json_file()
 	return require("lib.json_file")
 end
 
+local function visits()
+	return require("plugins.editor.telescope.visits")
+end
+
+local HOUR_S = 3600
+local DAY_S = 24 * HOUR_S
+
 local function listing(dir, ...)
 	local files = {}
 	for _, name in ipairs({ ... }) do
@@ -326,6 +333,71 @@ function tests.a_paired_motion_runs_each_way_and_repeats_with_the_last_direction
 	next_move()
 
 	h.assert_equal(moves, { "prev", "prev", "next", "next" }, "moves")
+end
+
+function tests.a_visit_counts_less_as_it_ages_and_not_at_all_past_a_month()
+	local now = 100 * DAY_S
+	local score = visits().score
+
+	h.assert_equal(score({ now - HOUR_S }, now), 100, "this morning")
+	h.assert_equal(score({ now - 2 * DAY_S }, now), 50, "two days ago")
+	h.assert_equal(score({ now - 40 * DAY_S }, now), 0, "last month")
+	h.assert_equal(score({ now - HOUR_S, now - 5 * DAY_S }, now), 130, "both")
+end
+
+function tests.a_quick_return_to_a_file_is_not_another_visit()
+	local now = 100 * DAY_S
+	local with_visit = visits().with_visit
+
+	h.assert_equal(with_visit({ now - 60 }, now), { now - 60 }, "a minute later")
+	h.assert_equal(with_visit({ now - HOUR_S }, now), { now - HOUR_S, now }, "an hour later")
+	h.assert_equal(with_visit({}, now), { now }, "the first")
+end
+
+function tests.a_file_keeps_its_ten_newest_visits_and_forgets_old_ones()
+	local now = 100 * DAY_S
+	local many = {}
+	for day = 12, 1, -1 do
+		table.insert(many, now - day * DAY_S)
+	end
+
+	local kept = visits().with_visit(many, now)
+
+	h.assert_equal(#kept, 10, "how many")
+	h.assert_equal(kept[#kept], now, "the new one last")
+	h.assert_equal(visits().with_visit({ now - 91 * DAY_S }, now), { now }, "forgotten")
+end
+
+function tests.visits_shrink_a_score_by_up_to_half_and_never_unfilter_one()
+	local favoured = visits().favoured
+
+	h.assert_equal(favoured(0.5, 1), 0.25, "the most visited")
+	h.assert_equal(favoured(0.5, 0.5), 0.375, "half as visited")
+	h.assert_equal(favoured(-1, 1), -1, "filtered out")
+end
+
+function tests.the_sorter_favours_files_by_their_share_of_the_top_visit_score()
+	local folder = h.temp_dir()
+	local now = os.time()
+	local store = vim.fs.joinpath(vim.fn.stdpath("state"), "file_visits.json")
+	vim.fn.mkdir(vim.fs.dirname(store), "p")
+	json_file().write(store, {
+		[folder .. "/often.lua"] = { now - 60, now - 2 * HOUR_S },
+		[folder .. "/once.lua"] = { now - 60 },
+	})
+	local sorter = visits().favour_visited({
+		scoring_function = function()
+			return 1
+		end,
+	}, folder)
+
+	local function score_of(path)
+		return sorter:scoring_function("", path, { value = path })
+	end
+
+	h.assert_equal(score_of("often.lua"), 0.5, "most visited")
+	h.assert_equal(score_of("once.lua"), 0.75, "half as visited")
+	h.assert_equal(score_of("never.lua"), 1, "not visited")
 end
 
 function tests.unchanged_ranges_fold_all_but_three_lines_around_each_change()

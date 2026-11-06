@@ -1,9 +1,11 @@
 --- Fuzzy file finder whose file list is narrowed by the globs after a double space.
 --- ripgrep applies those globs itself; fd and find, the listers used when it is
---- missing, list every file and the globs are matched here instead.
+--- missing, list every file and the globs are matched here instead. Files you visit
+--- often and lately rank higher (visits.lua), and changed ones carry git's letter.
 
 local changed_marks = require("plugins.editor.telescope.changed_marks")
 local glob = require("plugins.editor.telescope.glob")
+local visits = require("plugins.editor.telescope.visits")
 
 local M = {}
 
@@ -86,6 +88,7 @@ function M.find_files_with_glob_filter()
 
 	builtin.find_files(vim.tbl_extend("force", opts, {
 		prompt_title = "Find Files (query  *.glob)",
+		sorter = visits.favour_visited(require("telescope.config").values.file_sorter(opts), vim.fn.getcwd()),
 		find_command = lister.command({}),
 		on_input_filter_cb = function(prompt)
 			local query, globs = glob.split(prompt)
