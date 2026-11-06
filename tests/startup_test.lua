@@ -31,6 +31,38 @@ function tests.long_command_output_collapses_instead_of_waiting_for_a_key()
 	h.assert_equal(drawn_since():find("%[%+%d+%]") ~= nil, true, "the [+n] count of the lines it hid")
 end
 
+--- Lua run in the config's nvim that opens <leader>sf on the files given (paths in the
+--- working folder, each made first) and writes the rows it shows, one per line.
+---@param paths string[]
+---@param after_open? string[] Lua run once the rows are shown, before they are written
+---@return string[]
+local function file_picker_probe(paths, after_open)
+	local lines = {
+		"for _, path in ipairs(vim.json.decode([=[" .. vim.json.encode(paths) .. "]=])) do",
+		"  vim.fn.mkdir(vim.fs.dirname(path), 'p')",
+		"  vim.fn.writefile({ 'x' }, path)",
+		"end",
+		"local state = require('telescope.actions.state')",
+		"require('plugins.editor.telescope.files').find_files_with_glob_filter()",
+		"local function rows()",
+		"  local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
+		"  return vim.tbl_filter(function(row) return vim.trim(row) ~= '' end,",
+		"    vim.api.nvim_buf_get_lines(picker.results_bufnr, 0, -1, false))",
+		"end",
+		"vim.wait(5000, function() return #rows() >= " .. #paths .. " end, 20)",
+	}
+	vim.list_extend(lines, after_open or {})
+	table.insert(lines, "io.write(table.concat(rows(), '\\n'))")
+	return lines
+end
+
+function tests.the_file_picker_shows_each_name_before_its_folder()
+	local result = start(file_picker_probe({ "src/deep/parser.lua" }))
+
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_contains({ result.stdout }, "parser.lua src/deep", "row")
+end
+
 function tests.a_real_file_opens_without_errors()
 	local path = h.temp_dir() .. "/a.lua"
 	vim.fn.writefile({ "local a = 1", "return a" }, path)

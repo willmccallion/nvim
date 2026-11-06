@@ -39,6 +39,10 @@ local function setup_telescope()
 			selection_caret = selection_caret,
 			entry_prefix = entry_prefix,
 		},
+		-- File lists read best by name, the folder after it and dimmed; grep keeps its path:line layout.
+		pickers = {
+			oldfiles = { path_display = { "filename_first" } },
+		},
 		extensions = {
 			["fzf"] = { override_generic_sorter = true, override_file_sorter = true, case_mode = "smart_case" },
 			["ui-select"] = { require("telescope.themes").get_dropdown({}) },

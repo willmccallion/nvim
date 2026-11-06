@@ -73,7 +73,8 @@ function M.find_files_with_glob_filter()
 	local builtin = require("telescope.builtin")
 	local finders = require("telescope.finders")
 
-	local opts = {}
+	-- Set here, not under pickers in setup: the entry maker below reads it from opts.
+	local opts = { path_display = { "filename_first" } }
 	opts.entry_maker = lister.entry_maker(opts, {})
 	local active_globs = {}
 
