@@ -35,8 +35,9 @@ end
 --- working folder, each made first) and writes the rows it shows, one per line.
 ---@param paths string[]
 ---@param before_open? string[] Lua run once the files are made
+---@param after_open? string[] Lua run once the rows are shown, before they are written
 ---@return string[]
-local function file_picker_probe(paths, before_open)
+local function file_picker_probe(paths, before_open, after_open)
 	local lines = {
 		"for _, path in ipairs(vim.json.decode([=[" .. vim.json.encode(paths) .. "]=])) do",
 		"  vim.fn.mkdir(vim.fs.dirname(path), 'p')",
@@ -54,6 +55,7 @@ local function file_picker_probe(paths, before_open)
 		"end",
 		"vim.wait(5000, function() return #rows() >= " .. #paths .. " end, 20)",
 	})
+	vim.list_extend(lines, after_open or {})
 	table.insert(lines, "io.write(table.concat(rows(), '\\n'))")
 	return lines
 end
@@ -112,6 +114,39 @@ function tests.the_file_picker_puts_a_visited_file_nearest_the_prompt()
 	h.assert_equal(result.stderr, "", "errors")
 	local rows = vim.split(result.stdout, "\n")
 	h.assert_contains({ rows[#rows] }, "d.lua", "the row by the prompt")
+end
+
+function tests.the_file_picker_starts_with_the_folder_s_saved_filters_after_the_cursor()
+	local result = start(file_picker_probe({ "main.lua" }, {
+		"vim.fn.writefile({ 'x' }, 'main.test')",
+		"local store = vim.fs.joinpath(vim.fn.stdpath('state'), 'file_filters.json')",
+		"vim.fn.mkdir(vim.fs.dirname(store), 'p')",
+		"require('lib.json_file').write(store, { [vim.fn.getcwd()] = { '!*.test' } })",
+	}, {
+		"local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
+		"vim.wait(5000, function()",
+		"  return vim.api.nvim_win_get_cursor(picker.prompt_win)[2] == #picker.prompt_prefix",
+		"end, 10)",
+		"io.write(picker:_get_prompt(), '|', vim.api.nvim_win_get_cursor(picker.prompt_win)[2] - #picker.prompt_prefix, '\\n')",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	local lines = vim.split(result.stdout, "\n")
+	h.assert_equal(lines[1], "  !*.test|0", "prompt, and the cursor before the filters")
+	h.refute_contains(lines, "main.test", "filtered out")
+end
+
+function tests.closing_the_file_picker_saves_its_filters_for_the_folder()
+	local result = start(file_picker_probe({ "main.lua" }, {}, {
+		"vim.api.nvim_feedkeys('  !*.lua', 'xt', false)",
+		"vim.wait(5000, function() return #rows() == 0 end, 10)",
+		"require('telescope.actions').close(vim.api.nvim_get_current_buf())",
+		"io.write(vim.inspect(require('plugins.editor.telescope.saved_filters').load(vim.fn.getcwd())))",
+		"do return end",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_equal(result.stdout, '{ "!*.lua" }', "saved")
 end
 
 function tests.a_real_file_opens_without_errors()

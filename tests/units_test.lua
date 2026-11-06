@@ -400,6 +400,19 @@ function tests.the_sorter_favours_files_by_their_share_of_the_top_visit_score()
 	h.assert_equal(score_of("never.lua"), 1, "not visited")
 end
 
+function tests.saved_filters_are_kept_per_folder_until_cleared()
+	local filters = require("plugins.editor.telescope.saved_filters")
+
+	filters.save("/one", { "!*.test" })
+	filters.save("/two", { "*.lua" })
+	local kept = filters.load("/one")
+	filters.save("/one", {})
+
+	h.assert_equal(kept, { "!*.test" }, "saved")
+	h.assert_equal(filters.load("/one"), {}, "cleared")
+	h.assert_equal(filters.load("/two"), { "*.lua" }, "the other folder's")
+end
+
 function tests.unchanged_ranges_fold_all_but_three_lines_around_each_change()
 	local folds = require("plugins.editor.git_changes.folds")
 	local hunk = { added = { start = 10, count = 2 }, removed = { start = 10, count = 1 } }
