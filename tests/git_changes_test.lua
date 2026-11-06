@@ -266,6 +266,56 @@ function tests.a_preview_folds_away_lines_far_from_the_change_until_closed()
 	assert_equal(closed_at_end(), false, "folds gone after closing")
 end
 
+--- A 40-line a.txt committed, then its second line changed and the panel opened on it.
+---@return string root
+local function review_a_long_file()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local long = {}
+	for line = 1, 40 do
+		long[line] = "line " .. line
+	end
+	write(root, "a.txt", long)
+	git(root, "commit", "-qam", "long")
+	long[2] = "changed"
+	write(root, "a.txt", long)
+	vim.cmd.edit({ bang = true })
+	press("<leader>gd")
+	wait_for_preview()
+	return root
+end
+
+---@return boolean
+local function far_lines_folded()
+	return vim.api.nvim_win_call(preview_win(), function()
+		return vim.fn.foldclosed(30) ~= -1
+	end)
+end
+
+function tests.whole_files_unfold_the_preview_on_show_and_fold_it_again_when_toggled_back()
+	review_a_long_file()
+	local notified = capture_notifications()
+
+	press("<leader>gz")
+	local whole = far_lines_folded()
+	press("<leader>gz")
+
+	assert_equal(whole, false, "whole file shown")
+	assert_equal(far_lines_folded(), true, "folded again")
+	assert_contains(notified, "Git changes previews show whole files", "message")
+end
+
+function tests.whole_files_last_into_the_next_review()
+	review_a_long_file()
+	press("<leader>gz")
+	press("<leader>gd")
+
+	press("<leader>gd")
+	wait_for_preview()
+
+	assert_equal(far_lines_folded(), false, "whole file in the next review")
+end
+
 function tests.previews_a_deleted_file_from_git()
 	local root = repo()
 	require("plugins.editor.git_changes")

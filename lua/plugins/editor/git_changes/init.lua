@@ -2,12 +2,14 @@
 --- a split on the left, grouped by folder, and <leader>gD everything changed since
 --- a commit picked from the log, up to the files as they are now or to a later
 --- commit picked next. The file under the cursor previews on the right at its
---- first change, folded down to the changes and the lines around them. Each change
+--- first change, folded down to the changes and the lines around them; <leader>gz
+--- shows whole files instead until pressed again or nvim quits. Each change
 --- shows as a before and after: the old lines in red above the new ones in green,
 --- the part that differs marked in both; <CR> moves into it. Files as they are now
 --- are the real ones, kept up to date as you edit; a later commit's are read-only
---- copies. The panel stays open, and <leader>gd closes it, returns to the file it
---- was opened from and puts the folds, colours and gitsigns' base back.
+--- copies. <leader>yc in the panel copies its commit's hash. The panel stays open,
+--- and <leader>gd closes it, returns to the file it was opened from and puts the
+--- folds, colours and gitsigns' base back.
 --- <leader>gh lists the commits that changed the function under the cursor, or the
 --- selected lines, and opens the panel on the one picked.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does),
@@ -17,6 +19,7 @@
 
 local changes = require("plugins.editor.git_changes.changes")
 local commits = require("plugins.editor.git_changes.commits")
+local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
 local line_history = require("plugins.editor.git_changes.line_history")
 local panel = require("plugins.editor.git_changes.panel")
@@ -184,6 +187,13 @@ vim.keymap.set(
 	pick_commit_then_open_panel,
 	{ desc = "Git diff files changed since a commit picked from the log, up to now or a later commit" }
 )
+vim.keymap.set("n", "<leader>gz", function()
+	if folds.toggle_whole_files() then
+		vim.notify("Git changes previews show whole files")
+	else
+		vim.notify("Git changes previews fold to their changes")
+	end
+end, { desc = "Git toggle whole files in the changed files panel's previews" })
 vim.keymap.set("n", "<leader>gh", function()
 	line_history.pick_function(open_commit)
 end, { desc = "Git history of the function under the cursor" })

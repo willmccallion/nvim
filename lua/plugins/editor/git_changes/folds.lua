@@ -2,7 +2,8 @@
 --- are folded away. The folds are manual ones, since a fold expression would be
 --- replaced by the language server's when it attaches. A window's own fold
 --- settings for the buffer are put back on release, or, for a buffer that has
---- left the window by then, the next time it is shown there.
+--- left the window by then, the next time it is shown there. Previews can show their
+--- whole files instead, for the rest of the session, with toggle_whole_files.
 
 local CONTEXT_LINES = 3
 
@@ -21,6 +22,13 @@ local CONTEXT_LINES = 3
 
 ---@type table<integer, table<integer, SavedFoldOptions>> by window, then buffer
 local saved = {}
+
+--- The hunks of each buffer under review, by window then buffer, to fold it again
+--- when whole files are toggled off.
+---@type table<integer, table<integer, GitHunk[]>>
+local reviewed = {}
+
+local shows_whole_files = false
 
 local M = {}
 
@@ -58,14 +66,17 @@ local function restore(win, buf, options)
 	saved[win][buf] = nil
 end
 
---- Folds everything but the hunks and their context in win, which must show buf.
+--- Folds everything but the hunks and their context in win, which must show buf,
+--- unless previews show whole files.
 ---@param win integer
 ---@param buf integer
 ---@param hunks GitHunk[]
 function M.collapse(win, buf, hunks)
+	reviewed[win] = reviewed[win] or {}
+	reviewed[win][buf] = hunks
 	local ranges = M.unchanged_ranges(hunks, vim.api.nvim_buf_line_count(buf))
 	saved[win] = saved[win] or {}
-	if #hunks == 0 or #ranges == 0 then
+	if shows_whole_files or #hunks == 0 or #ranges == 0 then
 		if saved[win][buf] then
 			restore(win, buf, saved[win][buf])
 		end
@@ -84,9 +95,27 @@ function M.collapse(win, buf, hunks)
 	end)
 end
 
+--- Switches previews between their whole files and their changes, folding or
+--- unfolding the ones on show now, and keeping the choice until nvim quits.
+---@return boolean shows_whole_files
+function M.toggle_whole_files()
+	shows_whole_files = not shows_whole_files
+	for win, buffers in pairs(reviewed) do
+		local hunks = vim.api.nvim_win_is_valid(win) and buffers[vim.api.nvim_win_get_buf(win)]
+		if hunks then
+			M.collapse(win, vim.api.nvim_win_get_buf(win), hunks)
+			vim.api.nvim_win_call(win, function()
+				vim.cmd("normal! zv")
+			end)
+		end
+	end
+	return shows_whole_files
+end
+
 --- Restores every collapsed buffer still on show, and marks the rest to be
 --- restored when they are next shown in the window they were collapsed in.
 function M.release_all()
+	reviewed = {}
 	for win, buffers in pairs(saved) do
 		if not vim.api.nvim_win_is_valid(win) then
 			saved[win] = nil
@@ -122,6 +151,9 @@ vim.api.nvim_create_autocmd("BufWipeout", {
 	group = group,
 	callback = function(ev)
 		for _, buffers in pairs(saved) do
+			buffers[ev.buf] = nil
+		end
+		for _, buffers in pairs(reviewed) do
 			buffers[ev.buf] = nil
 		end
 	end,
