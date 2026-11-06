@@ -32,6 +32,10 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
 vim.keymap.set("n", "n", "nzzzv", { desc = "Search next match and center" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Search previous match and center" })
 
+-- gd, gp and searches leave the cursor elsewhere; these walk the jumplist like <C-o> and <C-i>.
+vim.keymap.set("n", "gb", "<C-o>", { desc = "Navigate back to where you were before a jump" })
+vim.keymap.set("n", "gB", "<C-i>", { desc = "Navigate forward again after going back" })
+
 vim.keymap.set({ "n", "x" }, "<leader>y", '"+y', { desc = "Clipboard copy to system clipboard" })
 vim.keymap.set({ "n", "x" }, "<leader>p", '"+p', { desc = "Clipboard paste from system clipboard after cursor" })
 vim.keymap.set({ "n", "x" }, "<leader>P", '"+P', { desc = "Clipboard paste from system clipboard before cursor" })

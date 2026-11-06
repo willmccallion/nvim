@@ -377,6 +377,20 @@ function tests.an_exited_terminal_is_replaced_by_a_new_one()
 	h.assert_equal(vim.api.nvim_get_current_buf() ~= terminal, true, "new terminal")
 end
 
+function tests.gb_goes_back_to_where_a_jump_left_and_gb_upper_comes_forward_again()
+	load_keymaps()
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, { "one", "two", "three", "four" })
+	vim.api.nvim_win_set_cursor(0, { 2, 0 })
+	vim.cmd.normal({ "G", bang = true })
+
+	vim.cmd.normal("gb")
+	local back = vim.api.nvim_win_get_cursor(0)[1]
+	vim.cmd.normal("gB")
+
+	h.assert_equal(back, 2, "back")
+	h.assert_equal(vim.api.nvim_win_get_cursor(0)[1], 4, "forward again")
+end
+
 function tests.the_last_window_is_not_hidden_by_its_terminal_key()
 	require("config.terminal")
 	local notified = h.capture_notifications()
