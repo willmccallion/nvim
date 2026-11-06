@@ -1,5 +1,6 @@
 --- Fuzzy finder via Telescope with fzf-native and ui-select extensions.
---- Find files and grep (both filter by glob after two spaces: `query  *.md`),
+--- Find files and grep (both filter by glob after two spaces: `query  *.md`, the
+--- filters named on the results border, saved per project and dropped with <C-e>),
 --- directory-scoped grep, marks, and more under <leader>s; git log and
 --- changed-file grep under <leader>g. The pickers themselves live beside this
 --- file: glob filter parsing in glob.lua, the finders in files.lua and grep.lua,

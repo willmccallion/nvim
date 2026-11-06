@@ -2,6 +2,7 @@
 --- Each keystroke reruns rg, so the globs after a double space and the
 --- changed-file list can narrow the search itself rather than its results.
 
+local filter_session = require("plugins.editor.telescope.filter_session")
 local glob = require("plugins.editor.telescope.glob")
 
 local M = {}
@@ -9,7 +10,8 @@ local M = {}
 --- Live grep that reruns rg on every keystroke with the args `rg_args_for` builds.
 ---@param title string
 ---@param rg_args_for fun(prompt: string): string[]? nil skips the search; the pattern must follow "--"
-local function live_rg_picker(title, rg_args_for)
+---@param picker_opts? table more options for the picker
+local function live_rg_picker(title, rg_args_for, picker_opts)
 	if vim.fn.executable("rg") == 0 then
 		vim.notify(title .. " needs ripgrep on PATH", vim.log.levels.ERROR)
 		return
@@ -21,21 +23,24 @@ local function live_rg_picker(title, rg_args_for)
 	local make_entry = require("telescope.make_entry")
 
 	pickers
-		.new({}, {
-			prompt_title = title,
-			finder = finders.new_job(function(prompt)
-				if not prompt or prompt == "" then
-					return nil
-				end
-				local args = rg_args_for(prompt)
-				if not args then
-					return nil
-				end
-				return vim.list_extend({ "rg", "--vimgrep", "--smart-case" }, args)
-			end, make_entry.gen_from_vimgrep({})),
-			previewer = conf.grep_previewer({}),
-			sorter = require("telescope.sorters").highlighter_only({}),
-		})
+		.new(
+			{},
+			vim.tbl_extend("force", picker_opts or {}, {
+				prompt_title = title,
+				finder = finders.new_job(function(prompt)
+					if not prompt or prompt == "" then
+						return nil
+					end
+					local args = rg_args_for(prompt)
+					if not args then
+						return nil
+					end
+					return vim.list_extend({ "rg", "--vimgrep", "--smart-case" }, args)
+				end, make_entry.gen_from_vimgrep({})),
+				previewer = conf.grep_previewer({}),
+				sorter = require("telescope.sorters").highlighter_only({}),
+			})
+		)
 		:find()
 end
 
@@ -69,14 +74,17 @@ function M.grep_changed_files()
 	end)
 end
 
+--- Its filters are labelled, dropped with <C-e> and saved per project (filter_session.lua).
 function M.grep_with_glob_filter()
+	local session = filter_session.start("grep")
 	live_rg_picker("Live Grep (pattern  *.glob)", function(prompt)
 		local pattern, globs = glob.split(prompt)
+		filter_session.use(session, globs)
 		if pattern == "" then
 			return nil
 		end
 		return vim.list_extend(glob.rg_args(globs), { "--", pattern })
-	end)
+	end, filter_session.picker_opts(session))
 end
 
 --- The tags the colourscheme draws as labels, written `TAG:` or `TAG(who):`.

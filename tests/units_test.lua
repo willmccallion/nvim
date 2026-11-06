@@ -400,17 +400,56 @@ function tests.the_sorter_favours_files_by_their_share_of_the_top_visit_score()
 	h.assert_equal(score_of("never.lua"), 1, "not visited")
 end
 
-function tests.saved_filters_are_kept_per_folder_until_cleared()
-	local filters = require("plugins.editor.telescope.saved_filters")
+local function saved_filters()
+	return require("plugins.editor.telescope.saved_filters")
+end
 
-	filters.save("/one", { "!*.test" })
-	filters.save("/two", { "*.lua" })
-	local kept = filters.load("/one")
-	filters.save("/one", {})
+function tests.a_path_glob_is_kept_relative_to_the_project_and_a_name_glob_as_typed()
+	local from_folder = saved_filters().from_folder
 
-	h.assert_equal(kept, { "!*.test" }, "saved")
-	h.assert_equal(filters.load("/one"), {}, "cleared")
-	h.assert_equal(filters.load("/two"), { "*.lua" }, "the other folder's")
+	h.assert_equal(from_folder("gen/**", "src/"), "src/gen/**", "path")
+	h.assert_equal(from_folder("!gen/**", "src/"), "!src/gen/**", "negated path")
+	h.assert_equal(from_folder("!*.test", "src/"), "!*.test", "name")
+	h.assert_equal(from_folder("**/fixtures/**", "src/"), "**/fixtures/**", "anywhere")
+	h.assert_equal(from_folder("gen/**", ""), "gen/**", "at the root")
+end
+
+function tests.a_saved_path_glob_comes_back_relative_to_the_folder_or_not_at_all()
+	local to_folder = saved_filters().to_folder
+
+	h.assert_equal(to_folder("!src/gen/**", "src/"), "!gen/**", "inside")
+	h.assert_equal(to_folder("lib/**", "src/"), nil, "outside")
+	h.assert_equal(to_folder("!*.test", "src/"), "!*.test", "name")
+end
+
+function tests.saving_from_a_folder_keeps_the_project_s_globs_that_point_outside_it()
+	h.assert_equal(
+		saved_filters().merged({ "lib/**", "src/old/**", "!*.test" }, { "new/**" }, "src/"),
+		{ "lib/**", "src/new/**" },
+		"globs"
+	)
+end
+
+function tests.filters_are_saved_per_picker_and_project_until_cleared()
+	local root = h.temp_dir()
+	vim.fn.mkdir(root .. "/.git")
+	vim.fn.mkdir(root .. "/src")
+
+	saved_filters().save("files", root .. "/src", { "gen/**", "!*.test" })
+	saved_filters().save("grep", root, { "*.lua" })
+
+	h.assert_equal(saved_filters().load("files", root), { "src/gen/**", "!*.test" }, "from the root")
+	h.assert_equal(saved_filters().load("files", root .. "/src"), { "gen/**", "!*.test" }, "from the folder")
+	h.assert_equal(saved_filters().load("grep", root), { "*.lua" }, "the other picker's")
+	saved_filters().save("files", root, {})
+	h.assert_equal(saved_filters().load("files", root), {}, "cleared")
+end
+
+function tests.the_results_title_names_the_filters_in_use()
+	local label = require("plugins.editor.telescope.filter_session").label
+
+	h.assert_equal(label({}), "Results", "none")
+	h.assert_equal(label({ "!*.test", "*.lua" }), "Filters: !*.test · *.lua", "two")
 end
 
 function tests.unchanged_ranges_fold_all_but_three_lines_around_each_change()

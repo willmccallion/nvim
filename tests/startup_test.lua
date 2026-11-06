@@ -116,37 +116,66 @@ function tests.the_file_picker_puts_a_visited_file_nearest_the_prompt()
 	h.assert_contains({ rows[#rows] }, "d.lua", "the row by the prompt")
 end
 
-function tests.the_file_picker_starts_with_the_folder_s_saved_filters_after_the_cursor()
-	local result = start(file_picker_probe({ "main.lua" }, {
-		"vim.fn.writefile({ 'x' }, 'main.test')",
-		"local store = vim.fs.joinpath(vim.fn.stdpath('state'), 'file_filters.json')",
-		"vim.fn.mkdir(vim.fs.dirname(store), 'p')",
-		"require('lib.json_file').write(store, { [vim.fn.getcwd()] = { '!*.test' } })",
-	}, {
-		"local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
-		"vim.wait(5000, function()",
-		"  return vim.api.nvim_win_get_cursor(picker.prompt_win)[2] == #picker.prompt_prefix",
-		"end, 10)",
-		"io.write(picker:_get_prompt(), '|', vim.api.nvim_win_get_cursor(picker.prompt_win)[2] - #picker.prompt_prefix, '\\n')",
-	}))
+--- Lua that saves these filters for a picker in the probe's folder, as if typed there before.
+---@param picker string
+---@param globs string[]
+---@return string[]
+local function saved_filters_probe(picker, globs)
+	return {
+		"require('plugins.editor.telescope.saved_filters').save('"
+			.. picker
+			.. "', vim.fn.getcwd(), vim.json.decode([=["
+			.. vim.json.encode(globs)
+			.. "]=]))",
+	}
+end
+
+--- Lua that writes the open picker's prompt, the cursor's place in it, and its results title.
+local WRITE_PROMPT_CURSOR_AND_TITLE = {
+	"local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
+	"vim.wait(5000, function()",
+	"  return vim.api.nvim_win_get_cursor(picker.prompt_win)[2] == #picker.prompt_prefix",
+	"end, 10)",
+	"local title = vim.api.nvim_buf_get_lines(picker.layout.results.border.bufnr, 0, 1, false)[1]",
+	"io.write(picker:_get_prompt(), '|', vim.api.nvim_win_get_cursor(picker.prompt_win)[2] - #picker.prompt_prefix,",
+	"  '|', vim.trim(title:gsub('[─╭╮]', '')), '\\n')",
+}
+
+function tests.the_file_picker_starts_with_the_project_s_saved_filters_named_and_after_the_cursor()
+	local before_open = saved_filters_probe("files", { "!*.test" })
+	table.insert(before_open, "vim.fn.writefile({ 'x' }, 'main.test')")
+	local result = start(file_picker_probe({ "main.lua" }, before_open, WRITE_PROMPT_CURSOR_AND_TITLE))
 
 	h.assert_equal(result.stderr, "", "errors")
 	local lines = vim.split(result.stdout, "\n")
-	h.assert_equal(lines[1], "  !*.test|0", "prompt, and the cursor before the filters")
+	h.assert_equal(lines[1], "  !*.test|0|Filters: !*.test", "prompt, the cursor before the filters, and the label")
 	h.refute_contains(lines, "main.test", "filtered out")
 end
 
-function tests.closing_the_file_picker_saves_its_filters_for_the_folder()
+function tests.closing_the_file_picker_saves_its_filters_for_the_project()
 	local result = start(file_picker_probe({ "main.lua" }, {}, {
 		"vim.api.nvim_feedkeys('  !*.lua', 'xt', false)",
 		"vim.wait(5000, function() return #rows() == 0 end, 10)",
 		"require('telescope.actions').close(vim.api.nvim_get_current_buf())",
-		"io.write(vim.inspect(require('plugins.editor.telescope.saved_filters').load(vim.fn.getcwd())))",
+		"io.write(vim.inspect(require('plugins.editor.telescope.saved_filters').load('files', vim.fn.getcwd())))",
 		"do return end",
 	}))
 
 	h.assert_equal(result.stderr, "", "errors")
 	h.assert_equal(result.stdout, '{ "!*.lua" }', "saved")
+end
+
+function tests.ctrl_e_drops_the_file_picker_s_filters_and_their_label()
+	local result = start(file_picker_probe({ "main.lua" }, saved_filters_probe("files", { "!probe.lua" }), {
+		"vim.api.nvim_feedkeys(vim.keycode('<C-e>'), 'xt', false)",
+		"vim.wait(5000, function() return #rows() == 2 end, 10)",
+		"local picker = state.get_current_picker(vim.api.nvim_get_current_buf())",
+		"local title = vim.api.nvim_buf_get_lines(picker.layout.results.border.bufnr, 0, 1, false)[1]",
+		"io.write(picker:_get_prompt(), '|', vim.trim(title:gsub('[─╭╮]', '')), '\\n')",
+	}))
+
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_equal(vim.split(result.stdout, "\n")[1], "|Results", "prompt and title")
 end
 
 function tests.typing_m_highlights_the_name_not_a_changed_file_s_mark()
@@ -173,6 +202,19 @@ function tests.typing_m_highlights_the_name_not_a_changed_file_s_mark()
 	h.assert_equal(result.stderr, "", "errors")
 	local starts = vim.split(vim.split(result.stdout, "\n")[1], " ")
 	h.assert_equal(vim.tbl_contains(starts, "0"), false, "a highlight on the mark, at " .. result.stdout)
+end
+
+function tests.grep_starts_with_the_project_s_saved_filters_named()
+	local lines = saved_filters_probe("grep", { "*.lua" })
+	vim.list_extend(lines, {
+		"local state = require('telescope.actions.state')",
+		"require('plugins.editor.telescope.grep').grep_with_glob_filter()",
+	})
+	vim.list_extend(lines, WRITE_PROMPT_CURSOR_AND_TITLE)
+	local result = start(lines)
+
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_equal(result.stdout, "  *.lua|0|Filters: *.lua\n", "prompt, cursor and label")
 end
 
 function tests.a_real_file_opens_without_errors()
