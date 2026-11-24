@@ -97,10 +97,8 @@ end
 --- Classes sit on ]] and [[ rather than a letter: ]c and [c are Vim's own
 --- diff-change motions, and gitsigns documents them for hunks.
 local move_maps = {
-	{ "]f", "@function.outer", "goto_next_start", "Jump to next function" },
 	{ "]a", "@parameter.outer", "goto_next_start", "Jump to next argument" },
 	{ "]]", "@class.outer", "goto_next_start", "Jump to next class" },
-	{ "[f", "@function.outer", "goto_previous_start", "Jump to previous function" },
 	{ "[a", "@parameter.outer", "goto_previous_start", "Jump to previous argument" },
 	{ "[[", "@class.outer", "goto_previous_start", "Jump to previous class" },
 }
@@ -110,6 +108,58 @@ for _, m in ipairs(move_maps) do
 		move[m[3]](m[2], "textobjects")
 	end, { desc = m[4] })
 end
+
+local shared = require("nvim-treesitter-textobjects.shared")
+
+--- The next or previous function start in the current window whose line isn't inside
+--- a closed fold, found as the plugin's own moves find one; nil when there is none.
+---@param forward boolean
+---@return Range6?
+local function visible_function_start(forward)
+	local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+	row = row - 1
+	local range = shared.find_best_range(0, "@function.outer", "textobjects", function(candidate)
+		local start_row, start_col = candidate[1], candidate[2]
+		if vim.fn.foldclosed(start_row + 1) ~= -1 then
+			return false
+		end
+		if forward then
+			return start_row > row or (start_row == row and start_col > col)
+		end
+		return start_row < row or (start_row == row and start_col < col)
+	end, function(candidate)
+		-- The nearest one wins; candidate[3] is its start's byte offset.
+		return forward and -candidate[3] or candidate[3]
+	end)
+	-- With no parser for the buffer it returns an empty table, not nil.
+	return range and range[1] and range or nil
+end
+
+--- ]f and [f step over functions hidden in closed folds, as j and k step over the fold,
+--- so in g diff's collapsed previews they visit only the functions on show. Like the
+--- plugin's moves, they leave a jump, take a count and work on an operator.
+---@param forward boolean
+local function goto_visible_function(forward)
+	for _ = 1, vim.v.count1 do
+		local range = visible_function_start(forward)
+		if not range then
+			return
+		end
+		vim.cmd("normal! m'")
+		if vim.api.nvim_get_mode().mode == "no" then
+			vim.cmd("normal! v")
+		end
+		vim.api.nvim_win_set_cursor(0, { range[1] + 1, range[2] })
+	end
+end
+
+local next_function, previous_function = require("plugins.editor.motion_repeat").pair(function()
+	goto_visible_function(true)
+end, function()
+	goto_visible_function(false)
+end)
+vim.keymap.set({ "n", "x", "o" }, "]f", next_function, { desc = "Jump to next function not in a closed fold" })
+vim.keymap.set({ "n", "x", "o" }, "[f", previous_function, { desc = "Jump to previous function not in a closed fold" })
 
 local swap = require("nvim-treesitter-textobjects.swap")
 

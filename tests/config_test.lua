@@ -29,6 +29,45 @@ local function answer_input(answer)
 	end
 end
 
+--- alpha starts at line 1, beta at 5 and gamma at 9.
+local THREE_FUNCTIONS = {
+	"local function alpha()",
+	"\treturn 1",
+	"end",
+	"",
+	"local function beta()",
+	"\treturn 2",
+	"end",
+	"",
+	"local function gamma()",
+	"\treturn 3",
+	"end",
+}
+
+--- Opens THREE_FUNCTIONS in the whole config, closes a fold over the lines given, if
+--- any, types keys from a line, and gives the line the cursor ends on.
+---@param from integer
+---@param keys string
+---@param fold integer[]? first and last line
+---@return integer?
+local function line_after_keys(from, keys, fold)
+	local file = h.temp_dir() .. "/three.lua"
+	vim.fn.writefile(THREE_FUNCTIONS, file)
+	local probe = { "vim.wo.foldmethod = 'manual'", "vim.cmd('normal! zE')" }
+	if fold then
+		table.insert(probe, ("vim.cmd('%d,%dfold')"):format(fold[1], fold[2]))
+		table.insert(probe, ("vim.cmd('%d,%dfoldclose')"):format(fold[1], fold[2]))
+	end
+	vim.list_extend(probe, {
+		("vim.api.nvim_win_set_cursor(0, { %d, 0 })"):format(from),
+		("vim.cmd.normal(%q)"):format(keys),
+		"io.write(vim.api.nvim_win_get_cursor(0)[1])",
+	})
+	local result = h.start_config(probe, file)
+	h.assert_equal(result.stderr, "", "errors")
+	return tonumber(result.stdout)
+end
+
 local tests = {}
 
 function tests.renaming_a_file_moves_it_and_follows_it()
@@ -601,6 +640,31 @@ function tests.no_definition_says_so()
 	peek.definition()
 
 	h.assert_contains(notified, "No definition found", "message")
+end
+
+function tests.next_function_goes_to_the_next_one_with_no_folds_closed()
+	h.assert_equal(line_after_keys(1, "]f"), 5, "line")
+end
+
+function tests.next_function_skips_one_inside_a_closed_fold()
+	h.assert_equal(line_after_keys(1, "]f", { 4, 8 }), 9, "line")
+end
+
+function tests.previous_function_skips_one_inside_a_closed_fold()
+	h.assert_equal(line_after_keys(9, "[f", { 4, 8 }), 1, "line")
+end
+
+function tests.next_function_stays_put_when_every_later_one_is_folded()
+	h.assert_equal(line_after_keys(5, "]f", { 8, 11 }), 5, "line")
+end
+
+function tests.a_counted_next_function_stops_at_the_last_function_on_show()
+	h.assert_equal(line_after_keys(1, "2]f", { 8, 11 }), 5, "line")
+	h.assert_equal(line_after_keys(1, "2]f"), 9, "line with no fold")
+end
+
+function tests.semicolon_repeats_next_function()
+	h.assert_equal(line_after_keys(1, "]f;"), 9, "line")
 end
 
 return tests
