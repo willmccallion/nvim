@@ -54,10 +54,14 @@ function M.git_file_buffer(root, sources, path, name)
 
 	local buf = vim.api.nvim_create_buf(false, true)
 	local lines = vim.split(result.stdout, "\n", { plain = true })
-	if lines[#lines] == "" then
+	local has_final_newline = vim.endswith(result.stdout, "\n")
+	if has_final_newline then
 		table.remove(lines)
 	end
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+	-- So its diff ends as git's copy does: it is never written, so no newline gets added.
+	vim.bo[buf].eol = has_final_newline
+	vim.bo[buf].fixeol = false
 	vim.api.nvim_buf_set_name(buf, name)
 	vim.bo[buf].filetype = vim.filetype.match({ filename = path, buf = buf }) or ""
 	vim.bo[buf].modifiable = false

@@ -158,6 +158,26 @@ local function stub_picker(lines_of_pick, choose)
 	end
 end
 
+--- Writes lines with no newline after the last, as some tools leave files.
+---@param root string
+---@param path string
+---@param lines string[]
+local function write_without_final_newline(root, path, lines)
+	vim.fn.writefile(lines, vim.fs.joinpath(root, path), "b")
+end
+
+local NO_FINAL_NEWLINE = { "first", "middle", "} // namespace x" }
+local NO_FINAL_NEWLINE_EDITED = { "FIRST", "middle", "} // namespace x" }
+
+--- Commits c.txt without a final newline, then changes its first line on disk, still without one.
+---@param root string
+local function edit_a_file_without_a_final_newline(root)
+	write_without_final_newline(root, "c.txt", NO_FINAL_NEWLINE)
+	git(root, "add", "c.txt")
+	git(root, "commit", "-qm", "no final newline")
+	write_without_final_newline(root, "c.txt", NO_FINAL_NEWLINE_EDITED)
+end
+
 local tests = {}
 
 function tests.lists_uncommitted_changes_with_folders_after_root_files()
@@ -831,6 +851,40 @@ function tests.opening_a_second_review_replaces_the_first()
 		return vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype == "gitchanges"
 	end, vim.api.nvim_list_bufs())
 	assert_equal(#panels, 1, "open panels")
+end
+
+function tests.a_file_without_a_final_newline_shows_only_its_real_change()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	edit_a_file_without_a_final_newline(root)
+	press("<leader>gd")
+	wait_for_preview()
+	assert_equal(vim.api.nvim_buf_get_name(preview_buf()), vim.fs.joinpath(root, "c.txt"), "previewed file")
+	assert_equal(removed_lines_shown(preview_buf()), { "first" }, "removed lines")
+end
+
+function tests.an_unsaved_edit_counts_the_final_newline_saving_will_add()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	edit_a_file_without_a_final_newline(root)
+	press("<leader>gd")
+	wait_for_preview()
+	local buf = preview_buf()
+	vim.api.nvim_buf_set_lines(buf, 1, 2, false, { "MIDDLE" })
+	vim.api.nvim_exec_autocmds("TextChanged", { buffer = buf })
+	assert_equal(removed_lines_shown(buf), { "first", "middle", "} // namespace x" }, "removed lines")
+end
+
+function tests.a_commit_range_shows_only_real_changes_to_a_file_without_a_final_newline()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	edit_a_file_without_a_final_newline(root)
+	local older = git(root, "rev-parse", "--short", "HEAD")
+	git(root, "commit", "-qam", "edit the first line")
+	vim.cmd.GitChanges({ args = { older, git(root, "rev-parse", "--short", "HEAD") } })
+	wait_for_preview()
+	assert_equal(vim.api.nvim_buf_get_lines(preview_buf(), 0, -1, false), NO_FINAL_NEWLINE_EDITED, "copy's text")
+	assert_equal(removed_lines_shown(preview_buf()), { "first" }, "removed lines")
 end
 
 return tests
