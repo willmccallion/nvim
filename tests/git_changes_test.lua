@@ -178,6 +178,48 @@ local function edit_a_file_without_a_final_newline(root)
 	write_without_final_newline(root, "c.txt", NO_FINAL_NEWLINE_EDITED)
 end
 
+--- A fish on PATH standing in for the real one, which runs g c's message checks: it logs
+--- the message it was given and prints each of problems.
+---@param problems string[]
+---@return string log the file the messages are logged to
+local function stub_message_checks(problems)
+	local bin = vim.fn.tempname()
+	vim.fn.mkdir(bin, "p")
+	local log = bin .. "/checked"
+	local lines = { "#!/bin/sh", 'shift 2; [ "$1" = -- ] && shift; printf "%s\\n" "$1" >> ' .. vim.fn.shellescape(log) }
+	for _, problem in ipairs(problems) do
+		table.insert(lines, "echo " .. vim.fn.shellescape(problem))
+	end
+	vim.fn.writefile(lines, bin .. "/fish")
+	vim.fn.setfperm(bin .. "/fish", "rwxr-xr-x")
+	vim.env.PATH = bin .. ":" .. vim.env.PATH
+	return log
+end
+
+--- Answers vim.ui.input with each of answers in turn, recording the defaults offered.
+---@param answers string[]
+---@return string[] defaults
+local function stub_input(answers)
+	local defaults = {}
+	vim.ui.input = function(opts, on_confirm)
+		table.insert(defaults, opts.default or "")
+		on_confirm(table.remove(answers, 1))
+	end
+	return defaults
+end
+
+--- Answers vim.ui.select with the choice named, recording the prompts.
+---@param choice string?
+---@return string[] prompts
+local function stub_select(choice)
+	local prompts = {}
+	vim.ui.select = function(items, opts, on_choice)
+		table.insert(prompts, opts.prompt)
+		on_choice(vim.list_contains(items, choice) and choice or nil)
+	end
+	return prompts
+end
+
 ---@param root string
 ---@return string[] the paths staged
 local function staged_paths(root)
@@ -969,6 +1011,101 @@ function tests.dot_stages_everything_with_untracked_and_deleted_files()
 	press_in_panel(".")
 	assert_equal(staged_paths(root), { "a.txt", "gone.txt", "new.txt" }, "staged")
 	assert_equal(git(root, "status", "--porcelain"), "M  a.txt\nD  gone.txt\nA  new.txt", "nothing left unstaged")
+end
+
+function tests.c_commits_what_is_staged_with_the_message_typed()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local checked = stub_message_checks({})
+	stub_input({ "Put the third line back" })
+	local prompts = stub_select(nil)
+	write(root, "a.txt", ORIGINAL)
+	git(root, "add", "a.txt")
+	press("<leader>gd")
+	press_in_panel("c")
+	wait_for(function()
+		return git(root, "log", "-1", "--format=%s") == "Put the third line back"
+	end, "the commit")
+	assert_equal(vim.fn.readfile(checked), { "Put the third line back" }, "message checked")
+	assert_equal(git(root, "status", "--porcelain"), "", "nothing left")
+	wait_for(function()
+		return vim.list_contains(panel_lines(), "No changes")
+	end, "the panel relisted")
+	assert_equal(prompts, {}, "no push offered without a remote")
+end
+
+function tests.a_message_with_problems_can_be_edited_before_committing()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	stub_message_checks({ "Subject ends with a period" })
+	local defaults = stub_input({ "Put it back.", "Put it back" })
+	local prompts = stub_select("Edit the message")
+	write(root, "a.txt", ORIGINAL)
+	git(root, "add", "a.txt")
+	press("<leader>gd")
+	press_in_panel("c")
+	assert_equal({ defaults[1], defaults[2] }, { "", "Put it back." }, "the second box starts with what was typed")
+	assert_equal(prompts[1], "Subject ends with a period. Commit anyway?", "problems shown")
+	assert_equal(git(root, "log", "-1", "--format=%s"), "second", "no commit while the message is edited")
+end
+
+function tests.a_message_with_problems_commits_anyway_when_told_to()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	stub_message_checks({ "Subject ends with a period" })
+	stub_input({ "Put it back." })
+	stub_select("Commit anyway")
+	write(root, "a.txt", ORIGINAL)
+	git(root, "add", "a.txt")
+	press("<leader>gd")
+	press_in_panel("c")
+	wait_for(function()
+		return git(root, "log", "-1", "--format=%s") == "Put it back."
+	end, "the commit")
+end
+
+function tests.c_with_nothing_staged_picks_files_first()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	stub_message_checks({})
+	stub_input({ "Put the third line back" })
+	stub_select(nil)
+	local offered
+	require("plugins.editor.git_changes.staging").pick_files = function(_, files, on_pick)
+		offered = vim.tbl_map(function(file)
+			return file.path
+		end, files)
+		on_pick({ "a.txt" })
+	end
+	write(root, "a.txt", ORIGINAL)
+	write(root, "new.txt", { "left out" })
+	press("<leader>gd")
+	press_in_panel("c")
+	assert_equal(offered, { "a.txt", "new.txt" }, "files offered")
+	wait_for(function()
+		return git(root, "log", "-1", "--format=%s") == "Put the third line back"
+	end, "the commit")
+	assert_equal(git(root, "show", "--name-only", "--format=", "HEAD"), "a.txt", "committed files")
+end
+
+function tests.a_commit_offers_to_push_and_pushes()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	local remote = vim.fn.tempname()
+	git(root, "init", "-q", "--bare", remote)
+	git(root, "remote", "add", "origin", remote)
+	git(root, "push", "-q", "-u", "origin", "main")
+	stub_message_checks({})
+	stub_input({ "Put the third line back" })
+	local prompts = stub_select("Push")
+	write(root, "a.txt", ORIGINAL)
+	git(root, "add", "a.txt")
+	press("<leader>gd")
+	press_in_panel("c")
+	wait_for(function()
+		return git(remote, "log", "-1", "--format=%s", "main") == "Put the third line back"
+	end, "the push")
+	assert_equal(prompts, { "Push to origin/main?" }, "push offered")
 end
 
 function tests.staging_keys_work_from_any_file_and_relist_an_open_panel()

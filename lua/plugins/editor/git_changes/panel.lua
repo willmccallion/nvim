@@ -340,8 +340,8 @@ local function copy_commit_hash()
 	vim.notify("Copied the hash of " .. summary)
 end
 
---- s and . in a panel of the uncommitted changes: stage or unstage the file under the
---- cursor, and stage everything.
+--- s, . and c in a panel of the uncommitted changes: stage or unstage the file under the
+--- cursor, stage everything, and commit.
 ---@param buf integer
 local function map_staging_keys(buf)
 	vim.keymap.set("n", "s", function()
@@ -355,6 +355,11 @@ local function map_staging_keys(buf)
 			refresh()
 		end
 	end, { buffer = buf, desc = "Git stage everything" })
+	vim.keymap.set("n", "c", function()
+		if panel then
+			staging.commit(panel.root, refresh)
+		end
+	end, { buffer = buf, desc = "Git commit what is staged" })
 end
 
 local function create_panel_buffer()

@@ -1,4 +1,7 @@
---- Staging from nvim: the changes panel's s and ., and <leader>gf and <leader>g. anywhere.
+--- Staging and committing from nvim: the changes panel's s, . and c, and <leader>gf,
+--- <leader>g. and <leader>gC anywhere. A message gets g c's checks (the fish function
+--- __g_message_problems), and a commit is offered for pushing, as g c does. Commits and
+--- pushes run in the background, since hooks can take a while.
 
 local changes = require("plugins.editor.git_changes.changes")
 local git = require("plugins.editor.git_changes.git")
@@ -127,6 +130,117 @@ function M.pick_and_stage(root, on_staged)
 			on_staged()
 		end
 	end)
+end
+
+--- What g c finds wrong with a message, one problem a line. When the check itself
+--- can't run, it says so and finds nothing, so a commit is never blocked by it.
+---@param message string
+---@return string[]
+local function message_problems(message)
+	local result = vim.system({ "fish", "-c", "__g_message_problems $argv", "--", message }, { text = true }):wait()
+	if result.code ~= 0 then
+		vim.notify("Couldn't check the commit message: " .. vim.trim(result.stderr), vim.log.levels.WARN)
+		return {}
+	end
+	return vim.split(vim.trim(result.stdout), "\n", { trimempty = true })
+end
+
+--- Offers to push to the branch's upstream, or to origin when it has none yet.
+---@param root string
+local function offer_push(root)
+	local upstream = vim.system({ "git", "rev-parse", "--abbrev-ref", "@{upstream}" }, { cwd = root, text = true })
+		:wait()
+	local question, args, where
+	if upstream.code == 0 then
+		where = vim.trim(upstream.stdout)
+		question, args = ("Push to %s?"):format(where), { "push", "--quiet" }
+	else
+		local branch = vim.trim(git.output(root, { "branch", "--show-current" }) or "")
+		if branch == "" or not succeeds(root, { "remote", "get-url", "origin" }) then
+			return
+		end
+		where = "origin/" .. branch
+		question = ("Push %s to origin (first push)?"):format(branch)
+		args = { "push", "--quiet", "--set-upstream", "origin", branch }
+	end
+	vim.ui.select({ "Push", "Not now" }, { prompt = question }, function(choice)
+		if choice ~= "Push" then
+			return
+		end
+		vim.notify("Pushing to " .. where .. "…")
+		vim.system(
+			vim.list_extend({ "git" }, args),
+			{ cwd = root, text = true },
+			vim.schedule_wrap(function(result)
+				if result.code == 0 then
+					vim.notify("Pushed to " .. where)
+				else
+					vim.notify("git push failed: " .. vim.trim(result.stderr), vim.log.levels.ERROR)
+				end
+			end)
+		)
+	end)
+end
+
+---@param root string
+---@param message string
+---@param on_committed fun()
+local function commit_with(root, message, on_committed)
+	vim.notify("Committing…")
+	vim.system(
+		{ "git", "commit", "--quiet", "-m", message },
+		{ cwd = root, text = true },
+		vim.schedule_wrap(function(result)
+			if result.code ~= 0 then
+				vim.notify("git commit failed: " .. vim.trim(result.stderr .. result.stdout), vim.log.levels.ERROR)
+				return
+			end
+			vim.notify("Committed " .. vim.trim(git.output(root, { "log", "-1", "--format=%h %s" }) or ""))
+			on_committed()
+			offer_push(root)
+		end)
+	)
+end
+
+--- Asks for the message, then for confirmation when g c finds something wrong with it,
+--- going back to the message, as typed, to edit it.
+---@param root string
+---@param typed string
+---@param on_committed fun()
+local function ask_message(root, typed, on_committed)
+	vim.ui.input({ prompt = "Commit message", default = typed }, function(message)
+		if not message or vim.trim(message) == "" then
+			return
+		end
+		local problems = message_problems(message)
+		if #problems == 0 then
+			commit_with(root, message, on_committed)
+			return
+		end
+		local prompt = table.concat(problems, "; ") .. ". Commit anyway?"
+		vim.ui.select({ "Commit anyway", "Edit the message" }, { prompt = prompt }, function(choice)
+			if choice == "Commit anyway" then
+				commit_with(root, message, on_committed)
+			elseif choice == "Edit the message" then
+				ask_message(root, message, on_committed)
+			end
+		end)
+	end)
+end
+
+--- Commits what is staged, first picking files to stage when nothing is. on_changed
+--- runs after staging and after the commit, so a panel can show them.
+---@param root string
+---@param on_changed fun()
+function M.commit(root, on_changed)
+	if succeeds(root, { "diff", "--cached", "--quiet" }) then
+		M.pick_and_stage(root, function()
+			on_changed()
+			ask_message(root, "", on_changed)
+		end)
+		return
+	end
+	ask_message(root, "", on_changed)
 end
 
 return M

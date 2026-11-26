@@ -11,8 +11,9 @@
 --- and <leader>gd closes it, returns to the file it was opened from and puts the
 --- folds, colours and gitsigns' base back.
 --- In the uncommitted changes, ● marks a staged file and ◐ a partly staged one: s
---- stages or unstages the file under the cursor and . stages everything. Anywhere,
---- <leader>gf picks files to stage and <leader>g. stages everything (staging.lua).
+--- stages or unstages the file under the cursor, . stages everything and c commits.
+--- Anywhere, <leader>gf picks files to stage, <leader>g. stages everything and
+--- <leader>gC commits (staging.lua).
 --- <leader>gh lists the commits that changed the function under the cursor, or the
 --- selected lines, and opens the panel on the one picked.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does),
@@ -235,6 +236,15 @@ vim.keymap.set(
 	end),
 	{ desc = "Git stage everything (git add -A)" }
 )
+vim.keymap.set(
+	"n",
+	"<leader>gC",
+	in_repository(function(root)
+		staging.commit(root, panel.refresh)
+	end),
+	{ desc = "Git commit what is staged, picking files first when nothing is" }
+)
+
 vim.api.nvim_create_user_command("GitChanges", function(opts)
 	local root = git.current_root()
 	if not root then
