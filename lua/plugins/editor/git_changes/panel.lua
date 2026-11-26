@@ -6,6 +6,7 @@ local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
 local gitsigns_base = require("plugins.editor.git_changes.gitsigns_base")
 local render = require("plugins.editor.git_changes.render")
+local staging = require("plugins.editor.git_changes.staging")
 local tint = require("plugins.editor.git_changes.tint")
 
 local M = {}
@@ -339,6 +340,23 @@ local function copy_commit_hash()
 	vim.notify("Copied the hash of " .. summary)
 end
 
+--- s and . in a panel of the uncommitted changes: stage or unstage the file under the
+--- cursor, and stage everything.
+---@param buf integer
+local function map_staging_keys(buf)
+	vim.keymap.set("n", "s", function()
+		local file = panel and panel.files_by_line[vim.api.nvim_win_get_cursor(0)[1]]
+		if file and staging.toggle_file(panel.root, file) then
+			refresh()
+		end
+	end, { buffer = buf, desc = "Git stage or unstage the file" })
+	vim.keymap.set("n", ".", function()
+		if panel and staging.stage_all(panel.root) then
+			refresh()
+		end
+	end, { buffer = buf, desc = "Git stage everything" })
+end
+
 local function create_panel_buffer()
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_name(buf, "Git changes")
@@ -406,6 +424,9 @@ local function open_panel(root, since, files, focus_path)
 		bases = {},
 	}
 	draw(content)
+	if not since then
+		map_staging_keys(buf)
+	end
 	if focus_path then
 		vim.api.nvim_win_set_cursor(win, { render.line_of(panel.files_by_line, focus_path) or 1, 0 })
 	end
@@ -440,6 +461,9 @@ function M.close()
 	end
 	leave_review(closed)
 end
+
+--- Relists the open panel's changes, as after staging or committing from elsewhere.
+M.refresh = refresh
 
 ---@return boolean
 function M.is_open()

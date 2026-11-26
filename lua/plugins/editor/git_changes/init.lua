@@ -10,6 +10,9 @@
 --- copies. <leader>yc in the panel copies its commit's hash. The panel stays open,
 --- and <leader>gd closes it, returns to the file it was opened from and puts the
 --- folds, colours and gitsigns' base back.
+--- In the uncommitted changes, ● marks a staged file and ◐ a partly staged one: s
+--- stages or unstages the file under the cursor and . stages everything. Anywhere,
+--- <leader>gf picks files to stage and <leader>g. stages everything (staging.lua).
 --- <leader>gh lists the commits that changed the function under the cursor, or the
 --- selected lines, and opens the panel on the one picked.
 --- :GitChanges [older [newer]] opens the same from the command line (g diff does),
@@ -23,6 +26,7 @@ local folds = require("plugins.editor.git_changes.folds")
 local git = require("plugins.editor.git_changes.git")
 local line_history = require("plugins.editor.git_changes.line_history")
 local panel = require("plugins.editor.git_changes.panel")
+local staging = require("plugins.editor.git_changes.staging")
 
 --- Opens the panel on since, or says there is nothing to show and leaves any open one.
 ---@param root string
@@ -201,6 +205,36 @@ vim.keymap.set("x", "<leader>gh", function()
 	line_history.pick_selection(open_commit)
 end, { desc = "Git history of the selected lines" })
 
+--- A key that acts on the current file's repository, saying so when there is none.
+---@param action fun(root: string)
+---@return fun()
+local function in_repository(action)
+	return function()
+		local root = git.current_root()
+		if root then
+			action(root)
+		end
+	end
+end
+
+vim.keymap.set(
+	"n",
+	"<leader>gf",
+	in_repository(function(root)
+		staging.pick_and_stage(root, panel.refresh)
+	end),
+	{ desc = "Git pick files to stage, with a diff preview" }
+)
+vim.keymap.set(
+	"n",
+	"<leader>g.",
+	in_repository(function(root)
+		if staging.stage_all(root) then
+			panel.refresh()
+		end
+	end),
+	{ desc = "Git stage everything (git add -A)" }
+)
 vim.api.nvim_create_user_command("GitChanges", function(opts)
 	local root = git.current_root()
 	if not root then

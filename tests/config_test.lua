@@ -667,4 +667,34 @@ function tests.semicolon_repeats_next_function()
 	h.assert_equal(line_after_keys(1, "]f;"), 9, "line")
 end
 
+function tests.the_stage_picker_stages_the_files_marked_with_tab()
+	local root = h.temp_dir()
+	local function git(...)
+		local result = vim.system({ "git", ... }, { cwd = root, text = true }):wait()
+		assert(result.code == 0, result.stderr)
+		return vim.trim(result.stdout)
+	end
+	git("init", "-q", "-b", "main")
+	for _, name in ipairs({ "a.txt", "b.txt", "c.txt" }) do
+		vim.fn.writefile({ "untracked" }, root .. "/" .. name)
+	end
+	local result = h.start_config({
+		"vim.cmd.cd(" .. vim.inspect(root) .. ")",
+		"local root = " .. vim.inspect(root),
+		"require('plugins.editor.git_changes.staging').pick_and_stage(root, function() end)",
+		"vim.wait(5000, function() return vim.bo.filetype == 'TelescopePrompt' end, 20)",
+		"local prompt = vim.api.nvim_get_current_buf()",
+		"local actions = require('telescope.actions')",
+		"vim.wait(5000, function() local picker = require('telescope.actions.state').get_current_picker(prompt); return picker.manager and picker.manager:num_results() == 3 end, 20)",
+		"actions.toggle_selection(prompt)",
+		"actions.move_selection_next(prompt)",
+		"actions.toggle_selection(prompt)",
+		"actions.select_default(prompt)",
+		"vim.wait(5000, function() return vim.system({ 'git', 'diff', '--cached', '--quiet' }, { cwd = root }):wait().code ~= 0 end, 20)",
+	}, root .. "/a.txt")
+	h.assert_equal(result.stderr, "", "errors")
+	h.assert_equal(#vim.split(git("diff", "--cached", "--name-only"), "\n"), 2, "files staged")
+	h.assert_equal(git("status", "--porcelain"):match("%?%? %w.txt") ~= nil, true, "one left untracked")
+end
+
 return tests

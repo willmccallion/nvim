@@ -178,6 +178,13 @@ local function edit_a_file_without_a_final_newline(root)
 	write_without_final_newline(root, "c.txt", NO_FINAL_NEWLINE_EDITED)
 end
 
+---@param root string
+---@return string[] the paths staged
+local function staged_paths(root)
+	local out = git(root, "diff", "--cached", "--name-only")
+	return out == "" and {} or vim.split(out, "\n")
+end
+
 --- The staged mark on a panel line: "●", "◐" or " " for none.
 ---@param line string
 ---@return string
@@ -188,6 +195,13 @@ local function staged_mark(line)
 		end
 	end
 	return " "
+end
+
+--- Presses a key in the panel's window, as typed there.
+---@param lhs string
+local function press_in_panel(lhs)
+	vim.api.nvim_set_current_win(panel_win())
+	press(lhs)
 end
 
 local tests = {}
@@ -914,6 +928,78 @@ function tests.the_panel_marks_staged_and_partly_staged_files()
 		{ "●", " ", "◐" },
 		"marks of a.txt, new.txt and lib/b.txt"
 	)
+end
+
+function tests.s_stages_the_file_under_the_cursor_and_again_unstages_it()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", ORIGINAL)
+	write(root, "new.txt", { "untracked" })
+	press("<leader>gd")
+	select_file("new.txt")
+	press_in_panel("s")
+	assert_equal(staged_paths(root), { "new.txt" }, "staged after s")
+	assert_equal(staged_mark(panel_lines()[2]), "●", "new.txt's mark")
+	press_in_panel("s")
+	assert_equal(staged_paths(root), {}, "staged after s again")
+end
+
+function tests.s_unstages_before_the_first_commit()
+	local root = vim.fn.tempname()
+	vim.fn.mkdir(root, "p")
+	git(root, "init", "-q", "-b", "main")
+	write(root, "first.txt", { "never committed" })
+	git(root, "add", "first.txt")
+	vim.cmd.cd(root)
+	vim.cmd.edit(vim.fs.joinpath(root, "first.txt"))
+	require("gitsigns").setup({})
+	require("plugins.editor.git_changes")
+	press("<leader>gd")
+	press_in_panel("s")
+	assert_equal(staged_paths(root), {}, "staged after s")
+end
+
+function tests.dot_stages_everything_with_untracked_and_deleted_files()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", ORIGINAL)
+	write(root, "new.txt", { "untracked" })
+	vim.fn.delete(vim.fs.joinpath(root, "gone.txt"))
+	press("<leader>gd")
+	press_in_panel(".")
+	assert_equal(staged_paths(root), { "a.txt", "gone.txt", "new.txt" }, "staged")
+	assert_equal(git(root, "status", "--porcelain"), "M  a.txt\nD  gone.txt\nA  new.txt", "nothing left unstaged")
+end
+
+function tests.staging_keys_work_from_any_file_and_relist_an_open_panel()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", ORIGINAL)
+	write(root, "new.txt", { "untracked" })
+	local offered
+	require("plugins.editor.git_changes.staging").pick_files = function(_, files, on_pick)
+		offered = #files
+		on_pick({ "new.txt" })
+	end
+	press("<leader>gf")
+	assert_equal(offered, 2, "files offered")
+	assert_equal(staged_paths(root), { "new.txt" }, "staged by the pick")
+	press("<leader>gd")
+	vim.cmd.wincmd("p")
+	press("<leader>g.")
+	assert_equal(staged_paths(root), { "a.txt", "new.txt" }, "staged by <leader>g.")
+	assert_equal(staged_mark(panel_lines()[1]), "●", "the open panel shows it")
+end
+
+function tests.a_range_of_commits_has_no_staging_keys()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	vim.cmd.GitChanges({ args = { "--commit", "HEAD" } })
+	wait_for_preview()
+	vim.api.nvim_buf_call(panel_buf(), function()
+		assert_equal(vim.fn.maparg("s", "n", false, true).buffer, nil, "no s")
+	end)
+	assert_equal(git(root, "status", "--porcelain"), "", "untouched")
 end
 
 return tests
