@@ -7,6 +7,14 @@ local M = {}
 local MIN_WIDTH = 25
 local MAX_WIDTH = 50
 
+--- How much of an uncommitted file is staged, in a column after its status letter.
+---@type table<StagedState, {text: string, group: string?}>
+local STAGED_MARKS = {
+	all = { text = "●", group = "GitSignsAdd" },
+	part = { text = "◐", group = "GitSignsChange" },
+	none = { text = " " },
+}
+
 local STATUS_HIGHLIGHTS = {
 	["?"] = "GitSignsAdd",
 	A = "GitSignsAdd",
@@ -61,13 +69,25 @@ function M.content(files, title)
 		local name = vim.fs.basename(file.path)
 		local icon, icon_group = devicons.get_icon(name, nil, { default = true })
 		local indent = dir == "." and "" or "  "
+		local staged = file.staged and STAGED_MARKS[file.staged]
+		local status = staged and ("%s %s"):format(file.status, staged.text) or file.status
 		local status_col = #indent
-		local icon_col = status_col + #file.status + 1
-		table.insert(content.lines, ("%s%s %s %s"):format(indent, file.status, icon, name))
+		local icon_col = status_col + #status + 1
+		table.insert(content.lines, ("%s%s %s %s"):format(indent, status, icon, name))
 
 		local row = #content.lines - 1
 		local status_group = STATUS_HIGHLIGHTS[file.status] or "GitSignsChange"
-		table.insert(content.marks, { row = row, col_start = status_col, col_end = icon_col - 1, group = status_group })
+		table.insert(
+			content.marks,
+			{ row = row, col_start = status_col, col_end = status_col + #file.status, group = status_group }
+		)
+		if staged and staged.group then
+			local staged_col = status_col + #file.status + 1
+			table.insert(
+				content.marks,
+				{ row = row, col_start = staged_col, col_end = staged_col + #staged.text, group = staged.group }
+			)
+		end
 		table.insert(content.marks, { row = row, col_start = icon_col, col_end = icon_col + #icon, group = icon_group })
 		content.files_by_line[#content.lines] = file
 	end

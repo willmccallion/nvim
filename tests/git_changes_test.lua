@@ -178,6 +178,18 @@ local function edit_a_file_without_a_final_newline(root)
 	write_without_final_newline(root, "c.txt", NO_FINAL_NEWLINE_EDITED)
 end
 
+--- The staged mark on a panel line: "●", "◐" or " " for none.
+---@param line string
+---@return string
+local function staged_mark(line)
+	for _, mark in ipairs({ "●", "◐" }) do
+		if line:find(mark, 1, true) then
+			return mark
+		end
+	end
+	return " "
+end
+
 local tests = {}
 
 function tests.lists_uncommitted_changes_with_folders_after_root_files()
@@ -187,13 +199,13 @@ function tests.lists_uncommitted_changes_with_folders_after_root_files()
 	write(root, "new.txt", { "brand new" })
 	write(root, "lib/b.txt", { "changed" })
 	press("<leader>gd")
-	assert_equal(
-		vim.tbl_map(function(line)
-			return (line:gsub("^(%s*%S+) %S+ ", "%1 "))
-		end, panel_lines()),
-		{ "M a.txt", "? new.txt", "lib/", "  M b.txt" },
-		"panel lines"
-	)
+	local icon = require("nvim-web-devicons").get_icon("a.txt", nil, { default = true })
+	assert_equal(panel_lines(), {
+		("M   %s a.txt"):format(icon),
+		("?   %s new.txt"):format(icon),
+		"lib/",
+		("  M   %s b.txt"):format(icon),
+	}, "panel lines, the blank after each letter where a staged file has its mark")
 end
 
 function tests.previews_a_change_with_the_removed_line_above_the_new_one()
@@ -885,6 +897,23 @@ function tests.a_commit_range_shows_only_real_changes_to_a_file_without_a_final_
 	wait_for_preview()
 	assert_equal(vim.api.nvim_buf_get_lines(preview_buf(), 0, -1, false), NO_FINAL_NEWLINE_EDITED, "copy's text")
 	assert_equal(removed_lines_shown(preview_buf()), { "first" }, "removed lines")
+end
+
+function tests.the_panel_marks_staged_and_partly_staged_files()
+	local root = repo()
+	require("plugins.editor.git_changes")
+	write(root, "a.txt", ORIGINAL)
+	write(root, "lib/b.txt", { "staged" })
+	git(root, "add", "a.txt", "lib/b.txt")
+	write(root, "lib/b.txt", { "staged, then changed again" })
+	write(root, "new.txt", { "untracked" })
+	press("<leader>gd")
+	local lines = panel_lines()
+	assert_equal(
+		vim.tbl_map(staged_mark, { lines[1], lines[2], lines[4] }),
+		{ "●", " ", "◐" },
+		"marks of a.txt, new.txt and lib/b.txt"
+	)
 end
 
 return tests

@@ -9,6 +9,9 @@ local M = {}
 ---@field path string relative to the repository root
 ---@field status string one git status letter, or "?" for untracked
 ---@field old_path string? where a renamed or copied file came from
+---@field staged StagedState? how much of it is staged; only the uncommitted changes say
+
+---@alias StagedState "all"|"part"|"none"
 
 ---@class Since
 ---@field commit string the commit the changes are listed since
@@ -30,6 +33,20 @@ local function status_letter(index, worktree)
 		return worktree
 	end
 	return index
+end
+
+--- Unmerged pairs, which staging marks as resolved rather than staging a change.
+local UNMERGED = { DD = true, AU = true, UD = true, UA = true, DU = true, AA = true, UU = true }
+
+--- How much of a file is staged, from its index and worktree letters.
+---@param index string
+---@param worktree string
+---@return StagedState
+local function staged_state(index, worktree)
+	if index == " " or index == "?" or UNMERGED[index .. worktree] then
+		return "none"
+	end
+	return worktree == " " and "all" or "part"
 end
 
 --- Root files come first, then each folder's files together, in path order.
@@ -58,7 +75,11 @@ local function parse_porcelain(output)
 	while i <= #fields do
 		local record = fields[i]
 		local index, worktree = record:sub(1, 1), record:sub(2, 2)
-		local file = { path = record:sub(4), status = status_letter(index, worktree) }
+		local file = {
+			path = record:sub(4),
+			status = status_letter(index, worktree),
+			staged = staged_state(index, worktree),
+		}
 		if index == "R" or index == "C" then
 			file.old_path = fields[i + 1]
 			i = i + 1
